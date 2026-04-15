@@ -17,8 +17,12 @@ import io.undertow.server.HttpHandler;
 import io.undertow.server.handlers.sse.ServerSentEventHandler;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
 import org.jboss.as.server.deployment.Attachments;
 
 import org.jboss.as.server.deployment.DeploymentPhaseContext;
@@ -91,6 +95,7 @@ public class MCPSseHandlerServiceInstaller implements DeploymentServiceInstaller
         Runnable start = new Runnable() {
             @Override
             public void run() {
+                connectionManager.start(configuration.timeout(), lookupScheduledExecutorService());
                 if (oidcSecured) {
                     HttpAuthenticationFactory httpAuthenticationFactory = HttpAuthenticationFactory.builder()
                             .setFactory(getHttpServerAuthenticationMechanismFactory(deploymentUnit))
@@ -112,6 +117,7 @@ public class MCPSseHandlerServiceInstaller implements DeploymentServiceInstaller
         Runnable stop = new Runnable() {
             @Override
             public void run() {
+                connectionManager.stop();
                 host.get().unregisterHandler(ssePath);
                 host.get().unregisterHandler(messagesEndpoint);
                 ROOT_LOGGER.endpointUnregistered(ssePath, host.get().getName());
@@ -185,5 +191,28 @@ public class MCPSseHandlerServiceInstaller implements DeploymentServiceInstaller
         })
                 .build();
         return domainHandler;
+    }
+
+    static ScheduledExecutorService lookupScheduledExecutorService() {
+        InitialContext context = null;
+        try {
+            context = new InitialContext();
+            return (ScheduledExecutorService) context.lookup("java:comp/DefaultManagedScheduledExecutorService");
+        } catch (NamingException ex) {
+            ROOT_LOGGER.warn("Managed scheduled executor service not available, using default scheduled executor service");
+            return Executors.newSingleThreadScheduledExecutor(r -> {
+                Thread t = new Thread(r, "mcp-connection-cleanup");
+                t.setDaemon(true);
+                return t;
+            });
+        } finally {
+            if (context != null) {
+                try {
+                    context.close();
+                } catch (NamingException ex) {
+                    ROOT_LOGGER.debug("Error closing initial context", ex);
+                }
+            }
+        }
     }
 }

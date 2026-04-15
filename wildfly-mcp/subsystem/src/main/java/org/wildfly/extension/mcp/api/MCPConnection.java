@@ -36,6 +36,8 @@ public interface MCPConnection extends Closeable {
 
     InitializeRequest initializeRequest();
 
+    long lastActivity();
+
     McpLog.LogLevel logLevel();
 
     void setLogLevel(McpLog.LogLevel level);

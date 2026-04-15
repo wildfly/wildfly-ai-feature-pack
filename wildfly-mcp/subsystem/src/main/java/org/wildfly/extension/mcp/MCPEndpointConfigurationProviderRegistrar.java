@@ -49,7 +49,12 @@ public class MCPEndpointConfigurationProviderRegistrar implements ChildResourceD
             .setRestartAllServices()
             .setStability(Stability.EXPERIMENTAL)
             .build();
-    public static final Collection<AttributeDefinition> ATTRIBUTES = List.of(MESSAGES_PATH, SSE_PATH, STREAMABLE_PATH, PAGE_SIZE);
+    public static final SimpleAttributeDefinition TIMEOUT = SimpleAttributeDefinitionBuilder.create("timeout", ModelType.LONG, true)
+            .setAllowExpression(true)
+            .setDefaultValue(new org.jboss.dmr.ModelNode(1800L))
+            .setRestartAllServices()
+            .build();
+    public static final Collection<AttributeDefinition> ATTRIBUTES = List.of(MESSAGES_PATH, SSE_PATH, STREAMABLE_PATH, PAGE_SIZE, TIMEOUT);
 
     private final ResourceDescriptor descriptor;
     static final String NAME = "mcp-server";

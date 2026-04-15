@@ -32,6 +32,7 @@ public class ServerSentEventResponder implements Responder, MCPConnection {
     private final AtomicReference<InitializeRequest> initializeRequest;
     private final PendingRequestRegistry pendingRequestRegistry = new PendingRequestRegistry();
     private final AtomicReference<McpLog.LogLevel> logLevel = new AtomicReference<>(McpLog.LogLevel.NOTICE);
+    private volatile long lastActivity;
     private Future future;
 
     ServerSentEventResponder(ServerSentEventConnection connection, String id) {
@@ -39,12 +40,14 @@ public class ServerSentEventResponder implements Responder, MCPConnection {
         this.status = new AtomicReference<>(Status.NEW);
         this.initializeRequest = new AtomicReference<>();
         this.id = id;
+        this.lastActivity = System.currentTimeMillis();
     }
 
     @Override
     public boolean initialize(InitializeRequest request) {
         if (status.compareAndSet(Status.NEW, Status.INITIALIZING)) {
             initializeRequest.set(request);
+            this.lastActivity = System.currentTimeMillis();
             return true;
         }
         return false;
@@ -52,7 +55,11 @@ public class ServerSentEventResponder implements Responder, MCPConnection {
 
     @Override
     public boolean setInitialized() {
-        return status.compareAndSet(Status.INITIALIZING, Status.IN_OPERATION);
+        boolean result = status.compareAndSet(Status.INITIALIZING, Status.IN_OPERATION);
+        if (result) {
+            this.lastActivity = System.currentTimeMillis();
+        }
+        return result;
     }
 
     @Override
@@ -75,7 +82,13 @@ public class ServerSentEventResponder implements Responder, MCPConnection {
         }
     }
 
+    @Override
+    public long lastActivity() {
+        return lastActivity;
+    }
+
     public void send(String name, String message) {
+        this.lastActivity = System.currentTimeMillis();
         ROOT_LOGGER.debugf("Sending message of type %s with content %s", name, message);
         connection.getResponseHeaders().add(MCP_SESSION_ID_HEADER, id);
         connection.send(message, name,""+ lastEventId(), new ServerSentEventConnection.EventCallback() {
