@@ -21,7 +21,7 @@ The integration tests automatically manage containers using Testcontainers, elim
 
 ### From Maven
 
-Run integration tests with the `integration-test` profile:
+Run integration tests with the `integration-test` Maven profile:
 
 ```bash
 mvn clean verify -Pintegration-test

@@ -12,9 +12,8 @@
         <layers>
             <!-- Base WildFly layers (no opentelemetry) -->
             <include name="cdi"/>
-            <include name="jaxrs"/>
+            <include name="jaxrs-server"/>
             <include name="management"/>
-
             <!-- AI Feature Pack layers for testing -->
             <include name="ollama-chat-model"/>
             <include name="ollama-streaming-chat-model"/>

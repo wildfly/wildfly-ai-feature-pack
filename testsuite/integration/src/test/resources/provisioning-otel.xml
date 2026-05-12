@@ -12,7 +12,7 @@
         <layers>
             <!-- Base WildFly layers -->
             <include name="cdi"/>
-            <include name="jaxrs"/>
+            <include name="jaxrs-server"/>
             <include name="management"/>
             <include name="opentelemetry"/>
 

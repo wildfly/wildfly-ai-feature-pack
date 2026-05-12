@@ -1,7 +1,7 @@
 # CLI script to configure OpenTelemetry subsystem for testing
 # This configures WildFly to send traces and metrics to the LGTM container
 
-embed-server --server-config=standalone.xml
+embed-server --server-config=standalone.xml --stability=experimental
 
 # Add OpenTelemetry subsystem if not already present
 if (outcome != success) of /subsystem=opentelemetry:read-resource

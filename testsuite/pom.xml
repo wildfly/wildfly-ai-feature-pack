@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.wildfly.generative-ai</groupId>
         <artifactId>wildfly-ai-feature-pack-parent</artifactId>
-        <version>0.10.0-SNAPSHOT</version>
+        <version>0.11.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>wildfly-ai-testsuite</artifactId>
@@ -14,9 +14,24 @@
     <name>WildFly AI Feature Pack - Testsuite</name>
     <description>Integration testsuite for the WildFly AI Feature Pack</description>
 
+    <properties>
+        <maven.deploy.skip>true</maven.deploy.skip>
+    </properties>
+
     <modules>
-        <module>integration</module>
         <module>mcp</module>
     </modules>
 
+    <profiles>
+        <!-- Profile to run integration tests -->
+        <!-- They are disabled by default, as they require more CPUs that
+             what can be provided by GitHub Actions.
+        -->
+        <profile>
+            <id>integration-test</id>
+            <modules>
+                <module>integration</module>
+            </modules>
+        </profile>
+    </profiles>
 </project>

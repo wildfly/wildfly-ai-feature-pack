@@ -11,6 +11,7 @@
                 <property name="managementPort">9990</property>
                 <property name="startupTimeoutInSeconds">120</property>
                 <property name="allowConnectingToRunningServer">false</property>
+                <property name="jbossArguments">--stability=experimental</property>
                 <property name="javaVmArguments">
                     -Dorg.wildfly.ai.ollama.chat.url=${ollama.base.url:http://127.0.0.1:11434}
                     -Dorg.wildfly.ai.ollama.embedding.url=${ollama.base.url:http://127.0.0.1:11434}
@@ -27,6 +28,7 @@
                 <property name="managementPort">10090</property>
                 <property name="startupTimeoutInSeconds">120</property>
                 <property name="allowConnectingToRunningServer">false</property>
+                <property name="jbossArguments">--stability=experimental</property>
                 <property name="javaVmArguments">
                     -Djboss.socket.binding.port-offset=100
                     -Dorg.wildfly.ai.ollama.chat.url=${ollama.base.url:http://127.0.0.1:11434}

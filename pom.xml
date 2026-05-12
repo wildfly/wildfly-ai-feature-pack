@@ -49,6 +49,7 @@
         <version.org.wildfly.core>31.0.1.Final</version.org.wildfly.core>
         <version.org.wildfly.common>1.7.0.Final</version.org.wildfly.common>
         <version.org.wildfly.galleon-plugins>8.1.0.Final</version.org.wildfly.galleon-plugins>
+        <version.wildfly.maven.plugin>5.1.5.Final</version.wildfly.maven.plugin>
 
         <version.ai.djl>0.33.0</version.ai.djl>
         <version.com.azure.azure-ai-inference>1.0.0-beta.5</version.com.azure.azure-ai-inference>
@@ -1080,15 +1081,6 @@
         <module>wildfly-wasm</module>
         <module>wildfly-mcp</module>
         <module>ai-feature-pack</module>
+        <module>testsuite</module>
     </modules>
-
-    <profiles>
-        <!-- Profile to run integration tests -->
-        <profile>
-            <id>integration-test</id>
-            <modules>
-                <module>testsuite</module>
-            </modules>
-        </profile>
-    </profiles>
 </project>
