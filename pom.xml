@@ -1084,7 +1084,7 @@
         <module>wildfly-ai</module>
         <module>wildfly-wasm</module>
         <module>wildfly-mcp</module>
-        <module>ai-feature-pack</module>
+        <module>provision</module>
         <module>testsuite</module>
     </modules>
 </project>
