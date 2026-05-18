@@ -69,6 +69,7 @@ public class MCPServerIntegrationTestCase {
                 .addClass(TestMCPPrompt.class)
                 .addClass(TestMCPResource.class)
                 .addClass(TestMCPElicitationTool.class)
+                .addClass(TestMCPLoggingTool.class)
                 .addAsLibraries(new File("target/test-libs/assertj-core-3.26.3.jar"))
                 .addAsWebInfResource(EmptyAsset.INSTANCE, "beans.xml");
         return archive;
@@ -666,6 +667,193 @@ public class MCPServerIntegrationTestCase {
         JsonObject resultJson = Json.createReader(new StringReader(toolResult)).readObject();
         JsonArray content = resultJson.getJsonObject("result").getJsonArray("content");
         assertThat(content.getJsonObject(0).getString("text")).as("Should contain sum result").contains("8");
+    }
+
+    // ==================== Logging / McpLog Injection ====================
+
+    @Test
+    @Order(40)
+    public void testLoggingToolListedWithoutMcpLogParam() throws Exception {
+        assertThat(sessionId).as("Session must be initialized first").isNotNull();
+
+        String toolsListMessage = """
+                {"jsonrpc":"2.0","id":50,"method":"tools/list"}""";
+
+        postToStreamable(toolsListMessage);
+        String response = sseResponses.poll(10, TimeUnit.SECONDS);
+        assertThat(response).as("Should receive tools list response").isNotNull();
+        assertThat(response).as("Should list the log-test tool").contains("log-test");
+        assertThat(response).as("McpLog must not appear in inputSchema").doesNotContain("McpLog");
+        assertThat(response).as("McpLog must not appear as property name").doesNotContain("\"mcpLog\"");
+    }
+
+    @Test
+    @Order(41)
+    public void testLoggingToolSendsNotification() throws Exception {
+        assertThat(sessionId).as("Session must be initialized first").isNotNull();
+
+        // Set log level to DEBUG so all messages pass the filter
+        String setLevelMessage = """
+                {"jsonrpc":"2.0","id":51,"method":"logging/setLevel","params":{"level":"debug"}}""";
+        postToStreamable(setLevelMessage);
+        String setLevelResponse = sseResponses.poll(10, TimeUnit.SECONDS);
+        assertThat(setLevelResponse).as("Should receive setLevel response").isNotNull();
+        assertThat(setLevelResponse).as("setLevel should succeed").contains("\"result\"");
+
+        // Call the log-test tool with level=info
+        String toolCallMessage = """
+                {"jsonrpc":"2.0","id":52,"method":"tools/call","params":{"name":"log-test","arguments":{"level":"info"}}}""";
+        postToStreamable(toolCallMessage);
+
+        // Expect the notification/message first, then the tool result
+        String firstMessage = sseResponses.poll(10, TimeUnit.SECONDS);
+        assertThat(firstMessage).as("Should receive first SSE message").isNotNull();
+        String secondMessage = sseResponses.poll(10, TimeUnit.SECONDS);
+        assertThat(secondMessage).as("Should receive second SSE message").isNotNull();
+
+        // One of the two should be the notification, the other the tool result
+        String notification;
+        String toolResult;
+        if (firstMessage.contains("notifications/message")) {
+            notification = firstMessage;
+            toolResult = secondMessage;
+        } else {
+            notification = secondMessage;
+            toolResult = firstMessage;
+        }
+
+        // Verify the notification
+        JsonObject notificationJson = Json.createReader(new StringReader(notification)).readObject();
+        assertThat(notificationJson.getString("method")).as("Should be notifications/message").isEqualTo("notifications/message");
+        JsonObject params = notificationJson.getJsonObject("params");
+        assertThat(params.getString("level")).as("Notification level should be info").isEqualTo("info");
+        assertThat(params.getString("logger")).as("Logger name should be the tool name").isEqualTo("log-test");
+        assertThat(params.getString("data")).as("Data should contain the log message").contains("Info message from tool");
+
+        // Verify the tool result
+        JsonObject resultJson = Json.createReader(new StringReader(toolResult)).readObject();
+        assertThat(resultJson.containsKey("result")).as("Should contain result").isTrue();
+        JsonArray content = resultJson.getJsonObject("result").getJsonArray("content");
+        assertThat(content.getJsonObject(0).getString("text")).as("Should contain logged level").contains("Logged at info");
+    }
+
+    @Test
+    @Order(42)
+    public void testLoggingLevelFiltersMessages() throws Exception {
+        assertThat(sessionId).as("Session must be initialized first").isNotNull();
+
+        // Set log level to ERROR so INFO messages are filtered out
+        String setLevelMessage = """
+                {"jsonrpc":"2.0","id":53,"method":"logging/setLevel","params":{"level":"error"}}""";
+        postToStreamable(setLevelMessage);
+        String setLevelResponse = sseResponses.poll(10, TimeUnit.SECONDS);
+        assertThat(setLevelResponse).as("Should receive setLevel response").isNotNull();
+
+        // Call the log-test tool with level=info — should be filtered
+        String toolCallMessage = """
+                {"jsonrpc":"2.0","id":54,"method":"tools/call","params":{"name":"log-test","arguments":{"level":"info"}}}""";
+        postToStreamable(toolCallMessage);
+
+        // Should only receive the tool result, no notification
+        String response = sseResponses.poll(10, TimeUnit.SECONDS);
+        assertThat(response).as("Should receive tool result").isNotNull();
+
+        JsonObject resultJson = Json.createReader(new StringReader(response)).readObject();
+        assertThat(resultJson.containsKey("result")).as("Should be a tool result, not a notification").isTrue();
+        assertThat(resultJson.containsKey("method")).as("Should not be a notification").isFalse();
+
+        // Verify no extra notification arrived
+        String extra = sseResponses.poll(2, TimeUnit.SECONDS);
+        assertThat(extra).as("No notification should be sent when level is below threshold").isNull();
+    }
+
+    @Test
+    @Order(43)
+    public void testLoggingErrorPassesWhenLevelIsError() throws Exception {
+        assertThat(sessionId).as("Session must be initialized first").isNotNull();
+
+        String setLevelMessage = """
+                {"jsonrpc":"2.0","id":59,"method":"logging/setLevel","params":{"level":"error"}}""";
+        postToStreamable(setLevelMessage);
+        String setLevelResponse = sseResponses.poll(10, TimeUnit.SECONDS);
+        assertThat(setLevelResponse).as("Should receive setLevel response").isNotNull();
+
+        // Call log-test with level=error — should pass the filter
+        String toolCallMessage = """
+                {"jsonrpc":"2.0","id":55,"method":"tools/call","params":{"name":"log-test","arguments":{"level":"error"}}}""";
+        postToStreamable(toolCallMessage);
+
+        String firstMessage = sseResponses.poll(10, TimeUnit.SECONDS);
+        assertThat(firstMessage).as("Should receive first SSE message").isNotNull();
+        String secondMessage = sseResponses.poll(10, TimeUnit.SECONDS);
+        assertThat(secondMessage).as("Should receive second SSE message").isNotNull();
+
+        String notification;
+        String toolResult;
+        if (firstMessage.contains("notifications/message")) {
+            notification = firstMessage;
+            toolResult = secondMessage;
+        } else {
+            notification = secondMessage;
+            toolResult = firstMessage;
+        }
+
+        JsonObject notificationJson = Json.createReader(new StringReader(notification)).readObject();
+        assertThat(notificationJson.getString("method")).as("Should be notifications/message").isEqualTo("notifications/message");
+        JsonObject params = notificationJson.getJsonObject("params");
+        assertThat(params.getString("level")).as("Notification level should be error").isEqualTo("error");
+        assertThat(params.getString("data")).as("Data should contain the error message").contains("Error message from tool");
+
+        JsonObject resultJson = Json.createReader(new StringReader(toolResult)).readObject();
+        assertThat(resultJson.containsKey("result")).as("Should contain result").isTrue();
+    }
+
+    @Test
+    @Order(44)
+    public void testLoggingSetLevelInvalidLevel() throws Exception {
+        assertThat(sessionId).as("Session must be initialized first").isNotNull();
+
+        String setLevelMessage = """
+                {"jsonrpc":"2.0","id":56,"method":"logging/setLevel","params":{"level":"nonexistent"}}""";
+        postToStreamable(setLevelMessage);
+        String response = sseResponses.poll(10, TimeUnit.SECONDS);
+        assertThat(response).as("Should receive error response").isNotNull();
+
+        JsonObject json = Json.createReader(new StringReader(response)).readObject();
+        assertThat(json.containsKey("error")).as("Invalid level should return an error").isTrue();
+        assertThat(json.getJsonObject("error").getInt("code")).as("Should be INVALID_PARAMS (-32602)").isEqualTo(-32602);
+    }
+
+    @Test
+    @Order(45)
+    public void testLoggingSetLevelMissingParams() throws Exception {
+        assertThat(sessionId).as("Session must be initialized first").isNotNull();
+
+        String setLevelMessage = """
+                {"jsonrpc":"2.0","id":57,"method":"logging/setLevel"}""";
+        postToStreamable(setLevelMessage);
+        String response = sseResponses.poll(10, TimeUnit.SECONDS);
+        assertThat(response).as("Should receive error response").isNotNull();
+
+        JsonObject json = Json.createReader(new StringReader(response)).readObject();
+        assertThat(json.containsKey("error")).as("Missing params should return an error").isTrue();
+        assertThat(json.getJsonObject("error").getInt("code")).as("Should be INVALID_PARAMS (-32602)").isEqualTo(-32602);
+    }
+
+    @Test
+    @Order(46)
+    public void testLoggingSetLevelMissingLevel() throws Exception {
+        assertThat(sessionId).as("Session must be initialized first").isNotNull();
+
+        String setLevelMessage = """
+                {"jsonrpc":"2.0","id":58,"method":"logging/setLevel","params":{}}""";
+        postToStreamable(setLevelMessage);
+        String response = sseResponses.poll(10, TimeUnit.SECONDS);
+        assertThat(response).as("Should receive error response").isNotNull();
+
+        JsonObject json = Json.createReader(new StringReader(response)).readObject();
+        assertThat(json.containsKey("error")).as("Missing level should return an error").isTrue();
+        assertThat(json.getJsonObject("error").getInt("code")).as("Should be INVALID_PARAMS (-32602)").isEqualTo(-32602);
     }
 
     /**
