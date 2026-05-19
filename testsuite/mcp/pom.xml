@@ -109,6 +109,11 @@
             <artifactId>mcp-model</artifactId>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>org.mcp-java</groupId>
+            <artifactId>mcp-server-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
 
         <!-- WildFly MCP injection API (ElicitationSender, schema types, etc.) -->
         <dependency>

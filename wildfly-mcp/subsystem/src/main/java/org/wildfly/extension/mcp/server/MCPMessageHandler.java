@@ -195,6 +195,7 @@ public class MCPMessageHandler {
             responder.sendError(id, JsonRPC.INVALID_PARAMS, "Invalid log level: " + level);
             return;
         }
+        connection.setLogLevel(logLevel);
         MCPLogger.ROOT_LOGGER.infof("Log level set to %s [connection: %s]", logLevel, connection.id());
         responder.sendResult(id, Json.createObjectBuilder());
     }

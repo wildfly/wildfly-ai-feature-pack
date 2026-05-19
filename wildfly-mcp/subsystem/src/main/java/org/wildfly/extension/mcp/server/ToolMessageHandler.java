@@ -55,6 +55,7 @@ import org.wildfly.extension.mcp.injection.tool.MCPFeatureMetadata;
 import org.wildfly.extension.mcp.injection.tool.MCPTool;
 import org.wildfly.extension.mcp.injection.tool.MethodMetadata;
 import org.wildfly.extension.mcp.injection.elicitation.ElicitationSender;
+import org.mcp_java.server.McpLog;
 import org.wildfly.security.manager.WildFlySecurityManager;
 
 public class ToolMessageHandler {
@@ -101,7 +102,8 @@ public class ToolMessageHandler {
             JsonObjectBuilder properties = Json.createObjectBuilder();
             JsonArrayBuilder required = Json.createArrayBuilder();
             for (ArgumentMetadata a : toolMetadata.arguments()) {
-                if (a.type() instanceof Class<?> clazz && ElicitationSender.class.isAssignableFrom(clazz)) {
+                if (a.type() instanceof Class<?> clazz
+                        && (ElicitationSender.class.isAssignableFrom(clazz) || McpLog.class.isAssignableFrom(clazz))) {
                     continue; // injected by the framework, not a client-supplied argument
                 }
                 properties.add(a.name(), generateSchema(a.type(), a));
@@ -276,6 +278,8 @@ public class ToolMessageHandler {
                         connection.pendingRequests(),
                         responder,
                         connection.initializeRequest());
+            } else if (arg.type() instanceof Class<?> clazz && McpLog.class.isAssignableFrom(clazz)) {
+                ret[idx] = new McpLogImpl(connection, responder, metadata.name());
             } else {
                 JsonValue val = jsonArgs.get(arg.name());
                 if (val == null && arg.required()) {

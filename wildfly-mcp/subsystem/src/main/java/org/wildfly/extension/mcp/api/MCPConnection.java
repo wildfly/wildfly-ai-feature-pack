@@ -5,6 +5,7 @@
 package org.wildfly.extension.mcp.api;
 import java.io.Closeable;
 import java.util.concurrent.Future;
+import org.mcp_java.server.McpLog;
 import org.wildfly.extension.mcp.server.PendingRequestRegistry;
 
 public interface MCPConnection extends Closeable {
@@ -34,4 +35,8 @@ public interface MCPConnection extends Closeable {
     PendingRequestRegistry pendingRequests();
 
     InitializeRequest initializeRequest();
+
+    McpLog.LogLevel logLevel();
+
+    void setLogLevel(McpLog.LogLevel level);
 }
