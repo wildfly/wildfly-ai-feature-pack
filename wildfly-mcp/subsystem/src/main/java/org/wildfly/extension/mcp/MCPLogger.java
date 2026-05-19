@@ -53,4 +53,8 @@ public interface MCPLogger extends BasicLogger {
     @Message(id = 8, value = "Invalid Accept header: %s")
     void invalidAcceptHeaders(String header);
 
+    @LogMessage(level = ERROR)
+    @Message(id = 9, value = "Invalid MCP-Protocol-Version header: expected '%s' but got '%s'")
+    void invalidProtocolVersion(String expected, String actual);
+
 }

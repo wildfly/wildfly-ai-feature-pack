@@ -16,6 +16,7 @@ import java.util.logging.Logger;
 public class ConnectionManager {
 
     public static final HttpString MCP_SESSION_ID_HEADER = HttpString.tryFromString("mcp-session-id");
+    public static final HttpString MCP_PROTOCOL_VERSION_HEADER = HttpString.tryFromString("mcp-protocol-version");
     private final ConcurrentMap<String, MCPConnection> connections = new ConcurrentHashMap<>();
 
     public String id() {

@@ -5,7 +5,9 @@ import static io.undertow.util.Headers.CACHE_CONTROL;
 import static io.undertow.util.Headers.CONTENT_TYPE;
 import static io.undertow.util.HttpString.tryFromString;
 
+import static org.wildfly.extension.mcp.api.ConnectionManager.MCP_PROTOCOL_VERSION_HEADER;
 import static org.wildfly.extension.mcp.api.ConnectionManager.MCP_SESSION_ID_HEADER;
+import static org.wildfly.extension.mcp.server.MCPMessageHandler.PROTOCOL_VERSION;
 import static org.wildfly.extension.mcp.server.MCPStreamableConnectionCallBack.JSON_PAYLOAD;
 import static org.wildfly.extension.mcp.server.MCPStreamableConnectionCallBack.SESSION_ID;
 
@@ -82,6 +84,13 @@ public class StreamableHttpHandler implements HttpHandler {
             exchange.getResponseHeaders().put(tryFromString("Access-Control-Expose-Headers"), "mcp-session-id");
             exchange.getResponseHeaders().put(CACHE_CONTROL, "no-cache");
             this.sseHandler.handleRequest(exchange);
+            return;
+        }
+        String protocolVersion = exchange.getRequestHeaders().getFirst(MCP_PROTOCOL_VERSION_HEADER);
+        if (protocolVersion != null && !PROTOCOL_VERSION.equals(protocolVersion)) {
+            MCPLogger.ROOT_LOGGER.invalidProtocolVersion(PROTOCOL_VERSION, protocolVersion);
+            exchange.setStatusCode(400);
+            exchange.endExchange();
             return;
         }
         ServerSentEventResponder connection = (ServerSentEventResponder) connectionManager.get(connectionId);

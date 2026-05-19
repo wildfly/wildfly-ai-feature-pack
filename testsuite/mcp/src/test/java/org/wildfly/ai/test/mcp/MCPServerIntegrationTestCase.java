@@ -669,6 +669,52 @@ public class MCPServerIntegrationTestCase {
         assertThat(content.getJsonObject(0).getString("text")).as("Should contain sum result").contains("8");
     }
 
+    // ==================== MCP-Protocol-Version Header Validation ====================
+
+    @Test
+    @Order(29)
+    public void testInvalidProtocolVersionHeaderReturns400() throws Exception {
+        assertThat(sessionId).as("Session must be initialized first").isNotNull();
+
+        String pingMessage = """
+                {"jsonrpc":"2.0","id":50,"method":"ping"}""";
+
+        int statusCode = postToStreamableWithProtocolVersion(pingMessage, "1999-01-01");
+        assertThat(statusCode).as("Mismatched MCP-Protocol-Version should return 400").isEqualTo(400);
+    }
+
+    @Test
+    @Order(30)
+    public void testValidProtocolVersionHeaderSucceeds() throws Exception {
+        assertThat(sessionId).as("Session must be initialized first").isNotNull();
+
+        String pingMessage = """
+                {"jsonrpc":"2.0","id":51,"method":"ping"}""";
+
+        int statusCode = postToStreamableWithProtocolVersion(pingMessage, "2025-03-26");
+        assertThat(statusCode).as("Matching MCP-Protocol-Version should succeed").isEqualTo(200);
+
+        String response = sseResponses.poll(10, TimeUnit.SECONDS);
+        assertThat(response).as("Ping should return a result").isNotNull();
+        assertThat(response).as("Ping should contain result").contains("\"result\"");
+    }
+
+    @Test
+    @Order(31)
+    public void testAbsentProtocolVersionHeaderSucceeds() throws Exception {
+        assertThat(sessionId).as("Session must be initialized first").isNotNull();
+
+        String pingMessage = """
+                {"jsonrpc":"2.0","id":52,"method":"ping"}""";
+
+        int statusCode = postToStreamable(pingMessage);
+        assertThat(statusCode).as("Absent MCP-Protocol-Version should succeed").isEqualTo(200);
+
+        String response = sseResponses.poll(10, TimeUnit.SECONDS);
+        assertThat(response).as("Ping should return a result").isNotNull();
+        assertThat(response).as("Ping should contain result").contains("\"result\"");
+    }
+
     // ==================== Logging / McpLog Injection ====================
 
     @Test
@@ -861,12 +907,19 @@ public class MCPServerIntegrationTestCase {
      * The response will arrive on the SSE stream (sseResponses queue), not in the HTTP response body.
      */
     private int postToStreamable(String jsonBody) throws Exception {
+        return postToStreamableWithProtocolVersion(jsonBody, null);
+    }
+
+    private int postToStreamableWithProtocolVersion(String jsonBody, String protocolVersion) throws Exception {
         URL streamUrl = new URL(deploymentUrl, "stream");
         HttpURLConnection conn = (HttpURLConnection) streamUrl.openConnection();
         conn.setRequestMethod("POST");
         conn.setRequestProperty("Content-Type", "application/json");
         conn.setRequestProperty("Accept", "application/json, text/event-stream");
         conn.setRequestProperty("mcp-session-id", sessionId);
+        if (protocolVersion != null) {
+            conn.setRequestProperty("mcp-protocol-version", protocolVersion);
+        }
         conn.setDoOutput(true);
         conn.setConnectTimeout(5000);
         conn.setReadTimeout(10000);
