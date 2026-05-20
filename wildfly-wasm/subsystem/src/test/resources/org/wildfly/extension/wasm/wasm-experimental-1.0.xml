@@ -3,7 +3,7 @@
 ~ SPDX-License-Identifier: Apache-2.0
 -->
 
-<subsystem xmlns="urn:jboss:domain:wasm:1.0">
+<subsystem xmlns="urn:jboss:domain:wasm:experimental:1.0">
     <wasm-tool name="chicory" path="/home/ehugonne/dev/AI/examples/greet.wasm"/>
     <wasm-tool name="dice" path="/home/ehugonne/dev/AI/examples/roll-dice.wasm"/>
     <wasm-tool name="pizza" path="/home/ehugonne/dev/AI/examples/hawaiian-pizza.wasm"/>

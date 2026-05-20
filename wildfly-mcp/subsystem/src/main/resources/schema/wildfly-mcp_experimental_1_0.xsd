@@ -6,8 +6,8 @@
 -->
 
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
-           targetNamespace="urn:jboss:domain:mcp:1.0"
-           xmlns="urn:jboss:domain:mcp:1.0"
+           targetNamespace="urn:jboss:domain:mcp:experimental:1.0"
+           xmlns="urn:jboss:domain:mcp:experimental:1.0"
            elementFormDefault="qualified"
            version="1.0">
     <xs:element name="subsystem" type="subsystemType">

@@ -15,6 +15,7 @@ import org.jboss.as.controller.persistence.xml.SubsystemResourceRegistrationXMLE
 import org.jboss.as.controller.persistence.xml.SubsystemResourceXMLSchema;
 import org.jboss.as.controller.xml.VersionedNamespace;
 import org.jboss.as.controller.xml.XMLCardinality;
+import org.jboss.as.version.Stability;
 import org.jboss.staxmapper.IntVersion;
 import org.wildfly.extension.ai.chat.GeminiChatLanguageModelProviderRegistrar;
 import org.wildfly.extension.ai.chat.GithubModelChatLanguageModelProviderRegistrar;
@@ -46,7 +47,7 @@ enum AISubsystemSchema implements SubsystemResourceXMLSchema<AISubsystemSchema> 
     private final VersionedNamespace<IntVersion, AISubsystemSchema> namespace;
 
     AISubsystemSchema(int major, int minor) {
-        this.namespace = SubsystemSchema.createLegacySubsystemURN(AISubsystemRegistrar.NAME, new IntVersion(major, minor));
+        this.namespace = SubsystemSchema.createLegacySubsystemURN(AISubsystemRegistrar.NAME, Stability.EXPERIMENTAL, new IntVersion(major, minor));
     }
 
     @Override
