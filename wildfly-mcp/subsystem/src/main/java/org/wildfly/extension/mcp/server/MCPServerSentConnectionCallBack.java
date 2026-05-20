@@ -4,6 +4,7 @@
  */
 package org.wildfly.extension.mcp.server;
 
+import static org.wildfly.extension.mcp.MCPLogger.ROOT_LOGGER;
 import static org.wildfly.extension.mcp.api.ConnectionManager.MCP_SESSION_ID_HEADER;
 import io.undertow.server.handlers.sse.ServerSentEventConnection;
 import io.undertow.server.handlers.sse.ServerSentEventConnectionCallback;
@@ -23,12 +24,12 @@ public class MCPServerSentConnectionCallBack implements ServerSentEventConnectio
     @Override
     public void connected(ServerSentEventConnection sseConnection, String lastEventId) {
         String id = connectionManager.id();
-        MCPLogger.ROOT_LOGGER.debug("Client connection initialized [%s]".formatted(id));
+        ROOT_LOGGER.debug("Client connection initialized [%s]".formatted(id));
         String endpointPath = endpoint + '/' + id;
         sseConnection.getResponseHeaders().add(MCP_SESSION_ID_HEADER, id);
         ServerSentEventResponder responder = new ServerSentEventResponder(sseConnection, id);
         connectionManager.add(responder);
-        MCPLogger.ROOT_LOGGER.debug("Sending endpoint [%s]".formatted(endpointPath));
+        ROOT_LOGGER.debug("Sending endpoint [%s]".formatted(endpointPath));
         responder.send("endpoint", endpointPath);
     }
 

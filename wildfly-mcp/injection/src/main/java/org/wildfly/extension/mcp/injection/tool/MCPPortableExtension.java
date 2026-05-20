@@ -17,6 +17,8 @@ import java.util.Set;
 import org.wildfly.extension.mcp.injection.MCPLogger;
 import org.wildfly.extension.mcp.injection.WildFlyMCPRegistry;
 
+import static org.wildfly.extension.mcp.injection.MCPLogger.ROOT_LOGGER;
+
 public class MCPPortableExtension implements Extension {
     
     private final WildFlyMCPRegistry registry;
@@ -32,50 +34,50 @@ public class MCPPortableExtension implements Extension {
         Map<Class<?>, String> ids = new HashMap<>();
         for (MCPFeatureMetadata tool : registry.listTools()) {
             String className = tool.method().declaringClassName();
-            MCPLogger.ROOT_LOGGER.infof("Adding %s to CDI for discovery", className);
+            ROOT_LOGGER.debugf("Adding %s to CDI for discovery", className);
             try {
                 Class<?> clazz = Class.forName(className, true, deploymentClassLoader);
                 registry.prepareTool(tool.name(), clazz);
                 updateAnnotations(beanClasses, clazz, MCPTool.MCPToolLiteral.INSTANCE);
                 ids.putIfAbsent(clazz, tool.name() + "-" + tool.method().name());
             } catch (ClassNotFoundException ex) {
-                MCPLogger.ROOT_LOGGER.error("Unexpected error ", ex);
+                ROOT_LOGGER.unexpectedError(ex);
             }
         }
         for (MCPFeatureMetadata prompt : registry.listPrompts()) {
             String className = prompt.method().declaringClassName();
-            MCPLogger.ROOT_LOGGER.infof("Adding %s to CDI for discovery", className);
+            ROOT_LOGGER.debugf("Adding %s to CDI for discovery", className);
             try {
                 Class clazz = Class.forName(className, true, deploymentClassLoader);
                 registry.preparePrompt(prompt.name(), clazz);
                 updateAnnotations(beanClasses, clazz, MCPPrompt.MCPPromptLiteral.INSTANCE);
                 ids.putIfAbsent(clazz, prompt.name() + "-" + prompt.method().name());
             } catch (ClassNotFoundException ex) {
-                MCPLogger.ROOT_LOGGER.error("Unexpected error ", ex);
+                ROOT_LOGGER.unexpectedError(ex);
             }
         }
         for (MCPFeatureMetadata resource : registry.listResources()) {
             String className = resource.method().declaringClassName();
-            MCPLogger.ROOT_LOGGER.infof("Adding %s to CDI for discovery", className);
+            ROOT_LOGGER.debugf("Adding %s to CDI for discovery", className);
             try {
                 Class clazz = Class.forName(className, true, deploymentClassLoader);
                 registry.prepareResource(resource.method().uri(), clazz);
                 updateAnnotations(beanClasses, clazz, MCPResource.MCPResourceLiteral.INSTANCE);
                 ids.putIfAbsent(clazz, resource.method().uri() + "-" + resource.method().name());
             } catch (ClassNotFoundException ex) {
-                MCPLogger.ROOT_LOGGER.error("Unexpected error ", ex);
+                ROOT_LOGGER.unexpectedError(ex);
             }
         }
         for (MCPFeatureMetadata resourceTemplate : registry.listResourceTemplates()) {
             String className = resourceTemplate.method().declaringClassName();
-            MCPLogger.ROOT_LOGGER.infof("Adding %s to CDI for discovery", className);
+            ROOT_LOGGER.debugf("Adding %s to CDI for discovery", className);
             try {
                 Class clazz = Class.forName(className, true, deploymentClassLoader);
                 registry.prepareResourceTemplate(resourceTemplate.method().uri(), clazz);
                 updateAnnotations(beanClasses, clazz, MCPResource.MCPResourceLiteral.INSTANCE);
                 ids.putIfAbsent(clazz, resourceTemplate.method().uri() + "-" + resourceTemplate.method().name());
             } catch (ClassNotFoundException ex) {
-                MCPLogger.ROOT_LOGGER.error("Unexpected error ", ex);
+                ROOT_LOGGER.unexpectedError(ex);
             }
         }
         for (MCPFeatureMetadata completion : registry.listPromptCompletions()) {
@@ -86,7 +88,7 @@ public class MCPPortableExtension implements Extension {
                 updateAnnotations(beanClasses, clazz, MCPPrompt.MCPPromptLiteral.INSTANCE);
                 ids.putIfAbsent(clazz, completion.name() + "-" + completion.method().name());
             } catch (ClassNotFoundException ex) {
-                MCPLogger.ROOT_LOGGER.error("Unexpected error ", ex);
+                ROOT_LOGGER.unexpectedError(ex);
             }
         }
         for (MCPFeatureMetadata completion : registry.listResourceTemplateCompletions()) {
@@ -97,7 +99,7 @@ public class MCPPortableExtension implements Extension {
                 updateAnnotations(beanClasses, clazz, MCPResource.MCPResourceLiteral.INSTANCE);
                 ids.putIfAbsent(clazz, completion.name() + "-" + completion.method().name());
             } catch (ClassNotFoundException ex) {
-                MCPLogger.ROOT_LOGGER.error("Unexpected error ", ex);
+                ROOT_LOGGER.unexpectedError(ex);
             }
         }
         for (Map.Entry<Class<?>, Set<AnnotationLiteral>> bean : beanClasses.entrySet()) {
@@ -105,7 +107,7 @@ public class MCPPortableExtension implements Extension {
             for (AnnotationLiteral annotation : bean.getValue()) {
                 config.add(annotation);
             }
-            MCPLogger.ROOT_LOGGER.infof("%s should be discoverable by CDI", bean.getKey().getName());
+            ROOT_LOGGER.debugf("%s should be discoverable by CDI", bean.getKey().getName());
         }
     }
 

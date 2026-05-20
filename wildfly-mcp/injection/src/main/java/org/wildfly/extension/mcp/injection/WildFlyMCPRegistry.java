@@ -14,6 +14,8 @@ import java.util.regex.Pattern;
 import org.wildfly.extension.mcp.injection.tool.MCPFeatureMetadata;
 import org.wildfly.extension.mcp.injection.tool.MethodMetadata;
 
+import static org.wildfly.extension.mcp.injection.MCPLogger.ROOT_LOGGER;
+
 public class WildFlyMCPRegistry {
 
     /**
@@ -190,7 +192,7 @@ public class WildFlyMCPRegistry {
             MethodHandle handle = privateLookup.findVirtual(clazz, method.name(), mt);
             toolInvokers.put(toolName, handle);
         } catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException ex) {
-            MCPLogger.ROOT_LOGGER.error("Unexpected error ", ex);
+            ROOT_LOGGER.unexpectedError(ex);
         }
     }
 
@@ -202,7 +204,7 @@ public class WildFlyMCPRegistry {
             MethodHandle handle = privateLookup.findVirtual(clazz, method.name(), mt);
             promptInvokers.put(promptName, handle);
         } catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException ex) {
-            MCPLogger.ROOT_LOGGER.error("Unexpected error ", ex);
+            ROOT_LOGGER.unexpectedError(ex);
         }
     }
 
@@ -214,7 +216,7 @@ public class WildFlyMCPRegistry {
             MethodHandle handle = privateLookup.findVirtual(clazz, method.name(), mt);
             resourceInvokers.put(resourceUri, handle);
         } catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException ex) {
-            MCPLogger.ROOT_LOGGER.error("Unexpected error ", ex);
+            ROOT_LOGGER.unexpectedError(ex);
         }
     }
 
@@ -226,7 +228,7 @@ public class WildFlyMCPRegistry {
             MethodHandle handle = privateLookup.findVirtual(clazz, method.name(), mt);
             resourceTemplateInvokers.put(uriTemplate, handle);
         } catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException ex) {
-            MCPLogger.ROOT_LOGGER.error("Unexpected error ", ex);
+            ROOT_LOGGER.unexpectedError(ex);
         }
     }
 
@@ -238,7 +240,7 @@ public class WildFlyMCPRegistry {
             MethodHandle handle = privateLookup.findVirtual(clazz, method.name(), mt);
             promptCompletionInvokers.put(key, handle);
         } catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException ex) {
-            MCPLogger.ROOT_LOGGER.error("Unexpected error ", ex);
+            ROOT_LOGGER.unexpectedError(ex);
         }
     }
 
@@ -250,7 +252,7 @@ public class WildFlyMCPRegistry {
             MethodHandle handle = privateLookup.findVirtual(clazz, method.name(), mt);
             resourceTemplateCompletionInvokers.put(key, handle);
         } catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException ex) {
-            MCPLogger.ROOT_LOGGER.error("Unexpected error ", ex);
+            ROOT_LOGGER.unexpectedError(ex);
         }
     }
 }

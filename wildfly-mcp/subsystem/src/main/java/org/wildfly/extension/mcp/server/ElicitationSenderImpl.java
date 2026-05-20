@@ -27,6 +27,8 @@ import org.wildfly.extension.mcp.injection.elicitation.ElicitationResponse;
 import org.wildfly.extension.mcp.injection.elicitation.ElicitationSender;
 import org.wildfly.extension.mcp.injection.elicitation.PrimitiveSchema;
 
+import static org.wildfly.extension.mcp.MCPLogger.ROOT_LOGGER;
+
 /**
  * Subsystem-side implementation of {@link ElicitationSender}.
  *
@@ -88,7 +90,7 @@ class ElicitationSenderImpl implements ElicitationSender {
                 .add("requestedSchema", schema);
 
         responder.send(Messages.newRequest(requestId, ELICITATION_CREATE, params));
-        MCPLogger.ROOT_LOGGER.debugf("Elicitation request sent [id: %d, message: %s]", requestId, request.message());
+        ROOT_LOGGER.debugf("Elicitation request sent [id: %d, message: %s]", requestId, request.message());
 
         // Block the tool thread until the client responds or the timeout expires
         JsonObject responseMessage;
@@ -96,7 +98,7 @@ class ElicitationSenderImpl implements ElicitationSender {
             responseMessage = future.get(request.timeoutMillis(), TimeUnit.MILLISECONDS);
         } catch (TimeoutException te) {
             registry.remove(requestId);
-            MCPLogger.ROOT_LOGGER.warnf("Elicitation request %d timed out after %d ms", requestId, request.timeoutMillis());
+            ROOT_LOGGER.elicitationTimedOut(requestId, request.timeoutMillis());
             throw te;
         }
 

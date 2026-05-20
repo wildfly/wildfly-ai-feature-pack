@@ -5,6 +5,7 @@ import static io.undertow.util.Headers.CACHE_CONTROL;
 import static io.undertow.util.Headers.CONTENT_TYPE;
 import static io.undertow.util.HttpString.tryFromString;
 
+import static org.wildfly.extension.mcp.MCPLogger.ROOT_LOGGER;
 import static org.wildfly.extension.mcp.api.ConnectionManager.MCP_PROTOCOL_VERSION_HEADER;
 import static org.wildfly.extension.mcp.api.ConnectionManager.MCP_SESSION_ID_HEADER;
 import static org.wildfly.extension.mcp.server.MCPMessageHandler.PROTOCOL_VERSION;
@@ -51,14 +52,14 @@ public class StreamableHttpHandler implements HttpHandler {
             return;
         }
         if (!Methods.POST.equals(exchange.getRequestMethod())) {
-            MCPLogger.ROOT_LOGGER.invalidHttpMethod(exchange.getRequestMethod().toString());
+            ROOT_LOGGER.invalidHttpMethod(exchange.getRequestMethod().toString());
             exchange.setStatusCode(405).getResponseHeaders().add(ALLOW, Methods.POST_STRING);
             exchange.endExchange();
             return;
         }
         HeaderValues accepts = exchange.getRequestHeaders().get(Headers.ACCEPT);
-        if (!isValideAcceptHeader(accepts)) {
-            MCPLogger.ROOT_LOGGER.invalidAcceptHeaders(Arrays.toString(accepts.toArray()));
+        if (!isValidAcceptHeader(accepts)) {
+            ROOT_LOGGER.invalidAcceptHeaders(Arrays.toString(accepts.toArray()));
             exchange.setStatusCode(400);
             exchange.endExchange();
             return;
@@ -71,7 +72,7 @@ public class StreamableHttpHandler implements HttpHandler {
         exchange.startBlocking();
         JsonReader reader = Json.createReader(exchange.getInputStream());
         JsonObject content = reader.readObject();
-        MCPLogger.ROOT_LOGGER.debug("Received message from client: %s".formatted(content));
+        ROOT_LOGGER.debug("Received message from client: %s".formatted(content));
         String connectionId = exchange.getRequestHeaders().getFirst(MCP_SESSION_ID_HEADER);
         if (connectionId == null) {
             connectionId = connectionManager.id();
@@ -103,7 +104,7 @@ public class StreamableHttpHandler implements HttpHandler {
         handler.handle(content, connection, connection);
     }
 
-    private boolean isValideAcceptHeader(HeaderValues accepts) {
+    private boolean isValidAcceptHeader(HeaderValues accepts) {
         for (String accept : accepts) {
             if (accept.contains("application/json") && accept.contains("text/event-stream")) {
                 return true;
