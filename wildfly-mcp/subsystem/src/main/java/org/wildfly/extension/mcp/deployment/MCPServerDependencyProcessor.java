@@ -85,7 +85,7 @@ public class MCPServerDependencyProcessor implements DeploymentUnitProcessor {
             String description = annotation.value("description") != null ? annotation.value("description").asString() : "";
             MethodInfo info = annotation.target().asMethod();
             List<ArgumentMetadata> arguments = buildArguments(info, promptArg);
-            MCPLogger.ROOT_LOGGER.debugf("Prompt detected on class %s with method %s with the following annotated parameters %s", info.declaringClass(), info.name(), arguments);
+            ROOT_LOGGER.debugf("Prompt detected on class %s with method %s with the following annotated parameters %s", info.declaringClass(), info.name(), arguments);
             MCPFeatureMetadata metadata = new MCPFeatureMetadata(MCPFeatureMetadata.Kind.PROMPT,
                     name,
                     new MethodMetadata(
@@ -135,7 +135,7 @@ public class MCPServerDependencyProcessor implements DeploymentUnitProcessor {
                     }
                 }
             }
-            MCPLogger.ROOT_LOGGER.debugf("Tool detected on class %s with method %s with the following annotated parameters %s", info.declaringClass(), info.name(), arguments);
+            ROOT_LOGGER.debugf("Tool detected on class %s with method %s with the following annotated parameters %s", info.declaringClass(), info.name(), arguments);
             MCPFeatureMetadata metadata = new MCPFeatureMetadata(MCPFeatureMetadata.Kind.TOOL,
                     name,
                     new MethodMetadata(
@@ -161,7 +161,7 @@ public class MCPServerDependencyProcessor implements DeploymentUnitProcessor {
             String uri = annotation.value("uri") != null ? annotation.value("uri").asString() : "";
             String mimeType = annotation.value("mimeType") != null ? annotation.value("mimeType").asString() : "";
             MethodInfo info = annotation.target().asMethod();
-            MCPLogger.ROOT_LOGGER.debugf("Resource detected on class %s with method %s", info.declaringClass(), info.name());
+            ROOT_LOGGER.debugf("Resource detected on class %s with method %s", info.declaringClass(), info.name());
             MCPFeatureMetadata metadata = new MCPFeatureMetadata(MCPFeatureMetadata.Kind.RESOURCE,
                     name,
                     new MethodMetadata(
@@ -189,7 +189,7 @@ public class MCPServerDependencyProcessor implements DeploymentUnitProcessor {
             String mimeType = annotation.value("mimeType") != null ? annotation.value("mimeType").asString() : "";
             MethodInfo info = annotation.target().asMethod();
             List<ArgumentMetadata> arguments = buildArguments(info, resourceTemplateArg);
-            MCPLogger.ROOT_LOGGER.debugf("ResourceTemplate detected on class %s with method %s with the following annotated parameters %s", info.declaringClass(), info.name(), arguments);
+            ROOT_LOGGER.debugf("ResourceTemplate detected on class %s with method %s with the following annotated parameters %s", info.declaringClass(), info.name(), arguments);
             MCPFeatureMetadata metadata = new MCPFeatureMetadata(MCPFeatureMetadata.Kind.RESOURCE_TEMPLATE,
                     name,
                     new MethodMetadata(
@@ -226,7 +226,7 @@ public class MCPServerDependencyProcessor implements DeploymentUnitProcessor {
                 arguments.add(new ArgumentMetadata(argName, "", true, String.class));
             }
             String completionKey = promptName + "_" + argName;
-            MCPLogger.ROOT_LOGGER.debugf("CompletePrompt detected on class %s with method %s for prompt %s arg %s", info.declaringClass(), info.name(), promptName, argName);
+            ROOT_LOGGER.debugf("CompletePrompt detected on class %s with method %s for prompt %s arg %s", info.declaringClass(), info.name(), promptName, argName);
             MCPFeatureMetadata metadata = new MCPFeatureMetadata(MCPFeatureMetadata.Kind.PROMPT_COMPLETE,
                     completionKey,
                     new MethodMetadata(
@@ -263,7 +263,7 @@ public class MCPServerDependencyProcessor implements DeploymentUnitProcessor {
                 arguments.add(new ArgumentMetadata(argName, "", true, String.class));
             }
             String completionKey = templateName + "_" + argName;
-            MCPLogger.ROOT_LOGGER.debugf("CompleteResourceTemplate detected on class %s with method %s for template %s arg %s", info.declaringClass(), info.name(), templateName, argName);
+            ROOT_LOGGER.debugf("CompleteResourceTemplate detected on class %s with method %s for template %s arg %s", info.declaringClass(), info.name(), templateName, argName);
             MCPFeatureMetadata metadata = new MCPFeatureMetadata(MCPFeatureMetadata.Kind.RESOURCE_TEMPLATE_COMPLETE,
                     completionKey,
                     new MethodMetadata(

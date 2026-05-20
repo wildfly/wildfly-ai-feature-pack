@@ -11,6 +11,8 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import org.wildfly.extension.mcp.MCPLogger;
 
+import static org.wildfly.extension.mcp.MCPLogger.ROOT_LOGGER;
+
 /**
  * Tracks pending server-initiated requests (e.g. {@code elicitation/create}) and routes
  * client responses back to the waiting {@link CompletableFuture}.
@@ -46,19 +48,19 @@ public class PendingRequestRegistry {
      */
     public void handleResponse(Object rawId, JsonObject message) {
         if (rawId == null) {
-            MCPLogger.ROOT_LOGGER.debugf("Client response has no id, discarding: %s", message);
+            ROOT_LOGGER.debugf("Client response has no id, discarding: %s", message);
             return;
         }
         long id;
         try {
             id = coerceId(rawId);
         } catch (NumberFormatException e) {
-            MCPLogger.ROOT_LOGGER.debugf("Client response id '%s' is not a long, discarding", rawId);
+            ROOT_LOGGER.debugf("Client response id '%s' is not a long, discarding", rawId);
             return;
         }
         CompletableFuture<JsonObject> future = pending.remove(id);
         if (future == null) {
-            MCPLogger.ROOT_LOGGER.debugf("No pending request for id %s, discarding client response", id);
+            ROOT_LOGGER.debugf("No pending request for id %s, discarding client response", id);
             return;
         }
         future.complete(message);

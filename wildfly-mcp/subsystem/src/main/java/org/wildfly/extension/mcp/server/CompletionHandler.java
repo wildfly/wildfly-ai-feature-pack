@@ -4,6 +4,7 @@
  */
 package org.wildfly.extension.mcp.server;
 
+import static org.wildfly.extension.mcp.MCPLogger.ROOT_LOGGER;
 import static org.wildfly.extension.mcp.api.JsonRPC.INTERNAL_ERROR;
 import static org.wildfly.extension.mcp.api.JsonRPC.INVALID_PARAMS;
 import static org.wildfly.extension.mcp.api.JsonRPC.INVALID_REQUEST;
@@ -19,7 +20,7 @@ import java.util.Collection;
 import java.util.List;
 import org.wildfly.extension.mcp.api.MCPConnection;
 import org.wildfly.extension.mcp.api.Responder;
-import org.wildfly.extension.mcp.injection.MCPLogger;
+import org.wildfly.extension.mcp.MCPLogger;
 import org.wildfly.extension.mcp.injection.WildFlyMCPRegistry;
 import org.wildfly.extension.mcp.injection.tool.MCPFeatureMetadata;
 import org.wildfly.extension.mcp.injection.tool.MCPPrompt;
@@ -93,7 +94,7 @@ public class CompletionHandler {
             }
             sendCompletionResponse(id, result, responder);
         } catch (Throwable ex) {
-            MCPLogger.ROOT_LOGGER.errorf(ex, "Error invoking completion %s", metadata.name());
+            ROOT_LOGGER.errorInvokingCompletion(ex, metadata.name());
             responder.sendError(id, INTERNAL_ERROR, ex.getMessage());
         }
     }

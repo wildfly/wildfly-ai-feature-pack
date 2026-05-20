@@ -4,6 +4,7 @@
  */
 package org.wildfly.extension.mcp.server;
 
+import static org.wildfly.extension.mcp.MCPLogger.ROOT_LOGGER;
 import static org.wildfly.extension.mcp.api.JsonRPC.INTERNAL_ERROR;
 import static org.wildfly.extension.mcp.api.JsonRPC.INVALID_PARAMS;
 
@@ -38,7 +39,7 @@ import org.wildfly.extension.mcp.api.Cursor;
 import org.wildfly.extension.mcp.api.ContentMapper;
 import org.wildfly.extension.mcp.api.MCPConnection;
 import org.wildfly.extension.mcp.api.Responder;
-import org.wildfly.extension.mcp.injection.MCPLogger;
+import org.wildfly.extension.mcp.MCPLogger;
 import org.wildfly.extension.mcp.injection.WildFlyMCPRegistry;
 import org.wildfly.extension.mcp.injection.tool.MCPFeatureMetadata;
 import org.wildfly.extension.mcp.injection.tool.MCPResource;
@@ -80,7 +81,7 @@ public class ResourceMessageHandler {
         List<MCPFeatureMetadata> page = applyPage(sorted, cursorValue);
         String nextCursor = nextCursor(sorted, page);
 
-        MCPLogger.ROOT_LOGGER.debugf("List resources [id: %s, cursor: %s, pageSize: %d]", id, cursorValue, pageSize);
+        ROOT_LOGGER.debugf("List resources [id: %s, cursor: %s, pageSize: %d]", id, cursorValue, pageSize);
 
         JsonArrayBuilder resources = Json.createArrayBuilder();
         for (MCPFeatureMetadata resourceMetadata : page) {
@@ -137,7 +138,7 @@ public class ResourceMessageHandler {
             responder.sendError(id, INVALID_PARAMS, "Resource URI not defined");
             return;
         }
-        MCPLogger.ROOT_LOGGER.debugf("Subscribe to resource %s [id: %s]", resourceUri, id);
+        ROOT_LOGGER.debugf("Subscribe to resource %s [id: %s]", resourceUri, id);
         responder.sendResult(id, Json.createObjectBuilder());
     }
 
@@ -153,7 +154,7 @@ public class ResourceMessageHandler {
             responder.sendError(id, INVALID_PARAMS, "Resource URI not defined");
             return;
         }
-        MCPLogger.ROOT_LOGGER.debugf("Unsubscribe from resource %s [id: %s]", resourceUri, id);
+        ROOT_LOGGER.debugf("Unsubscribe from resource %s [id: %s]", resourceUri, id);
         responder.sendResult(id, Json.createObjectBuilder());
     }
 
@@ -166,7 +167,7 @@ public class ResourceMessageHandler {
         }
         JsonObject params = paramsValue.asJsonObject();
         String resourceUri = params.getString("uri");
-        MCPLogger.ROOT_LOGGER.debugf("Call resource %s [id: %s]", resourceUri, id);
+        ROOT_LOGGER.debugf("Call resource %s [id: %s]", resourceUri, id);
         Map<String, JsonValue> args = new HashMap<>();
         JsonObject arguments = params.getJsonObject("arguments");
         if (arguments != null) {
@@ -191,7 +192,7 @@ public class ResourceMessageHandler {
                         Instance beanInstance = CDI.current().select(clazz, MCPResource.MCPResourceLiteral.INSTANCE);
                         Object result = null;
                         if (beanInstance.isResolvable()) {
-                            MCPLogger.ROOT_LOGGER.infof("We have found the Singleton instance of the resource %s", resourceUri);
+                            ROOT_LOGGER.debugf("Singleton instance found for resource %s", resourceUri);
                             try {
                                 if (args.isEmpty()) {
                                     result = registry.getResourceInvoker(resourceUri).invoke(beanInstance.get());
@@ -201,11 +202,11 @@ public class ResourceMessageHandler {
                                     result = registry.getResourceInvoker(resourceUri).invokeWithArguments(preparedArguments);
                                 }
                             } catch (Throwable ex) {
-                                MCPLogger.ROOT_LOGGER.errorf(ex, "Error invoking resource %s", resourceUri);
+                                ROOT_LOGGER.errorInvokingResource(ex, resourceUri);
                                 responder.sendError(id, INTERNAL_ERROR, ex.getMessage());
                             }
                         } else {
-                            MCPLogger.ROOT_LOGGER.warnf("We have NOT found the Singleton instance of the resource %s", resourceUri);
+                            ROOT_LOGGER.debugf("Singleton instance not found for resource %s, using reflection", resourceUri);
                             Method method = clazz.getMethod(methodMetadata.name(), methodMetadata.argumentTypes());
                             if (Modifier.isStatic(method.getModifiers())) {
                                 result = method.invoke(null, prepareArguments(metadata, args, mapper));
@@ -235,10 +236,10 @@ public class ResourceMessageHandler {
                         builder.add("contents", jsonContent);
                         responder.sendResult(id, builder);
                     } catch (MCPException e) {
-                        MCPLogger.ROOT_LOGGER.error(e);
+                        ROOT_LOGGER.errorProcessingRequest(e);
                         responder.sendError(id, e.getJsonRpcError(), e.getMessage());
                     } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException | SecurityException | ClassNotFoundException | InstantiationException | IllegalArgumentException ex) {
-                        MCPLogger.ROOT_LOGGER.errorf(ex, "Error invoking resource %s", resourceUri);
+                        ROOT_LOGGER.errorInvokingResource(ex, resourceUri);
                         responder.sendError(id, INTERNAL_ERROR, ex.getMessage());
                     }
                 }

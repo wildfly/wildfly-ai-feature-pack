@@ -4,6 +4,7 @@
  */
 package org.wildfly.extension.mcp.server;
 
+import static org.wildfly.extension.mcp.MCPLogger.ROOT_LOGGER;
 import static org.wildfly.extension.mcp.api.ConnectionManager.MCP_SESSION_ID_HEADER;
 import io.undertow.server.handlers.sse.ServerSentEventConnection;
 import jakarta.json.Json;
@@ -70,23 +71,22 @@ public class ServerSentEventResponder implements Responder, MCPConnection {
             jsonWriter.writeObject(message);
             send("message", writer.toString());
         } catch (IOException ex) {
-            MCPLogger.ROOT_LOGGER.error("Failure sending message", ex);
-            ex.printStackTrace();
+            ROOT_LOGGER.failureSendingMessage(ex);
         }
     }
 
     public void send(String name, String message) {
-        MCPLogger.ROOT_LOGGER.debugf("Sending message of type %s with content %s", name, message);
+        ROOT_LOGGER.debugf("Sending message of type %s with content %s", name, message);
         connection.getResponseHeaders().add(MCP_SESSION_ID_HEADER, id);
         connection.send(message, name,""+ lastEventId(), new ServerSentEventConnection.EventCallback() {
             @Override
             public void done(ServerSentEventConnection connection, String data, String event, String id) {
-                MCPLogger.ROOT_LOGGER.warnf("Message sent: %s", data);
+                ROOT_LOGGER.debugf("Message sent: %s", data);
             }
 
             @Override
             public void failed(ServerSentEventConnection connection, String data, String event, String id, IOException e) {
-                MCPLogger.ROOT_LOGGER.warn("Failed to send event to client: %s".formatted(data));
+                ROOT_LOGGER.failedToSendEvent(data);
                 close();
             }
         });
@@ -97,7 +97,7 @@ public class ServerSentEventResponder implements Responder, MCPConnection {
         try {
             this.connection.close();
         } catch (IOException ex) {
-            MCPLogger.ROOT_LOGGER.debug("Error closing the SSEConnection", ex);
+            ROOT_LOGGER.debug("Error closing the SSEConnection", ex);
         }
     }
 
@@ -106,7 +106,7 @@ public class ServerSentEventResponder implements Responder, MCPConnection {
         if (this.future != null && !this.future.isDone()) {
             Future task = this.future;
             this.future = null;
-            MCPLogger.ROOT_LOGGER.warn("Task not finished");
+            ROOT_LOGGER.debug("Task not finished");
             task.cancel(true);
         }
         this.future = future;
@@ -117,7 +117,7 @@ public class ServerSentEventResponder implements Responder, MCPConnection {
         if (this.future != null && !this.future.isDone()) {
             Future task = this.future;
             this.future = null;
-            MCPLogger.ROOT_LOGGER.warn("Task cancelled");
+            ROOT_LOGGER.debug("Task cancelled");
             task.cancel(true);
         }
 

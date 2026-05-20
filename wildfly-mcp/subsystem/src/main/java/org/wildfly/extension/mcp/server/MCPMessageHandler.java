@@ -26,6 +26,8 @@ import org.wildfly.extension.mcp.api.Responder;
 import org.wildfly.extension.mcp.injection.WildFlyMCPRegistry;
 import org.mcp_java.server.McpLog;
 
+import static org.wildfly.extension.mcp.MCPLogger.ROOT_LOGGER;
+
 public class MCPMessageHandler {
 
     private final ConnectionManager connectionManager;
@@ -111,7 +113,7 @@ public class MCPMessageHandler {
         String method = message.getString("method");
         if (NOTIFICATIONS_INITIALIZED.equals(method)) {
             if (connection.setInitialized()) {
-                MCPLogger.ROOT_LOGGER.infof("Client successfully initialized [%s]", connection.id());
+                ROOT_LOGGER.debugf("Client successfully initialized [%s]", connection.id());
             }
         } else if (PING.equals(method)) {
             ping(message, responder);
@@ -197,20 +199,20 @@ public class MCPMessageHandler {
             return;
         }
         connection.setLogLevel(logLevel);
-        MCPLogger.ROOT_LOGGER.infof("Log level set to %s [connection: %s]", logLevel, connection.id());
+        ROOT_LOGGER.logLevelSet(logLevel, connection.id());
         responder.sendResult(id, Json.createObjectBuilder());
     }
 
     private void ping(JsonObject message, Responder responder) {
         // https://spec.modelcontextprotocol.io/specification/basic/utilities/ping/
         String id = message.get("id").toString();
-        MCPLogger.ROOT_LOGGER.infof("Ping [id: %s]", id);
+        ROOT_LOGGER.debugf("Ping [id: %s]", id);
         responder.sendResult(id, Json.createObjectBuilder());
     }
 
     private void close(JsonObject message, Responder responder, MCPConnection connection) {
         if (connectionManager.remove(connection.id())) {
-            MCPLogger.ROOT_LOGGER.debugf("Connection %s closed", connection.id());
+            ROOT_LOGGER.debugf("Connection %s closed", connection.id());
         } else {
             responder.sendError(message.get("id").toString(), JsonRPC.INTERNAL_ERROR,
                     "Unable to obtain the connection to be closed:" + connection.id());
@@ -223,14 +225,14 @@ public class MCPMessageHandler {
             context = new InitialContext();
             return (ExecutorService) context.lookup("java:jboss/ee/concurrency/executor/default");
         } catch (NamingException ex) {
-            MCPLogger.ROOT_LOGGER.warn("Managed executor service not available, using default executor service");
+            ROOT_LOGGER.managedExecutorServiceNotAvailable();
             return Executors.newCachedThreadPool();
         } finally {
             if (context != null) {
                 try {
                     context.close();
                 } catch (NamingException ex) {
-                    MCPLogger.ROOT_LOGGER.debug("Error closing initial context", ex);
+                    ROOT_LOGGER.debug("Error closing initial context", ex);
                 }
             }
         }

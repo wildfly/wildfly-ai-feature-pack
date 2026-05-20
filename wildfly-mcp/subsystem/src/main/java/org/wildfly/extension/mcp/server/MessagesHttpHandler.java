@@ -1,6 +1,7 @@
 package org.wildfly.extension.mcp.server;
 
 import static io.undertow.util.Headers.ALLOW;
+import static org.wildfly.extension.mcp.MCPLogger.ROOT_LOGGER;
 
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
@@ -42,7 +43,7 @@ public class MessagesHttpHandler implements HttpHandler {
         }
         String connectionId = exchange.getRequestPath().substring( exchange.getRequestPath().lastIndexOf('/') + 1);
         if (connectionId == null) {
-            MCPLogger.ROOT_LOGGER.warn("Connection id is missing: %s".formatted( exchange.getRequestPath()));
+            ROOT_LOGGER.connectionIdMissing(exchange.getRequestPath());
             exchange.setStatusCode(400);
             return;
         }
@@ -50,7 +51,7 @@ public class MessagesHttpHandler implements HttpHandler {
         exchange.startBlocking();
         JsonReader reader = Json.createReader(exchange.getInputStream());
         JsonObject content = reader.readObject();
-        MCPLogger.ROOT_LOGGER.debug("Received message from client: %s".formatted(content));
+        ROOT_LOGGER.debug("Received message from client: %s".formatted(content));
         JsonRPC.validate(content, connection);
         handler.handle(content, connection, connection);
     }

@@ -4,6 +4,7 @@
  */
 package org.wildfly.extension.mcp.server;
 
+import static org.wildfly.extension.mcp.MCPLogger.ROOT_LOGGER;
 import static org.wildfly.extension.mcp.api.JsonRPC.INTERNAL_ERROR;
 import static org.wildfly.extension.mcp.api.JsonRPC.INVALID_PARAMS;
 
@@ -37,7 +38,7 @@ import org.wildfly.extension.mcp.api.Cursor;
 import org.wildfly.extension.mcp.api.ContentMapper;
 import org.wildfly.extension.mcp.api.MCPConnection;
 import org.wildfly.extension.mcp.api.Responder;
-import org.wildfly.extension.mcp.injection.MCPLogger;
+import org.wildfly.extension.mcp.MCPLogger;
 import org.wildfly.extension.mcp.injection.WildFlyMCPRegistry;
 import org.wildfly.extension.mcp.injection.tool.ArgumentMetadata;
 import org.wildfly.extension.mcp.injection.tool.MCPFeatureMetadata;
@@ -77,7 +78,7 @@ public class ResourceTemplateMessageHandler {
         List<MCPFeatureMetadata> page = applyPage(sorted, cursorValue);
         String nextCursor = nextCursor(sorted, page);
 
-        MCPLogger.ROOT_LOGGER.debugf("List resource templates [id: %s, cursor: %s, pageSize: %d]", id, cursorValue, pageSize);
+        ROOT_LOGGER.debugf("List resource templates [id: %s, cursor: %s, pageSize: %d]", id, cursorValue, pageSize);
 
         JsonArrayBuilder templates = Json.createArrayBuilder();
         for (MCPFeatureMetadata metadata : page) {
@@ -131,7 +132,7 @@ public class ResourceTemplateMessageHandler {
         }
         JsonObject params = paramsValue.asJsonObject();
         String resourceUri = params.getString("uri");
-        MCPLogger.ROOT_LOGGER.debugf("Read resource template %s [id: %s]", resourceUri, id);
+        ROOT_LOGGER.debugf("Read resource template %s [id: %s]", resourceUri, id);
 
         final MCPFeatureMetadata metadata = registry.findResourceTemplateByUri(resourceUri);
         if (metadata == null) {
@@ -152,7 +153,7 @@ public class ResourceTemplateMessageHandler {
                         Object result = null;
                         MethodHandle invoker = registry.findResourceTemplateInvokerByUri(resourceUri);
                         if (beanInstance.isResolvable()) {
-                            MCPLogger.ROOT_LOGGER.debugf("We have found the Singleton instance of the resource template %s", resourceUri);
+                            ROOT_LOGGER.debugf("We have found the Singleton instance of the resource template %s", resourceUri);
                             try {
                                 if (args.isEmpty()) {
                                     result = invoker.invoke(beanInstance.get());
@@ -162,11 +163,11 @@ public class ResourceTemplateMessageHandler {
                                     result = invoker.invokeWithArguments(preparedArguments);
                                 }
                             } catch (Throwable ex) {
-                                MCPLogger.ROOT_LOGGER.errorf(ex, "Error invoking resource template %s", resourceUri);
+                                ROOT_LOGGER.errorInvokingResourceTemplate(ex, resourceUri);
                                 responder.sendError(id, INTERNAL_ERROR, ex.getMessage());
                             }
                         } else {
-                            MCPLogger.ROOT_LOGGER.warnf("We have NOT found the Singleton instance of the resource template %s", resourceUri);
+                            ROOT_LOGGER.debugf("Singleton instance not found for resource template %s, using reflection", resourceUri);
                             Method method = clazz.getMethod(methodMetadata.name(), methodMetadata.argumentTypes());
                             if (Modifier.isStatic(method.getModifiers())) {
                                 result = method.invoke(null, prepareArguments(metadata, args, mapper));
@@ -196,10 +197,10 @@ public class ResourceTemplateMessageHandler {
                         builder.add("contents", jsonContent);
                         responder.sendResult(id, builder);
                     } catch (MCPException e) {
-                        MCPLogger.ROOT_LOGGER.error(e);
+                        ROOT_LOGGER.errorProcessingRequest(e);
                         responder.sendError(id, e.getJsonRpcError(), e.getMessage());
                     } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException | SecurityException | ClassNotFoundException | InstantiationException | IllegalArgumentException ex) {
-                        MCPLogger.ROOT_LOGGER.errorf(ex, "Error invoking resource template %s", resourceUri);
+                        ROOT_LOGGER.errorInvokingResourceTemplate(ex, resourceUri);
                         responder.sendError(id, INTERNAL_ERROR, ex.getMessage());
                     }
                 }

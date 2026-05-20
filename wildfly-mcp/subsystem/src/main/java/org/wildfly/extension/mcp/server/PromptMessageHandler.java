@@ -4,6 +4,7 @@
  */
 package org.wildfly.extension.mcp.server;
 
+import static org.wildfly.extension.mcp.MCPLogger.ROOT_LOGGER;
 import static org.wildfly.extension.mcp.api.JsonRPC.INTERNAL_ERROR;
 import static org.wildfly.extension.mcp.api.JsonRPC.INVALID_PARAMS;
 
@@ -36,7 +37,7 @@ import java.util.stream.StreamSupport;
 import org.wildfly.extension.mcp.api.Cursor;
 import org.wildfly.extension.mcp.api.MCPConnection;
 import org.wildfly.extension.mcp.api.Responder;
-import org.wildfly.extension.mcp.injection.MCPLogger;
+import org.wildfly.extension.mcp.MCPLogger;
 import org.wildfly.extension.mcp.injection.WildFlyMCPRegistry;
 import org.wildfly.extension.mcp.injection.tool.ArgumentMetadata;
 import org.wildfly.extension.mcp.injection.tool.MCPFeatureMetadata;
@@ -77,7 +78,7 @@ public class PromptMessageHandler {
         List<MCPFeatureMetadata> page = applyPage(sorted, cursorValue);
         String nextCursor = nextCursor(sorted, page);
 
-        MCPLogger.ROOT_LOGGER.debugf("List prompts [id: %s, cursor: %s, pageSize: %d]", id, cursorValue, pageSize);
+        ROOT_LOGGER.debugf("List prompts [id: %s, cursor: %s, pageSize: %d]", id, cursorValue, pageSize);
 
         JsonArrayBuilder prompts = Json.createArrayBuilder();
         for (MCPFeatureMetadata promptMetadata : page) {
@@ -139,7 +140,7 @@ public class PromptMessageHandler {
         }
         JsonObject params = paramsValue.asJsonObject();
         String promptName = params.getString("name");
-        MCPLogger.ROOT_LOGGER.debugf("Call prompt %s [id: %s]", promptName, id);
+        ROOT_LOGGER.debugf("Call prompt %s [id: %s]", promptName, id);
         Map<String, JsonValue> args = new HashMap<>();
         JsonObject arguments = params.getJsonObject("arguments");
         if (arguments != null) {
@@ -164,7 +165,7 @@ public class PromptMessageHandler {
                         Instance beanInstance = CDI.current().select(clazz, MCPPrompt.MCPPromptLiteral.INSTANCE);
                         Object result = null;
                         if (beanInstance.isResolvable()) {
-                            MCPLogger.ROOT_LOGGER.debugf("We have found the Singleton instance of the prompt %s", promptName);
+                            ROOT_LOGGER.debugf("We have found the Singleton instance of the prompt %s", promptName);
                             try {
                                 if (args.isEmpty()) {
                                     result = registry.getPromptInvoker(promptName).invoke(beanInstance.get());
@@ -174,11 +175,11 @@ public class PromptMessageHandler {
                                     result = registry.getPromptInvoker(promptName).invokeWithArguments(preparedArguments);
                                 }
                             } catch (Throwable ex) {
-                                MCPLogger.ROOT_LOGGER.errorf(ex, "Error invoking tool %s", promptName);
+                                ROOT_LOGGER.errorInvokingPrompt(ex, promptName);
                                 responder.sendError(id, INTERNAL_ERROR, ex.getMessage());
                             }
                         } else {
-                            MCPLogger.ROOT_LOGGER.warnf("We have NOT found the Singleton instance of the prompt %s", promptName);
+                            ROOT_LOGGER.debugf("Singleton instance not found for prompt %s, using reflection", promptName);
                             Method method = clazz.getMethod(methodMetadata.name(), methodMetadata.argumentTypes());
                             if (Modifier.isStatic(method.getModifiers())) {
                                 result = method.invoke(null, prepareArguments(metadata, args, mapper));
@@ -215,10 +216,10 @@ public class PromptMessageHandler {
                         builder.add("messages", messagesArray);
                         responder.sendResult(id, builder);
                     } catch (MCPException e) {
-                        MCPLogger.ROOT_LOGGER.error(e);
+                        ROOT_LOGGER.errorProcessingRequest(e);
                         responder.sendError(id, e.getJsonRpcError(), e.getMessage());
                     } catch (IOException | IllegalAccessException | InvocationTargetException | NoSuchMethodException | SecurityException | ClassNotFoundException | InstantiationException | IllegalArgumentException ex) {
-                        MCPLogger.ROOT_LOGGER.errorf(ex, "Error invoking prompt %s", promptName);
+                        ROOT_LOGGER.errorInvokingPrompt(ex, promptName);
                         responder.sendError(id, INTERNAL_ERROR, ex.getMessage());
                     }
                 }
