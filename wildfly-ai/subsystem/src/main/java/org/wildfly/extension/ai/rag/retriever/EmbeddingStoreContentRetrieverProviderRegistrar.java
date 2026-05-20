@@ -17,6 +17,7 @@ import org.jboss.as.controller.SimpleAttributeDefinition;
 import org.jboss.as.controller.SimpleAttributeDefinitionBuilder;
 import org.jboss.as.controller.descriptions.ParentResourceDescriptionResolver;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
+import org.jboss.as.version.Stability;
 import org.jboss.dmr.ModelType;
 import org.wildfly.extension.ai.Capabilities;
 import org.wildfly.subsystem.resource.ChildResourceDefinitionRegistrar;
@@ -35,19 +36,23 @@ public class EmbeddingStoreContentRetrieverProviderRegistrar implements ChildRes
             .setAllowExpression(true)
             .setCapabilityReference(EMBEDDING_STORE_PROVIDER_DESCRIPTOR.getName())
             .setRestartAllServices()
+            .setStability(Stability.EXPERIMENTAL)
             .build();
     public static final SimpleAttributeDefinition EMBEDDING_MODEL = SimpleAttributeDefinitionBuilder.create("embedding-model", ModelType.STRING, false)
             .setAllowExpression(true)
             .setCapabilityReference(EMBEDDING_MODEL_PROVIDER_DESCRIPTOR.getName())
             .setRestartAllServices()
+            .setStability(Stability.EXPERIMENTAL)
             .build();
     public static final SimpleAttributeDefinition MAX_RESULTS = SimpleAttributeDefinitionBuilder.create("max-results", ModelType.INT, true)
             .setAllowExpression(true)
             .setRestartAllServices()
+            .setStability(Stability.EXPERIMENTAL)
             .build();
     public static final SimpleAttributeDefinition MIN_SCORE = SimpleAttributeDefinitionBuilder.create("min-score", ModelType.DOUBLE, true)
             .setAllowExpression(true)
             .setRestartAllServices()
+            .setStability(Stability.EXPERIMENTAL)
             .build();
 //    public static final SimpleAttributeDefinition FILTER = SimpleAttributeDefinitionBuilder.create("filter", ModelType.STRING, true)
 //            .setAllowExpression(true)

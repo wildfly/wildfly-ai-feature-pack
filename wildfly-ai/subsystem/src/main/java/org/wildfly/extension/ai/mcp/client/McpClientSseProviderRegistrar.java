@@ -23,6 +23,7 @@ import org.jboss.as.controller.SimpleAttributeDefinitionBuilder;
 import org.jboss.as.controller.access.management.SensitiveTargetAccessConstraintDefinition;
 import org.jboss.as.controller.descriptions.ParentResourceDescriptionResolver;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
+import org.jboss.as.version.Stability;
 import org.jboss.dmr.ModelType;
 import org.wildfly.subsystem.resource.ChildResourceDefinitionRegistrar;
 import org.wildfly.subsystem.resource.ManagementResourceRegistrar;
@@ -37,10 +38,12 @@ public class McpClientSseProviderRegistrar implements ChildResourceDefinitionReg
             .setCapabilityReference(OUTBOUND_SOCKET_BINDING_CAPABILITY_NAME)
             .addAccessConstraint(SensitiveTargetAccessConstraintDefinition.SOCKET_BINDING_REF)
             .setRestartAllServices()
+            .setStability(Stability.EXPERIMENTAL)
             .build();
     public static final SimpleAttributeDefinition SSE_PATH = SimpleAttributeDefinitionBuilder.create("sse-path", ModelType.STRING, false)
             .setAllowExpression(true)
             .setRestartAllServices()
+            .setStability(Stability.EXPERIMENTAL)
             .build();
 
     public static final Collection<AttributeDefinition> ATTRIBUTES = List.of(CONNECT_TIMEOUT, LOG_REQUESTS, LOG_RESPONSES, SSE_PATH, SSL_ENABLED, SSE_SOCKET_BINDING);

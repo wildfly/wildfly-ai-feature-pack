@@ -20,6 +20,7 @@ import org.jboss.as.controller.operations.validation.StringLengthValidator;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
 import org.jboss.as.controller.services.path.PathManager;
 import org.jboss.as.controller.services.path.ResolvePathHandler;
+import org.jboss.as.version.Stability;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
 import org.wildfly.subsystem.resource.ChildResourceDefinitionRegistrar;
@@ -36,12 +37,14 @@ public class InMemoryEmbeddingStoreProviderRegistrar implements ChildResourceDef
                     .setAllowExpression(true)
                     .setValidator(new StringLengthValidator(1, Integer.MAX_VALUE, false, true))
                     .addArbitraryDescriptor(FILESYSTEM_PATH, ModelNode.TRUE)
+                    .setStability(Stability.EXPERIMENTAL)
                     .build();
     protected static final SimpleAttributeDefinition STORE_RELATIVE_TO
             = new SimpleAttributeDefinitionBuilder("relative-to", ModelType.STRING, true)
                     .setXmlName("relative-to")
                     .setValidator(new StringLengthValidator(1, Integer.MAX_VALUE, true, false))
                     .setCapabilityReference(PathManager.PATH_SERVICE_DESCRIPTOR.getName())
+                    .setStability(Stability.EXPERIMENTAL)
                     .build();
 
     public static final Collection<AttributeDefinition> ATTRIBUTES = List.of(STORE_PATH, STORE_RELATIVE_TO);

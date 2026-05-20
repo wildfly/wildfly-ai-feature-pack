@@ -27,6 +27,7 @@ import org.jboss.as.controller.StringListAttributeDefinition;
 import org.jboss.as.controller.descriptions.ParentResourceDescriptionResolver;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
 import org.jboss.as.controller.registry.RuntimePackageDependency;
+import org.jboss.as.version.Stability;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
 import org.wildfly.extension.ai.Capabilities;
@@ -44,18 +45,19 @@ public class WebSearchContentContentRetrieverProviderRegistrar implements ChildR
 
     public static final SimpleAttributeDefinition GOOGLE_SEARCH_ENGINE = new ObjectTypeAttributeDefinition.Builder("google",
             API_KEY,
-            SimpleAttributeDefinitionBuilder.create(CONNECT_TIMEOUT).setDefaultValue(new ModelNode(60000L)).build(),
-            SimpleAttributeDefinitionBuilder.create("custom-search-id", ModelType.STRING, true).build(),
-            SimpleAttributeDefinitionBuilder.create("include-images", ModelType.BOOLEAN, true).build(),
+            SimpleAttributeDefinitionBuilder.create(CONNECT_TIMEOUT).setDefaultValue(new ModelNode(60000L)).setStability(Stability.EXPERIMENTAL).build(),
+            SimpleAttributeDefinitionBuilder.create("custom-search-id", ModelType.STRING, true).setStability(Stability.EXPERIMENTAL).build(),
+            SimpleAttributeDefinitionBuilder.create("include-images", ModelType.BOOLEAN, true).setStability(Stability.EXPERIMENTAL).build(),
             LOG_REQUESTS,
             LOG_RESPONSES,
             MAX_RETRIES,
-            SimpleAttributeDefinitionBuilder.create("site-restrict", ModelType.BOOLEAN, true).build())
+            SimpleAttributeDefinitionBuilder.create("site-restrict", ModelType.BOOLEAN, true).setStability(Stability.EXPERIMENTAL).build())
                 .setAttributeMarshaller(AttributeMarshaller.ATTRIBUTE_OBJECT)
                 .setAttributeParser(AttributeParser.OBJECT_PARSER)
                 .setAllowExpression(true)
                 .addAlternatives("tavily")
                 .setRestartAllServices()
+                .setStability(Stability.EXPERIMENTAL)
                 .build();
 
     public static final SimpleAttributeDefinition TAVILY_SEARCH_ENGINE = new ObjectTypeAttributeDefinition.Builder("tavily",
@@ -67,26 +69,30 @@ public class WebSearchContentContentRetrieverProviderRegistrar implements ChildR
                 .setMinSize(0)
                 .setAllowExpression(true)
                 .setRestartAllServices()
+                .setStability(Stability.EXPERIMENTAL)
                 .build(),
-            SimpleAttributeDefinitionBuilder.create("include-answer", ModelType.BOOLEAN, true).build(),
+            SimpleAttributeDefinitionBuilder.create("include-answer", ModelType.BOOLEAN, true).setStability(Stability.EXPERIMENTAL).build(),
             StringListAttributeDefinition.Builder.of("include-domains")
                 .setRequired(false)
                 .setMinSize(0)
                 .setAllowExpression(true)
                 .setRestartAllServices()
+                .setStability(Stability.EXPERIMENTAL)
                 .build(),
-            SimpleAttributeDefinitionBuilder.create("include-raw-content", ModelType.BOOLEAN, true).build(),
-            SimpleAttributeDefinitionBuilder.create("search-depth", ModelType.STRING, true).setAllowedValues("basic", "advanced").build())
+            SimpleAttributeDefinitionBuilder.create("include-raw-content", ModelType.BOOLEAN, true).setStability(Stability.EXPERIMENTAL).build(),
+            SimpleAttributeDefinitionBuilder.create("search-depth", ModelType.STRING, true).setAllowedValues("basic", "advanced").setStability(Stability.EXPERIMENTAL).build())
                 .setAllowExpression(true)
                 .addAlternatives("google")
                 .setRestartAllServices()
                 .setAttributeMarshaller(AttributeMarshaller.ATTRIBUTE_OBJECT)
                 .setAttributeParser(AttributeParser.OBJECT_PARSER)
+                .setStability(Stability.EXPERIMENTAL)
                 .build();
 
     public static final SimpleAttributeDefinition MAX_RESULTS = SimpleAttributeDefinitionBuilder.create("max-results", ModelType.INT, true)
             .setAllowExpression(true)
             .setRestartAllServices()
+            .setStability(Stability.EXPERIMENTAL)
             .build();
 
     public static final Collection<AttributeDefinition> ATTRIBUTES = List.of(GOOGLE_SEARCH_ENGINE, MAX_RESULTS, TAVILY_SEARCH_ENGINE);

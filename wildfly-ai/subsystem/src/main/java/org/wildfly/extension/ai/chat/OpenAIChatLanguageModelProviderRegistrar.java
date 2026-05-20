@@ -28,6 +28,7 @@ import org.jboss.as.controller.SimpleAttributeDefinitionBuilder;
 import org.jboss.as.controller.descriptions.ParentResourceDescriptionResolver;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
 import org.jboss.as.controller.registry.RuntimePackageDependency;
+import org.jboss.as.version.Stability;
 import org.jboss.dmr.ModelType;
 
 import static org.wildfly.extension.ai.AIAttributeDefinitions.RESPONSE_FORMAT;
@@ -46,6 +47,7 @@ import org.wildfly.subsystem.resource.operation.ResourceOperationRuntimeHandler;
 public class OpenAIChatLanguageModelProviderRegistrar implements ChildResourceDefinitionRegistrar {
     public static final SimpleAttributeDefinition ORGANIZATION_ID = new SimpleAttributeDefinitionBuilder("organization-id", ModelType.STRING, true)
             .setAllowExpression(true)
+            .setStability(Stability.EXPERIMENTAL)
             .build();
     public static final Collection<AttributeDefinition> ATTRIBUTES = List.of(API_KEY, BASE_URL, CONNECT_TIMEOUT,
             EXECUTOR_SERVICE, FREQUENCY_PENALTY, LOG_REQUESTS, LOG_RESPONSES, MAX_TOKEN, MODEL_NAME, ORGANIZATION_ID,

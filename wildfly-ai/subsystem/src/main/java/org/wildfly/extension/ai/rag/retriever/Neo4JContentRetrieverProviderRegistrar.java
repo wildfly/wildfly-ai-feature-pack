@@ -21,6 +21,7 @@ import org.jboss.as.controller.SimpleAttributeDefinitionBuilder;
 import org.jboss.as.controller.descriptions.ParentResourceDescriptionResolver;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
 import org.jboss.as.controller.registry.RuntimePackageDependency;
+import org.jboss.as.version.Stability;
 import org.jboss.dmr.ModelType;
 import org.wildfly.extension.ai.Capabilities;
 import org.wildfly.subsystem.resource.ChildResourceDefinitionRegistrar;
@@ -35,10 +36,12 @@ public class Neo4JContentRetrieverProviderRegistrar implements ChildResourceDefi
             .setAllowExpression(true)
             .setCapabilityReference(CHAT_MODEL_PROVIDER_DESCRIPTOR.getName())
             .setRestartAllServices()
+            .setStability(Stability.EXPERIMENTAL)
             .build();
     public static final SimpleAttributeDefinition PROMPT_TEMPLATE = SimpleAttributeDefinitionBuilder.create("prompt-template", ModelType.STRING, true)
             .setAllowExpression(true)
             .setRestartAllServices()
+            .setStability(Stability.EXPERIMENTAL)
             .build();
 
     public static final Collection<AttributeDefinition> ATTRIBUTES = List.of(BOLT_URL, CHAT_LANGUAGE_MODEL, CREDENTIAL_REFERENCE, USERNAME, PROMPT_TEMPLATE);

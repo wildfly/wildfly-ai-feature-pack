@@ -32,6 +32,7 @@ import org.jboss.as.controller.SimpleAttributeDefinitionBuilder;
 import org.jboss.as.controller.descriptions.ParentResourceDescriptionResolver;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
 import org.jboss.as.controller.registry.RuntimePackageDependency;
+import org.jboss.as.version.Stability;
 import org.jboss.dmr.ModelType;
 
 import org.wildfly.extension.ai.injection.chat.WildFlyChatModelConfig;
@@ -49,19 +50,24 @@ public class GithubModelChatLanguageModelProviderRegistrar implements ChildResou
             .setAllowExpression(true)
             .setAttributeParser(new AttributeParsers.PropertiesParser(null, "header", false))
             .setAttributeMarshaller(new AttributeMarshallers.PropertiesAttributeMarshaller(null, "header", false))
+            .setStability(Stability.EXPERIMENTAL)
             .build();
     public static final SimpleAttributeDefinition ENDPOINT = SimpleAttributeDefinitionBuilder.create("endpoint", ModelType.STRING, false)
             .setAllowExpression(true)
+            .setStability(Stability.EXPERIMENTAL)
             .build();
     public static final SimpleAttributeDefinition SEED = new SimpleAttributeDefinitionBuilder("seed", ModelType.LONG, true)
             .setAllowExpression(true)
+            .setStability(Stability.EXPERIMENTAL)
             .build();
     public static final SimpleAttributeDefinition SERVICE_VERSION = new SimpleAttributeDefinitionBuilder("service-version", ModelType.STRING, true)
             .setAllowedValues("2024-05-01-preview", "2024-05-01-preview")
             .setAllowExpression(true)
+            .setStability(Stability.EXPERIMENTAL)
             .build();
     public static final SimpleAttributeDefinition USER_AGENT_SUFFIX = new SimpleAttributeDefinitionBuilder("user-agent-suffix", ModelType.STRING, true)
             .setAllowExpression(true)
+            .setStability(Stability.EXPERIMENTAL)
             .build();
 
     public static final Collection<AttributeDefinition> ATTRIBUTES = List.of(API_KEY, CONNECT_TIMEOUT,CUSTOM_HEADERS,

@@ -18,6 +18,7 @@ import org.jboss.as.controller.SimpleAttributeDefinition;
 import org.jboss.as.controller.SimpleAttributeDefinitionBuilder;
 import org.jboss.as.controller.descriptions.ParentResourceDescriptionResolver;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
+import org.jboss.as.version.Stability;
 import org.jboss.dmr.ModelType;
 import org.wildfly.subsystem.resource.ChildResourceDefinitionRegistrar;
 import org.wildfly.subsystem.resource.ManagementResourceRegistrar;
@@ -30,9 +31,11 @@ public class InMemoryEmbeddingModelProviderRegistrar implements ChildResourceDef
     public static final SimpleAttributeDefinition EMBEDDING_MODULE = new SimpleAttributeDefinitionBuilder(MODULE, ModelType.STRING, false)
             .setAllowExpression(true)
             .setValidator(new ModuleIdentifierValidator(false, true))
+            .setStability(Stability.EXPERIMENTAL)
             .build();
     public static final SimpleAttributeDefinition EMBEDDING_MODEL_CLASS = new SimpleAttributeDefinitionBuilder("embedding-class", ModelType.STRING, false)
             .setAllowExpression(true)
+            .setStability(Stability.EXPERIMENTAL)
             .build();
 
     public static final Collection<AttributeDefinition> ATTRIBUTES = List.of(EMBEDDING_MODULE, EMBEDDING_MODEL_CLASS);

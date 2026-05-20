@@ -22,6 +22,7 @@ import org.jboss.as.controller.access.management.SensitiveTargetAccessConstraint
 import org.jboss.as.controller.descriptions.ParentResourceDescriptionResolver;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
 import org.jboss.as.controller.registry.RuntimePackageDependency;
+import org.jboss.as.version.Stability;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
 import org.wildfly.subsystem.resource.ChildResourceDefinitionRegistrar;
@@ -35,28 +36,33 @@ public class WeaviateEmbeddingStoreProviderRegistrar implements ChildResourceDef
     public static final SimpleAttributeDefinition AVOID_DUPS = SimpleAttributeDefinitionBuilder.create("avoid-dups", ModelType.BOOLEAN, true)
             .setAllowExpression(true)
             .setRestartAllServices()
+            .setStability(Stability.EXPERIMENTAL)
             .build();
     public static final SimpleAttributeDefinition CONSISTENCY_LEVEL = SimpleAttributeDefinitionBuilder.create("consistency-level", ModelType.STRING, true)
             .setAllowExpression(true)
             .setDefaultValue(new ModelNode("ALL"))
             .setAllowedValues("ONE", "QUORUM", "ALL")
             .setRestartAllServices()
+            .setStability(Stability.EXPERIMENTAL)
             .build();
     public static final SimpleAttributeDefinition OBJECT_CLASS = SimpleAttributeDefinitionBuilder.create("object-class", ModelType.STRING, false)
             .setAllowExpression(true)
             .setRestartAllServices()
+            .setStability(Stability.EXPERIMENTAL)
             .build();
     public static final SimpleAttributeDefinition STORE_BINDING = SimpleAttributeDefinitionBuilder.create(SOCKET_BINDING, ModelType.STRING, false)
             .setAllowExpression(true)
             .setCapabilityReference(OUTBOUND_SOCKET_BINDING_CAPABILITY_NAME)
             .addAccessConstraint(SensitiveTargetAccessConstraintDefinition.SOCKET_BINDING_REF)
             .setRestartAllServices()
+            .setStability(Stability.EXPERIMENTAL)
             .build();
     public static final StringListAttributeDefinition METADATA = StringListAttributeDefinition.Builder.of("metadata")
             .setRequired(false)
             .setMinSize(0)
             .setAllowExpression(true)
             .setRestartAllServices()
+            .setStability(Stability.EXPERIMENTAL)
             .build();
 
     public static final Collection<AttributeDefinition> ATTRIBUTES = List.of(AVOID_DUPS, CONSISTENCY_LEVEL, METADATA, OBJECT_CLASS, SSL_ENABLED, STORE_BINDING);

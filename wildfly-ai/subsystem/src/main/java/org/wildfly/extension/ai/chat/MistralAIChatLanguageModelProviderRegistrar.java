@@ -33,6 +33,7 @@ import org.jboss.as.controller.SimpleAttributeDefinitionBuilder;
 import org.jboss.as.controller.descriptions.ParentResourceDescriptionResolver;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
 import org.jboss.as.controller.registry.RuntimePackageDependency;
+import org.jboss.as.version.Stability;
 import org.jboss.dmr.ModelType;
 import org.wildfly.extension.ai.injection.chat.WildFlyChatModelConfig;
 import org.wildfly.service.capture.ValueExecutorRegistry;
@@ -47,9 +48,11 @@ public class MistralAIChatLanguageModelProviderRegistrar implements ChildResourc
 
     public static final SimpleAttributeDefinition RANDOM_SEED = new SimpleAttributeDefinitionBuilder("random-seed", ModelType.INT, true)
             .setAllowExpression(true)
+            .setStability(Stability.EXPERIMENTAL)
             .build();
     public static final SimpleAttributeDefinition SAFE_PROMPT = SimpleAttributeDefinitionBuilder.create("safe-prompt", ModelType.BOOLEAN, true)
             .setAllowExpression(true)
+            .setStability(Stability.EXPERIMENTAL)
             .build();
 
     public static final Collection<AttributeDefinition> ATTRIBUTES = List.of(API_KEY, BASE_URL, CONNECT_TIMEOUT,
