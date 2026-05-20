@@ -15,12 +15,16 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import jakarta.json.Json;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
+import jakarta.json.JsonObjectBuilder;
 
 import org.jboss.arquillian.container.test.api.Deployment;
 import org.jboss.arquillian.container.test.api.RunAsClient;
@@ -29,10 +33,11 @@ import org.jboss.arquillian.test.api.ArquillianResource;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.EmptyAsset;
 import org.jboss.shrinkwrap.api.spec.WebArchive;
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
@@ -46,18 +51,24 @@ import org.junit.jupiter.api.extension.ExtendWith;
  *   <li>The first POST (initialize) opens an SSE connection that stays open</li>
  *   <li>All subsequent POST responses are sent back through that SSE connection</li>
  * </ul>
- * Therefore, this test keeps a background reader on the SSE stream and collects
- * responses via a blocking queue.</p>
+ * Therefore, this test keeps a background reader on the SSE stream and dispatches
+ * responses to the correct test via JSON-RPC id correlation.</p>
  */
 @ExtendWith(ArquillianExtension.class)
 @RunAsClient
-@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class MCPServerIntegrationTestCase {
 
-    private static String sessionId;
-    private static BlockingQueue<String> sseResponses;
-    private static Thread sseReaderThread;
-    private static HttpURLConnection sseConnection;
+    private static final long RESPONSE_TIMEOUT_SECONDS = 10;
+
+    private volatile boolean initialized;
+    private String sessionId;
+    private Thread sseReaderThread;
+    private HttpURLConnection sseConnection;
+
+    private final AtomicLong nextId = new AtomicLong(1);
+    private final ConcurrentHashMap<Long, CompletableFuture<String>> pendingResponses = new ConcurrentHashMap<>();
+    private final BlockingQueue<String> serverInitiatedMessages = new LinkedBlockingQueue<>();
 
     @ArquillianResource
     private URL deploymentUrl;
@@ -75,13 +86,47 @@ public class MCPServerIntegrationTestCase {
         return archive;
     }
 
-    @Test
-    @Order(1)
-    public void testInitialize() throws Exception {
-        sseResponses = new LinkedBlockingQueue<>();
+    @AfterEach
+    public void cleanUpState() throws Exception {
+        pendingResponses.values().forEach(f -> f.cancel(true));
+        pendingResponses.clear();
+        int staleCount = serverInitiatedMessages.size();
+        if (staleCount > 0) {
+            System.err.println("[WARN] " + staleCount + " stale server-initiated message(s) drained after test");
+        }
+        serverInitiatedMessages.clear();
+
+        if (initialized) {
+            sendAndReceive("logging/setLevel", Json.createObjectBuilder()
+                    .add("level", "warning")
+                    .build());
+        }
+    }
+
+    @AfterAll
+    public void tearDown() {
+        if (sseReaderThread != null) {
+            sseReaderThread.interrupt();
+        }
+        if (sseConnection != null) {
+            sseConnection.disconnect();
+        }
+    }
+
+    @BeforeEach
+    public void setUp() throws Exception {
+        if (initialized) {
+            return;
+        }
+        initialized = true;
+
+        long initId = nextId.getAndIncrement();
+        CompletableFuture<String> initFuture = new CompletableFuture<>();
+        pendingResponses.put(initId, initFuture);
 
         String initMessage = """
-                {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","clientInfo":{"name":"test-client","version":"1.0.0"},"capabilities":{"elicitation":{}}}}""";
+                {"jsonrpc":"2.0","id":%d,"method":"initialize","params":{"protocolVersion":"2025-03-26","clientInfo":{"name":"test-client","version":"1.0.0"},"capabilities":{"elicitation":{}}}}"""
+                .formatted(initId);
 
         URL streamUrl = deploymentUrl.toURI().resolve("stream").toURL();
         sseConnection = (HttpURLConnection) streamUrl.openConnection();
@@ -108,7 +153,8 @@ public class MCPServerIntegrationTestCase {
                 String line;
                 while ((line = reader.readLine()) != null) {
                     if (line.startsWith("data:")) {
-                        sseResponses.offer(line.substring(5).trim());
+                        String data = line.substring(5).trim();
+                        dispatchSseEvent(data);
                     }
                 }
             } catch (Exception e) {
@@ -118,52 +164,30 @@ public class MCPServerIntegrationTestCase {
         sseReaderThread.setDaemon(true);
         sseReaderThread.start();
 
-        String response = sseResponses.poll(10, TimeUnit.SECONDS);
+        String response = initFuture.get(RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
         assertThat(response).as("Should receive initialize response").isNotNull();
         assertThat(response).as("Response should contain protocolVersion").contains("protocolVersion");
         assertThat(response).as("Response should contain server capabilities").contains("capabilities");
         assertThat(response).as("Response should advertise tools capability").contains("tools");
         assertThat(response).as("Response should advertise prompts capability").contains("prompts");
         assertThat(response).as("Response should advertise resources capability").contains("resources");
-    }
-
-    @Test
-    @Order(2)
-    public void testInitializedNotification() throws Exception {
-        assertThat(sessionId).as("Session must be initialized first").isNotNull();
 
         String initializedMessage = """
                 {"jsonrpc":"2.0","method":"notifications/initialized"}""";
 
-        int statusCode = postToStreamable(initializedMessage);
-        assertThat(statusCode).as("Initialized notification should succeed").isEqualTo(200);
+        int notifStatusCode = postToStreamable(initializedMessage);
+        assertThat(notifStatusCode).as("Initialized notification should succeed").isEqualTo(200);
     }
 
     @Test
-    @Order(3)
     public void testPing() throws Exception {
-        assertThat(sessionId).as("Session must be initialized first").isNotNull();
-
-        String pingMessage = """
-                {"jsonrpc":"2.0","id":2,"method":"ping"}""";
-
-        postToStreamable(pingMessage);
-        String response = sseResponses.poll(10, TimeUnit.SECONDS);
-        assertThat(response).as("Ping should return a result").isNotNull();
+        String response = sendAndReceive("ping", null);
         assertThat(response).as("Ping should return a result").contains("\"result\"");
     }
 
     @Test
-    @Order(4)
     public void testToolsList() throws Exception {
-        assertThat(sessionId).as("Session must be initialized first").isNotNull();
-
-        String toolsListMessage = """
-                {"jsonrpc":"2.0","id":3,"method":"tools/list"}""";
-
-        postToStreamable(toolsListMessage);
-        String response = sseResponses.poll(10, TimeUnit.SECONDS);
-        assertThat(response).as("Should receive tools list response").isNotNull();
+        String response = sendAndReceive("tools/list", null);
         assertThat(response).as("Should contain tools array").contains("\"tools\"");
         assertThat(response).as("Should list the add tool").contains("\"add\"");
         assertThat(response).as("Should list the echo tool").contains("\"echo\"");
@@ -172,16 +196,11 @@ public class MCPServerIntegrationTestCase {
     }
 
     @Test
-    @Order(5)
     public void testToolsCall() throws Exception {
-        assertThat(sessionId).as("Session must be initialized first").isNotNull();
-
-        String toolsCallMessage = """
-                {"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"echo","arguments":{"message":"hello MCP"}}}""";
-
-        postToStreamable(toolsCallMessage);
-        String response = sseResponses.poll(10, TimeUnit.SECONDS);
-        assertThat(response).as("Should receive tool call response").isNotNull();
+        String response = sendAndReceive("tools/call", Json.createObjectBuilder()
+                .add("name", "echo")
+                .add("arguments", Json.createObjectBuilder().add("message", "hello MCP"))
+                .build());
 
         JsonObject jsonResponse = Json.createReader(new StringReader(response)).readObject();
         JsonObject result = jsonResponse.getJsonObject("result");
@@ -198,16 +217,11 @@ public class MCPServerIntegrationTestCase {
     }
 
     @Test
-    @Order(6)
     public void testToolsCallAdd() throws Exception {
-        assertThat(sessionId).as("Session must be initialized first").isNotNull();
-
-        String toolsCallMessage = """
-                {"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"add","arguments":{"a":"3","b":"7"}}}""";
-
-        postToStreamable(toolsCallMessage);
-        String response = sseResponses.poll(10, TimeUnit.SECONDS);
-        assertThat(response).as("Should receive tool call response").isNotNull();
+        String response = sendAndReceive("tools/call", Json.createObjectBuilder()
+                .add("name", "add")
+                .add("arguments", Json.createObjectBuilder().add("a", "3").add("b", "7"))
+                .build());
 
         JsonObject jsonResponse = Json.createReader(new StringReader(response)).readObject();
         JsonObject result = jsonResponse.getJsonObject("result");
@@ -224,32 +238,19 @@ public class MCPServerIntegrationTestCase {
     }
 
     @Test
-    @Order(7)
     public void testPromptsList() throws Exception {
-        assertThat(sessionId).as("Session must be initialized first").isNotNull();
-
-        String promptsListMessage = """
-                {"jsonrpc":"2.0","id":6,"method":"prompts/list"}""";
-
-        postToStreamable(promptsListMessage);
-        String response = sseResponses.poll(10, TimeUnit.SECONDS);
-        assertThat(response).as("Should receive prompts list response").isNotNull();
+        String response = sendAndReceive("prompts/list", null);
         assertThat(response).as("Should contain prompts array").contains("\"prompts\"");
         assertThat(response).as("Should list the greeting prompt").contains("\"greeting\"");
         assertThat(response).as("Should contain prompt description").contains("Generates a greeting");
     }
 
     @Test
-    @Order(8)
     public void testPromptsGet() throws Exception {
-        assertThat(sessionId).as("Session must be initialized first").isNotNull();
-
-        String promptsGetMessage = """
-                {"jsonrpc":"2.0","id":7,"method":"prompts/get","params":{"name":"greeting","arguments":{"name":"WildFly"}}}""";
-
-        postToStreamable(promptsGetMessage);
-        String response = sseResponses.poll(10, TimeUnit.SECONDS);
-        assertThat(response).as("Should receive prompt get response").isNotNull();
+        String response = sendAndReceive("prompts/get", Json.createObjectBuilder()
+                .add("name", "greeting")
+                .add("arguments", Json.createObjectBuilder().add("name", "WildFly"))
+                .build());
 
         JsonObject jsonResponse = Json.createReader(new StringReader(response)).readObject();
         JsonObject result = jsonResponse.getJsonObject("result");
@@ -271,16 +272,11 @@ public class MCPServerIntegrationTestCase {
     }
 
     @Test
-    @Order(13)
     public void testPromptsGetAssistantRole() throws Exception {
-        assertThat(sessionId).as("Session must be initialized first").isNotNull();
-
-        String promptsGetMessage = """
-                {"jsonrpc":"2.0","id":13,"method":"prompts/get","params":{"name":"assistant-reply","arguments":{"topic":"Java"}}}""";
-
-        postToStreamable(promptsGetMessage);
-        String response = sseResponses.poll(10, TimeUnit.SECONDS);
-        assertThat(response).as("Should receive prompt get response").isNotNull();
+        String response = sendAndReceive("prompts/get", Json.createObjectBuilder()
+                .add("name", "assistant-reply")
+                .add("arguments", Json.createObjectBuilder().add("topic", "Java"))
+                .build());
 
         JsonObject jsonResponse = Json.createReader(new StringReader(response)).readObject();
         JsonObject result = jsonResponse.getJsonObject("result");
@@ -300,32 +296,22 @@ public class MCPServerIntegrationTestCase {
     }
 
     @Test
-    @Order(9)
     public void testResourcesList() throws Exception {
-        assertThat(sessionId).as("Session must be initialized first").isNotNull();
-
-        String resourcesListMessage = """
-                {"jsonrpc":"2.0","id":8,"method":"resources/list"}""";
-
-        postToStreamable(resourcesListMessage);
-        String response = sseResponses.poll(10, TimeUnit.SECONDS);
-        assertThat(response).as("Should receive resources list response").isNotNull();
+        String response = sendAndReceive("resources/list", null);
         assertThat(response).as("Should contain resources array").contains("\"resources\"");
         assertThat(response).as("Should list the test-info resource").contains("\"test-info\"");
         assertThat(response).as("Should contain the resource URI").contains("test://info");
+        assertThat(response).as("Should contain test-status resource").contains("\"test-status\"");
+        assertThat(response).as("Should contain test://status URI").contains("test://status");
+        assertThat(response).as("Should contain application/json mimeType").contains("application/json");
     }
 
     @Test
-    @Order(10)
     public void testResourcesRead() throws Exception {
-        assertThat(sessionId).as("Session must be initialized first").isNotNull();
+        String response = sendAndReceive("resources/read", Json.createObjectBuilder()
+                .add("uri", "test://info")
+                .build());
 
-        String resourcesReadMessage = """
-                {"jsonrpc":"2.0","id":9,"method":"resources/read","params":{"uri":"test://info"}}""";
-
-        postToStreamable(resourcesReadMessage);
-        String response = sseResponses.poll(10, TimeUnit.SECONDS);
-        assertThat(response).as("Should receive resource read response").isNotNull();
         assertThat(response).as("Should contain result").contains("\"result\"");
         assertThat(response).as("Should contain resource content").contains("WildFly MCP Test Resource");
     }
@@ -333,53 +319,22 @@ public class MCPServerIntegrationTestCase {
     // ==================== Resource Subscribe / Unsubscribe ====================
 
     @Test
-    @Order(18)
-    public void testResourcesSubscribeCapabilityAdvertised() throws Exception {
-        assertThat(sessionId).as("Session must be initialized first").isNotNull();
-
-        // Re-use the initialize response already received in testInitialize — re-initialize just to inspect
-        // Actually, the capability was already asserted in testInitialize via "resources". We validate subscribe here.
-        // Send a fresh tools/list to avoid consuming a pending SSE message, then check the init response cached earlier.
-        // Instead, call resources/list and ensure subscribe is still the advertised capability.
-        // We validate this by issuing resources/subscribe on a known URI and expecting success (not method-not-found).
-        String subscribeMessage = """
-                {"jsonrpc":"2.0","id":30,"method":"resources/subscribe","params":{"uri":"test://info"}}""";
-
-        postToStreamable(subscribeMessage);
-        String response = sseResponses.poll(10, TimeUnit.SECONDS);
-        assertThat(response).as("Subscribe should return a result").isNotNull();
-        assertThat(response).as("Subscribe should not return an error").doesNotContain("\"error\"");
-        assertThat(response).as("Subscribe should return an empty result object").contains("\"result\"");
-    }
-
-    @Test
-    @Order(19)
     public void testResourcesSubscribeKnownResource() throws Exception {
-        assertThat(sessionId).as("Session must be initialized first").isNotNull();
+        String response = sendAndReceive("resources/subscribe", Json.createObjectBuilder()
+                .add("uri", "test://info")
+                .build());
 
-        String subscribeMessage = """
-                {"jsonrpc":"2.0","id":31,"method":"resources/subscribe","params":{"uri":"test://info"}}""";
-
-        postToStreamable(subscribeMessage);
-        String response = sseResponses.poll(10, TimeUnit.SECONDS);
-        assertThat(response).as("Should receive subscribe response").isNotNull();
-
+        assertThat(response).as("Subscribe should not return an error").doesNotContain("\"error\"");
         JsonObject json = Json.createReader(new StringReader(response)).readObject();
         assertThat(json.containsKey("result")).as("Should be a result, not an error").isTrue();
         assertThat(json.getJsonObject("result").isEmpty()).as("Result should be empty object per MCP spec").isTrue();
     }
 
     @Test
-    @Order(20)
     public void testResourcesSubscribeSecondResource() throws Exception {
-        assertThat(sessionId).as("Session must be initialized first").isNotNull();
-
-        String subscribeMessage = """
-                {"jsonrpc":"2.0","id":32,"method":"resources/subscribe","params":{"uri":"test://status"}}""";
-
-        postToStreamable(subscribeMessage);
-        String response = sseResponses.poll(10, TimeUnit.SECONDS);
-        assertThat(response).as("Should receive subscribe response").isNotNull();
+        String response = sendAndReceive("resources/subscribe", Json.createObjectBuilder()
+                .add("uri", "test://status")
+                .build());
 
         JsonObject json = Json.createReader(new StringReader(response)).readObject();
         assertThat(json.containsKey("result")).as("Should be a result, not an error").isTrue();
@@ -387,32 +342,32 @@ public class MCPServerIntegrationTestCase {
     }
 
     @Test
-    @Order(21)
     public void testResourcesReadAfterSubscribe() throws Exception {
-        assertThat(sessionId).as("Session must be initialized first").isNotNull();
+        JsonObject statusUri = Json.createObjectBuilder()
+                .add("uri", "test://status")
+                .build();
 
-        // Subscribing must not affect the ability to read the resource
-        String readMessage = """
-                {"jsonrpc":"2.0","id":33,"method":"resources/read","params":{"uri":"test://status"}}""";
+        // Subscribe first, then read
+        String subscribeResponse = sendAndReceive("resources/subscribe", statusUri);
+        assertThat(subscribeResponse).as("Subscribe should succeed before read").doesNotContain("\"error\"");
 
-        postToStreamable(readMessage);
-        String response = sseResponses.poll(10, TimeUnit.SECONDS);
-        assertThat(response).as("Should receive resource read response").isNotNull();
+        String response = sendAndReceive("resources/read", statusUri);
+
         assertThat(response).as("Should contain contents").contains("\"contents\"");
         assertThat(response).as("Should contain JSON status content").contains("running");
     }
 
     @Test
-    @Order(22)
     public void testResourcesUnsubscribeKnownResource() throws Exception {
-        assertThat(sessionId).as("Session must be initialized first").isNotNull();
+        JsonObject infoUri = Json.createObjectBuilder()
+                .add("uri", "test://info")
+                .build();
 
-        String unsubscribeMessage = """
-                {"jsonrpc":"2.0","id":34,"method":"resources/unsubscribe","params":{"uri":"test://info"}}""";
+        // Subscribe first so we can unsubscribe
+        String subscribeResponse = sendAndReceive("resources/subscribe", infoUri);
+        assertThat(subscribeResponse).as("Subscribe should succeed before unsubscribe").doesNotContain("\"error\"");
 
-        postToStreamable(unsubscribeMessage);
-        String response = sseResponses.poll(10, TimeUnit.SECONDS);
-        assertThat(response).as("Should receive unsubscribe response").isNotNull();
+        String response = sendAndReceive("resources/unsubscribe", infoUri);
 
         JsonObject json = Json.createReader(new StringReader(response)).readObject();
         assertThat(json.containsKey("result")).as("Should be a result, not an error").isTrue();
@@ -420,33 +375,19 @@ public class MCPServerIntegrationTestCase {
     }
 
     @Test
-    @Order(23)
     public void testResourcesUnsubscribeIdempotent() throws Exception {
-        assertThat(sessionId).as("Session must be initialized first").isNotNull();
-
-        // Unsubscribing from a resource that was already unsubscribed (or never subscribed) should still succeed
-        String unsubscribeMessage = """
-                {"jsonrpc":"2.0","id":35,"method":"resources/unsubscribe","params":{"uri":"test://info"}}""";
-
-        postToStreamable(unsubscribeMessage);
-        String response = sseResponses.poll(10, TimeUnit.SECONDS);
-        assertThat(response).as("Should receive unsubscribe response").isNotNull();
+        // Unsubscribing from a resource that was never subscribed should still succeed
+        String response = sendAndReceive("resources/unsubscribe", Json.createObjectBuilder()
+                .add("uri", "test://info")
+                .build());
 
         JsonObject json = Json.createReader(new StringReader(response)).readObject();
         assertThat(json.containsKey("result")).as("Repeated unsubscribe should still succeed").isTrue();
     }
 
     @Test
-    @Order(24)
     public void testResourcesSubscribeMissingParams() throws Exception {
-        assertThat(sessionId).as("Session must be initialized first").isNotNull();
-
-        String subscribeMessage = """
-                {"jsonrpc":"2.0","id":36,"method":"resources/subscribe"}""";
-
-        postToStreamable(subscribeMessage);
-        String response = sseResponses.poll(10, TimeUnit.SECONDS);
-        assertThat(response).as("Should receive error response").isNotNull();
+        String response = sendAndReceive("resources/subscribe", null);
 
         JsonObject json = Json.createReader(new StringReader(response)).readObject();
         assertThat(json.containsKey("error")).as("Missing params should return an error").isTrue();
@@ -454,16 +395,8 @@ public class MCPServerIntegrationTestCase {
     }
 
     @Test
-    @Order(25)
     public void testResourcesSubscribeMissingUri() throws Exception {
-        assertThat(sessionId).as("Session must be initialized first").isNotNull();
-
-        String subscribeMessage = """
-                {"jsonrpc":"2.0","id":37,"method":"resources/subscribe","params":{}}""";
-
-        postToStreamable(subscribeMessage);
-        String response = sseResponses.poll(10, TimeUnit.SECONDS);
-        assertThat(response).as("Should receive error response").isNotNull();
+        String response = sendAndReceive("resources/subscribe", Json.createObjectBuilder().build());
 
         JsonObject json = Json.createReader(new StringReader(response)).readObject();
         assertThat(json.containsKey("error")).as("Missing URI should return an error").isTrue();
@@ -471,16 +404,8 @@ public class MCPServerIntegrationTestCase {
     }
 
     @Test
-    @Order(26)
     public void testResourcesUnsubscribeMissingParams() throws Exception {
-        assertThat(sessionId).as("Session must be initialized first").isNotNull();
-
-        String unsubscribeMessage = """
-                {"jsonrpc":"2.0","id":38,"method":"resources/unsubscribe"}""";
-
-        postToStreamable(unsubscribeMessage);
-        String response = sseResponses.poll(10, TimeUnit.SECONDS);
-        assertThat(response).as("Should receive error response").isNotNull();
+        String response = sendAndReceive("resources/unsubscribe", null);
 
         JsonObject json = Json.createReader(new StringReader(response)).readObject();
         assertThat(json.containsKey("error")).as("Missing params should return an error").isTrue();
@@ -488,16 +413,8 @@ public class MCPServerIntegrationTestCase {
     }
 
     @Test
-    @Order(27)
     public void testResourcesUnsubscribeMissingUri() throws Exception {
-        assertThat(sessionId).as("Session must be initialized first").isNotNull();
-
-        String unsubscribeMessage = """
-                {"jsonrpc":"2.0","id":39,"method":"resources/unsubscribe","params":{}}""";
-
-        postToStreamable(unsubscribeMessage);
-        String response = sseResponses.poll(10, TimeUnit.SECONDS);
-        assertThat(response).as("Should receive error response").isNotNull();
+        String response = sendAndReceive("resources/unsubscribe", Json.createObjectBuilder().build());
 
         JsonObject json = Json.createReader(new StringReader(response)).readObject();
         assertThat(json.containsKey("error")).as("Missing URI should return an error").isTrue();
@@ -505,98 +422,68 @@ public class MCPServerIntegrationTestCase {
     }
 
     @Test
-    @Order(28)
-    public void testResourcesListIncludesSecondResource() throws Exception {
-        assertThat(sessionId).as("Session must be initialized first").isNotNull();
-
-        String listMessage = """
-                {"jsonrpc":"2.0","id":40,"method":"resources/list"}""";
-
-        postToStreamable(listMessage);
-        String response = sseResponses.poll(10, TimeUnit.SECONDS);
-        assertThat(response).as("Should receive resources list response").isNotNull();
-        assertThat(response).as("Should contain test-status resource").contains("\"test-status\"");
-        assertThat(response).as("Should contain test://status URI").contains("test://status");
-        assertThat(response).as("Should contain application/json mimeType").contains("application/json");
-    }
-
-    @Test
-    @Order(11)
     public void testUnsupportedMethod() throws Exception {
-        assertThat(sessionId).as("Session must be initialized first").isNotNull();
-
-        String unsupportedMessage = """
-                {"jsonrpc":"2.0","id":10,"method":"unsupported/method"}""";
-
-        postToStreamable(unsupportedMessage);
-        String response = sseResponses.poll(10, TimeUnit.SECONDS);
-        assertThat(response).as("Should receive error response").isNotNull();
+        String response = sendAndReceive("unsupported/method", null);
         assertThat(response).as("Should contain error").contains("\"error\"");
         assertThat(response).as("Should contain method not found code").contains("-32601");
     }
 
     @Test
-    @Order(12)
     public void testLoggingSetLevel() throws Exception {
-        assertThat(sessionId).as("Session must be initialized first").isNotNull();
-
-        String loggingMessage = """
-                {"jsonrpc":"2.0","id":11,"method":"logging/setLevel","params":{"level":"info"}}""";
-
-        postToStreamable(loggingMessage);
-        String response = sseResponses.poll(10, TimeUnit.SECONDS);
-        assertThat(response).as("Should receive logging response").isNotNull();
+        String response = sendAndReceive("logging/setLevel", Json.createObjectBuilder()
+                .add("level", "info")
+                .build());
         assertThat(response).as("Should contain result").contains("\"result\"");
     }
 
     @Test
-    @Order(14)
     public void testElicitationToolListedWithoutSenderParam() throws Exception {
-        assertThat(sessionId).as("Session must be initialized first").isNotNull();
-
-        String toolsListMessage = """
-                {"jsonrpc":"2.0","id":20,"method":"tools/list"}""";
-
-        postToStreamable(toolsListMessage);
-        String response = sseResponses.poll(10, TimeUnit.SECONDS);
-        assertThat(response).as("Should receive tools list response").isNotNull();
+        String response = sendAndReceive("tools/list", null);
         assertThat(response).as("Should list the greet-with-name tool").contains("greet-with-name");
-        // ElicitationSender must NOT appear as a client-supplied input parameter
         assertThat(response).as("ElicitationSender must not appear in inputSchema").doesNotContain("ElicitationSender");
-        assertThat(response).as("greet-with-name should have empty required array").isNotEmpty();
+
+        JsonObject json = Json.createReader(new StringReader(response)).readObject();
+        JsonArray tools = json.getJsonObject("result").getJsonArray("tools");
+        JsonObject greetTool = null;
+        for (int i = 0; i < tools.size(); i++) {
+            if ("greet-with-name".equals(tools.getJsonObject(i).getString("name"))) {
+                greetTool = tools.getJsonObject(i);
+                break;
+            }
+        }
+        assertThat(greetTool).as("greet-with-name tool should be present").isNotNull();
+        JsonArray required = greetTool.getJsonObject("inputSchema").getJsonArray("required");
+        assertThat(required).as("greet-with-name should have empty required array").isEmpty();
     }
 
     @Test
-    @Order(15)
     public void testElicitationAcceptRoundTrip() throws Exception {
-        assertThat(sessionId).as("Session must be initialized first").isNotNull();
+        long toolCallId = nextId.getAndIncrement();
+        CompletableFuture<String> toolResultFuture = new CompletableFuture<>();
+        pendingResponses.put(toolCallId, toolResultFuture);
 
-        // Call the elicitation tool — it will block the tool thread waiting for our response
         String toolCallMessage = """
-                {"jsonrpc":"2.0","id":21,"method":"tools/call","params":{"name":"greet-with-name","arguments":{}}}""";
+                {"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":"greet-with-name","arguments":{}}}"""
+                .formatted(toolCallId);
 
         postToStreamable(toolCallMessage);
 
-        // The server should now send an elicitation/create request over the SSE stream
-        String elicitationJson = sseResponses.poll(10, TimeUnit.SECONDS);
+        String elicitationJson = serverInitiatedMessages.poll(RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
         assertThat(elicitationJson).as("Should receive elicitation/create request").isNotNull();
         assertThat(elicitationJson).as("Should be an elicitation/create request").contains("elicitation/create");
         assertThat(elicitationJson).as("Should contain the prompt message").contains("What is your name?");
         assertThat(elicitationJson).as("Should contain requestedSchema").contains("requestedSchema");
 
-        // Parse the request id so we can respond to it
         JsonObject elicitationMessage = Json.createReader(new StringReader(elicitationJson)).readObject();
         long elicitationId = elicitationMessage.getJsonNumber("id").longValue();
 
-        // Simulate client accepting with the user's name
         String clientResponse = """
                 {"jsonrpc":"2.0","id":%d,"result":{"action":"accept","content":{"name":"WildFly"}}}"""
                 .formatted(elicitationId);
         int statusCode = postToStreamable(clientResponse);
         assertThat(statusCode).as("Client response POST should succeed").isEqualTo(200);
 
-        // Now the tool should complete and send the tool result
-        String toolResult = sseResponses.poll(10, TimeUnit.SECONDS);
+        String toolResult = toolResultFuture.get(RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
         assertThat(toolResult).as("Should receive tool result after elicitation").isNotNull();
 
         JsonObject resultJson = Json.createReader(new StringReader(toolResult)).readObject();
@@ -608,29 +495,30 @@ public class MCPServerIntegrationTestCase {
     }
 
     @Test
-    @Order(16)
     public void testElicitationDeclineRoundTrip() throws Exception {
-        assertThat(sessionId).as("Session must be initialized first").isNotNull();
+        long toolCallId = nextId.getAndIncrement();
+        CompletableFuture<String> toolResultFuture = new CompletableFuture<>();
+        pendingResponses.put(toolCallId, toolResultFuture);
 
         String toolCallMessage = """
-                {"jsonrpc":"2.0","id":22,"method":"tools/call","params":{"name":"greet-with-name","arguments":{}}}""";
+                {"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":"greet-with-name","arguments":{}}}"""
+                .formatted(toolCallId);
 
         postToStreamable(toolCallMessage);
 
-        String elicitationJson = sseResponses.poll(10, TimeUnit.SECONDS);
+        String elicitationJson = serverInitiatedMessages.poll(RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
         assertThat(elicitationJson).as("Should receive elicitation/create request").isNotNull();
         assertThat(elicitationJson).as("Should be elicitation/create").contains("elicitation/create");
 
         JsonObject elicitationMessage = Json.createReader(new StringReader(elicitationJson)).readObject();
         long elicitationId = elicitationMessage.getJsonNumber("id").longValue();
 
-        // Client declines
         String clientResponse = """
                 {"jsonrpc":"2.0","id":%d,"result":{"action":"decline"}}"""
                 .formatted(elicitationId);
         postToStreamable(clientResponse);
 
-        String toolResult = sseResponses.poll(10, TimeUnit.SECONDS);
+        String toolResult = toolResultFuture.get(RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
         assertThat(toolResult).as("Should receive tool result after decline").isNotNull();
 
         JsonObject resultJson = Json.createReader(new StringReader(toolResult)).readObject();
@@ -639,29 +527,30 @@ public class MCPServerIntegrationTestCase {
     }
 
     @Test
-    @Order(17)
     public void testElicitationWithRegularArgsAndConfirmation() throws Exception {
-        assertThat(sessionId).as("Session must be initialized first").isNotNull();
+        long toolCallId = nextId.getAndIncrement();
+        CompletableFuture<String> toolResultFuture = new CompletableFuture<>();
+        pendingResponses.put(toolCallId, toolResultFuture);
 
         String toolCallMessage = """
-                {"jsonrpc":"2.0","id":23,"method":"tools/call","params":{"name":"add-with-confirmation","arguments":{"a":"5","b":"3"}}}""";
+                {"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":"add-with-confirmation","arguments":{"a":"5","b":"3"}}}"""
+                .formatted(toolCallId);
 
         postToStreamable(toolCallMessage);
 
-        String elicitationJson = sseResponses.poll(10, TimeUnit.SECONDS);
+        String elicitationJson = serverInitiatedMessages.poll(RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
         assertThat(elicitationJson).as("Should receive elicitation/create request").isNotNull();
         assertThat(elicitationJson).as("Should ask for confirmation").contains("Confirm");
 
         JsonObject elicitationMessage = Json.createReader(new StringReader(elicitationJson)).readObject();
         long elicitationId = elicitationMessage.getJsonNumber("id").longValue();
 
-        // Client confirms
         String clientResponse = """
                 {"jsonrpc":"2.0","id":%d,"result":{"action":"accept","content":{"confirm":true}}}"""
                 .formatted(elicitationId);
         postToStreamable(clientResponse);
 
-        String toolResult = sseResponses.poll(10, TimeUnit.SECONDS);
+        String toolResult = toolResultFuture.get(RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
         assertThat(toolResult).as("Should receive tool result").isNotNull();
 
         JsonObject resultJson = Json.createReader(new StringReader(toolResult)).readObject();
@@ -672,101 +561,72 @@ public class MCPServerIntegrationTestCase {
     // ==================== MCP-Protocol-Version Header Validation ====================
 
     @Test
-    @Order(29)
     public void testInvalidProtocolVersionHeaderReturns400() throws Exception {
-        assertThat(sessionId).as("Session must be initialized first").isNotNull();
-
+        long id = nextId.getAndIncrement();
         String pingMessage = """
-                {"jsonrpc":"2.0","id":50,"method":"ping"}""";
+                {"jsonrpc":"2.0","id":%d,"method":"ping"}""".formatted(id);
 
         int statusCode = postToStreamableWithProtocolVersion(pingMessage, "1999-01-01");
         assertThat(statusCode).as("Mismatched MCP-Protocol-Version should return 400").isEqualTo(400);
     }
 
     @Test
-    @Order(30)
     public void testValidProtocolVersionHeaderSucceeds() throws Exception {
-        assertThat(sessionId).as("Session must be initialized first").isNotNull();
+        long id = nextId.getAndIncrement();
+        CompletableFuture<String> future = new CompletableFuture<>();
+        pendingResponses.put(id, future);
 
         String pingMessage = """
-                {"jsonrpc":"2.0","id":51,"method":"ping"}""";
+                {"jsonrpc":"2.0","id":%d,"method":"ping"}""".formatted(id);
 
         int statusCode = postToStreamableWithProtocolVersion(pingMessage, "2025-03-26");
         assertThat(statusCode).as("Matching MCP-Protocol-Version should succeed").isEqualTo(200);
 
-        String response = sseResponses.poll(10, TimeUnit.SECONDS);
+        String response = future.get(RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
         assertThat(response).as("Ping should return a result").isNotNull();
         assertThat(response).as("Ping should contain result").contains("\"result\"");
     }
 
     @Test
-    @Order(31)
     public void testAbsentProtocolVersionHeaderSucceeds() throws Exception {
-        assertThat(sessionId).as("Session must be initialized first").isNotNull();
-
-        String pingMessage = """
-                {"jsonrpc":"2.0","id":52,"method":"ping"}""";
-
-        int statusCode = postToStreamable(pingMessage);
-        assertThat(statusCode).as("Absent MCP-Protocol-Version should succeed").isEqualTo(200);
-
-        String response = sseResponses.poll(10, TimeUnit.SECONDS);
-        assertThat(response).as("Ping should return a result").isNotNull();
-        assertThat(response).as("Ping should contain result").contains("\"result\"");
+        String response = sendAndReceive("ping", null);
+        assertThat(response).as("Ping should return a result").contains("\"result\"");
     }
 
     // ==================== Logging / McpLog Injection ====================
 
     @Test
-    @Order(40)
     public void testLoggingToolListedWithoutMcpLogParam() throws Exception {
-        assertThat(sessionId).as("Session must be initialized first").isNotNull();
-
-        String toolsListMessage = """
-                {"jsonrpc":"2.0","id":50,"method":"tools/list"}""";
-
-        postToStreamable(toolsListMessage);
-        String response = sseResponses.poll(10, TimeUnit.SECONDS);
-        assertThat(response).as("Should receive tools list response").isNotNull();
+        String response = sendAndReceive("tools/list", null);
         assertThat(response).as("Should list the log-test tool").contains("log-test");
         assertThat(response).as("McpLog must not appear in inputSchema").doesNotContain("McpLog");
         assertThat(response).as("McpLog must not appear as property name").doesNotContain("\"mcpLog\"");
     }
 
     @Test
-    @Order(41)
     public void testLoggingToolSendsNotification() throws Exception {
-        assertThat(sessionId).as("Session must be initialized first").isNotNull();
-
         // Set log level to DEBUG so all messages pass the filter
-        String setLevelMessage = """
-                {"jsonrpc":"2.0","id":51,"method":"logging/setLevel","params":{"level":"debug"}}""";
-        postToStreamable(setLevelMessage);
-        String setLevelResponse = sseResponses.poll(10, TimeUnit.SECONDS);
-        assertThat(setLevelResponse).as("Should receive setLevel response").isNotNull();
-        assertThat(setLevelResponse).as("setLevel should succeed").contains("\"result\"");
+        sendAndReceive("logging/setLevel", Json.createObjectBuilder()
+                .add("level", "debug")
+                .build());
 
-        // Call the log-test tool with level=info
+        // Call the log-test tool — expect both a notification and a tool result
+        long toolCallId = nextId.getAndIncrement();
+        CompletableFuture<String> toolResultFuture = new CompletableFuture<>();
+        pendingResponses.put(toolCallId, toolResultFuture);
+
         String toolCallMessage = """
-                {"jsonrpc":"2.0","id":52,"method":"tools/call","params":{"name":"log-test","arguments":{"level":"info"}}}""";
+                {"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":"log-test","arguments":{"level":"info"}}}"""
+                .formatted(toolCallId);
         postToStreamable(toolCallMessage);
 
-        // Expect the notification/message first, then the tool result
-        String firstMessage = sseResponses.poll(10, TimeUnit.SECONDS);
-        assertThat(firstMessage).as("Should receive first SSE message").isNotNull();
-        String secondMessage = sseResponses.poll(10, TimeUnit.SECONDS);
-        assertThat(secondMessage).as("Should receive second SSE message").isNotNull();
+        // The tool result arrives via the future (correlated by id)
+        String toolResult = toolResultFuture.get(RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        assertThat(toolResult).as("Should receive tool result").isNotNull();
 
-        // One of the two should be the notification, the other the tool result
-        String notification;
-        String toolResult;
-        if (firstMessage.contains("notifications/message")) {
-            notification = firstMessage;
-            toolResult = secondMessage;
-        } else {
-            notification = secondMessage;
-            toolResult = firstMessage;
-        }
+        // The notification arrives via serverInitiatedMessages (no correlated id)
+        String notification = serverInitiatedMessages.poll(RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        assertThat(notification).as("Should receive logging notification").isNotNull();
 
         // Verify the notification
         JsonObject notificationJson = Json.createReader(new StringReader(notification)).readObject();
@@ -784,65 +644,48 @@ public class MCPServerIntegrationTestCase {
     }
 
     @Test
-    @Order(42)
     public void testLoggingLevelFiltersMessages() throws Exception {
-        assertThat(sessionId).as("Session must be initialized first").isNotNull();
-
         // Set log level to ERROR so INFO messages are filtered out
-        String setLevelMessage = """
-                {"jsonrpc":"2.0","id":53,"method":"logging/setLevel","params":{"level":"error"}}""";
-        postToStreamable(setLevelMessage);
-        String setLevelResponse = sseResponses.poll(10, TimeUnit.SECONDS);
-        assertThat(setLevelResponse).as("Should receive setLevel response").isNotNull();
+        sendAndReceive("logging/setLevel", Json.createObjectBuilder()
+                .add("level", "error")
+                .build());
 
-        // Call the log-test tool with level=info — should be filtered
-        String toolCallMessage = """
-                {"jsonrpc":"2.0","id":54,"method":"tools/call","params":{"name":"log-test","arguments":{"level":"info"}}}""";
-        postToStreamable(toolCallMessage);
-
-        // Should only receive the tool result, no notification
-        String response = sseResponses.poll(10, TimeUnit.SECONDS);
-        assertThat(response).as("Should receive tool result").isNotNull();
+        // Call the log-test tool with level=info — notification should be filtered
+        String response = sendAndReceive("tools/call", Json.createObjectBuilder()
+                .add("name", "log-test")
+                .add("arguments", Json.createObjectBuilder().add("level", "info"))
+                .build());
 
         JsonObject resultJson = Json.createReader(new StringReader(response)).readObject();
         assertThat(resultJson.containsKey("result")).as("Should be a tool result, not a notification").isTrue();
         assertThat(resultJson.containsKey("method")).as("Should not be a notification").isFalse();
 
-        // Verify no extra notification arrived
-        String extra = sseResponses.poll(2, TimeUnit.SECONDS);
+        // Verify no notification arrived
+        String extra = serverInitiatedMessages.poll(2, TimeUnit.SECONDS);
         assertThat(extra).as("No notification should be sent when level is below threshold").isNull();
     }
 
     @Test
-    @Order(43)
     public void testLoggingErrorPassesWhenLevelIsError() throws Exception {
-        assertThat(sessionId).as("Session must be initialized first").isNotNull();
-
-        String setLevelMessage = """
-                {"jsonrpc":"2.0","id":59,"method":"logging/setLevel","params":{"level":"error"}}""";
-        postToStreamable(setLevelMessage);
-        String setLevelResponse = sseResponses.poll(10, TimeUnit.SECONDS);
-        assertThat(setLevelResponse).as("Should receive setLevel response").isNotNull();
+        sendAndReceive("logging/setLevel", Json.createObjectBuilder()
+                .add("level", "error")
+                .build());
 
         // Call log-test with level=error — should pass the filter
+        long toolCallId = nextId.getAndIncrement();
+        CompletableFuture<String> toolResultFuture = new CompletableFuture<>();
+        pendingResponses.put(toolCallId, toolResultFuture);
+
         String toolCallMessage = """
-                {"jsonrpc":"2.0","id":55,"method":"tools/call","params":{"name":"log-test","arguments":{"level":"error"}}}""";
+                {"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":"log-test","arguments":{"level":"error"}}}"""
+                .formatted(toolCallId);
         postToStreamable(toolCallMessage);
 
-        String firstMessage = sseResponses.poll(10, TimeUnit.SECONDS);
-        assertThat(firstMessage).as("Should receive first SSE message").isNotNull();
-        String secondMessage = sseResponses.poll(10, TimeUnit.SECONDS);
-        assertThat(secondMessage).as("Should receive second SSE message").isNotNull();
+        String toolResult = toolResultFuture.get(RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        assertThat(toolResult).as("Should receive tool result").isNotNull();
 
-        String notification;
-        String toolResult;
-        if (firstMessage.contains("notifications/message")) {
-            notification = firstMessage;
-            toolResult = secondMessage;
-        } else {
-            notification = secondMessage;
-            toolResult = firstMessage;
-        }
+        String notification = serverInitiatedMessages.poll(RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        assertThat(notification).as("Should receive logging notification").isNotNull();
 
         JsonObject notificationJson = Json.createReader(new StringReader(notification)).readObject();
         assertThat(notificationJson.getString("method")).as("Should be notifications/message").isEqualTo("notifications/message");
@@ -855,15 +698,10 @@ public class MCPServerIntegrationTestCase {
     }
 
     @Test
-    @Order(44)
     public void testLoggingSetLevelInvalidLevel() throws Exception {
-        assertThat(sessionId).as("Session must be initialized first").isNotNull();
-
-        String setLevelMessage = """
-                {"jsonrpc":"2.0","id":56,"method":"logging/setLevel","params":{"level":"nonexistent"}}""";
-        postToStreamable(setLevelMessage);
-        String response = sseResponses.poll(10, TimeUnit.SECONDS);
-        assertThat(response).as("Should receive error response").isNotNull();
+        String response = sendAndReceive("logging/setLevel", Json.createObjectBuilder()
+                .add("level", "nonexistent")
+                .build());
 
         JsonObject json = Json.createReader(new StringReader(response)).readObject();
         assertThat(json.containsKey("error")).as("Invalid level should return an error").isTrue();
@@ -871,15 +709,8 @@ public class MCPServerIntegrationTestCase {
     }
 
     @Test
-    @Order(45)
     public void testLoggingSetLevelMissingParams() throws Exception {
-        assertThat(sessionId).as("Session must be initialized first").isNotNull();
-
-        String setLevelMessage = """
-                {"jsonrpc":"2.0","id":57,"method":"logging/setLevel"}""";
-        postToStreamable(setLevelMessage);
-        String response = sseResponses.poll(10, TimeUnit.SECONDS);
-        assertThat(response).as("Should receive error response").isNotNull();
+        String response = sendAndReceive("logging/setLevel", null);
 
         JsonObject json = Json.createReader(new StringReader(response)).readObject();
         assertThat(json.containsKey("error")).as("Missing params should return an error").isTrue();
@@ -887,15 +718,8 @@ public class MCPServerIntegrationTestCase {
     }
 
     @Test
-    @Order(46)
     public void testLoggingSetLevelMissingLevel() throws Exception {
-        assertThat(sessionId).as("Session must be initialized first").isNotNull();
-
-        String setLevelMessage = """
-                {"jsonrpc":"2.0","id":58,"method":"logging/setLevel","params":{}}""";
-        postToStreamable(setLevelMessage);
-        String response = sseResponses.poll(10, TimeUnit.SECONDS);
-        assertThat(response).as("Should receive error response").isNotNull();
+        String response = sendAndReceive("logging/setLevel", Json.createObjectBuilder().build());
 
         JsonObject json = Json.createReader(new StringReader(response)).readObject();
         assertThat(json.containsKey("error")).as("Missing level should return an error").isTrue();
@@ -903,8 +727,48 @@ public class MCPServerIntegrationTestCase {
     }
 
     /**
+     * Dispatches an SSE event to the appropriate handler based on its JSON-RPC id.
+     * If the id matches a pending request, the corresponding future is completed.
+     * Otherwise, the event is queued as a server-initiated message.
+     */
+    private void dispatchSseEvent(String data) {
+        try {
+            JsonObject json = Json.createReader(new StringReader(data)).readObject();
+            boolean isResponse = json.containsKey("result") || json.containsKey("error");
+            if (isResponse && json.containsKey("id")) {
+                long id = json.getJsonNumber("id").longValue();
+                CompletableFuture<String> future = pendingResponses.remove(id);
+                if (future != null) {
+                    future.complete(data);
+                    return;
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to parse SSE event for id correlation, treating as server-initiated: " + data);
+        }
+        serverInitiatedMessages.offer(data);
+    }
+
+    private String sendAndReceive(String method, JsonObject params) throws Exception {
+        long id = nextId.getAndIncrement();
+        CompletableFuture<String> future = new CompletableFuture<>();
+        pendingResponses.put(id, future);
+
+        JsonObjectBuilder builder = Json.createObjectBuilder()
+                .add("jsonrpc", "2.0")
+                .add("id", id)
+                .add("method", method);
+        if (params != null) {
+            builder.add("params", params);
+        }
+
+        postToStreamable(builder.build().toString());
+        return future.get(RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+    }
+
+    /**
      * Sends a JSON-RPC message to the streamable endpoint using an existing session.
-     * The response will arrive on the SSE stream (sseResponses queue), not in the HTTP response body.
+     * The response will arrive on the SSE stream and be dispatched by id.
      */
     private int postToStreamable(String jsonBody) throws Exception {
         return postToStreamableWithProtocolVersion(jsonBody, null);
