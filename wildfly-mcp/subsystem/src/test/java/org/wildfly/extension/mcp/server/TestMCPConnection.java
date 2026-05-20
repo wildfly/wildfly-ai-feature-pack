@@ -93,4 +93,9 @@ public class TestMCPConnection implements MCPConnection {
     public void setLogLevel(McpLog.LogLevel level) {
         this.logLevel = level;
     }
+
+    @Override
+    public long lastActivity() {
+        return System.currentTimeMillis();
+    }
 }
