@@ -12,7 +12,7 @@
         <prop name="org.wildfly.rule.annotations" value="org.mcp_java.annotations.*"/>
     </props>
     <dependencies>
-        <layer name="mcp"/>
+        <layer name="ee-concurrency"/>
     </dependencies>
     <feature spec="subsystem.mcp">
         <feature spec="subsystem.mcp.mcp-server">
