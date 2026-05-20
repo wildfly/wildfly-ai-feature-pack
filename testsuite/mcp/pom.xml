@@ -15,32 +15,8 @@
     <description>Integration tests for WildFly MCP Server subsystem</description>
 
     <properties>
-        <version.junit>5.11.4</version.junit>
-        <version.arquillian>1.10.0.Final</version.arquillian>
-        <version.wildfly.arquillian>5.1.0.Final</version.wildfly.arquillian>
-        <version.assertj>3.26.3</version.assertj>
-        <version.maven.surefire>3.5.2</version.maven.surefire>
         <jboss.home>${project.build.directory}/server</jboss.home>
     </properties>
-
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>org.jboss.arquillian</groupId>
-                <artifactId>arquillian-bom</artifactId>
-                <version>${version.arquillian}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.junit</groupId>
-                <artifactId>junit-bom</artifactId>
-                <version>${version.junit}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
 
     <dependencies>
         <!-- JUnit 5 -->
@@ -145,7 +121,6 @@
             <plugin>
                 <groupId>org.wildfly.plugins</groupId>
                 <artifactId>wildfly-maven-plugin</artifactId>
-                <version>${version.wildfly.maven.plugin}</version>
                 <executions>
                     <execution>
                         <id>provision-server</id>
@@ -187,13 +162,6 @@
                         </configuration>
                     </execution>
                 </executions>
-            </plugin>
-
-            <!-- Maven Surefire Plugin -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>${version.maven.surefire}</version>
             </plugin>
         </plugins>
     </build>
