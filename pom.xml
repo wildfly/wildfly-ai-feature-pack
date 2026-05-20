@@ -51,16 +51,16 @@
         <version.org.wildfly.galleon-plugins>8.1.0.Final</version.org.wildfly.galleon-plugins>
         <version.wildfly.maven.plugin>5.1.5.Final</version.wildfly.maven.plugin>
 
-        <version.ai.djl>0.33.0</version.ai.djl>
+        <version.ai.djl>0.36.0</version.ai.djl>
         <version.com.azure.azure-ai-inference>1.0.0-beta.5</version.com.azure.azure-ai-inference>
-        <version.com.azure.azure-core>1.55.3</version.com.azure.azure-core>
-        <version.com.azure.azure-core-http-netty>1.15.11</version.com.azure.azure-core-http-netty>
-        <version.com.azure.azure-json>1.5.0</version.com.azure.azure-json>
-        <version.com.azure.azure-xml>1.2.0</version.com.azure.azure-xml>
+        <version.com.azure.azure-core>1.57.1</version.com.azure.azure-core>
+        <version.com.azure.azure-core-http-netty>1.16.3</version.com.azure.azure-core-http-netty>
+        <version.com.azure.azure-json>1.5.1</version.com.azure.azure-json>
+        <version.com.azure.azure-xml>1.2.1</version.com.azure.azure-xml>
         <version.com.dylibso.chicory>1.7.5</version.com.dylibso.chicory>
         <version.com.fasterxml.classmate>1.7.0</version.com.fasterxml.classmate>
         <version.com.fasterxml.jackson.annotations>2.21</version.com.fasterxml.jackson.annotations>
-        <version.com.fasterxml.jackson.core>2.21.2</version.com.fasterxml.jackson.core>
+        <version.com.fasterxml.jackson.core>2.21.3</version.com.fasterxml.jackson.core>
         <version.com.github.victools.jsonschema-generator>4.38.0</version.com.github.victools.jsonschema-generator>
         <version.com.google.apis>v1-rev20240821-2.0.0</version.com.google.apis>
         <version.com.knuddels.jtokkit>1.1.0</version.com.knuddels.jtokkit>
@@ -69,20 +69,20 @@
         <version.com.squareup.okio-jvm>3.6.0</version.com.squareup.okio-jvm>
         <version.com.squareup.retrofit2>2.9.0</version.com.squareup.retrofit2>
         <version.commons-compress>1.27.1</version.commons-compress>
-        <version.dev.langchain4j>1.12.2-beta22</version.dev.langchain4j>
-        <version.dev.langchain4j.cdi>1.1.0</version.dev.langchain4j.cdi>
-        <version.dev.langchain4j.community>1.12.2-beta22</version.dev.langchain4j.community>
-        <version.dev.langchain4j.core>1.12.2</version.dev.langchain4j.core>
-        <version.dev.langchain4j.embeddings>1.12.2-beta22</version.dev.langchain4j.embeddings>
-        <version.io.projectreactor.netty>1.0.45</version.io.projectreactor.netty>
-        <version.io.projectreactor.reactor-core>3.4.38</version.io.projectreactor.reactor-core>
+        <version.dev.langchain4j>1.15.0-beta25</version.dev.langchain4j>
+        <version.dev.langchain4j.cdi>1.3.0</version.dev.langchain4j.cdi>
+        <version.dev.langchain4j.community>1.15.0-beta25</version.dev.langchain4j.community>
+        <version.dev.langchain4j.core>1.15.0</version.dev.langchain4j.core>
+        <version.dev.langchain4j.embeddings>1.15.0-beta25</version.dev.langchain4j.embeddings>
+        <version.io.projectreactor.netty>1.2.10</version.io.projectreactor.netty>
+        <version.io.projectreactor.reactor-core>3.7.14</version.io.projectreactor.reactor-core>
         <version.io.weaviate.client>5.3.0</version.io.weaviate.client>
         <version.net.java.dev.jna>5.13.0</version.net.java.dev.jna>
         <version.org.extism.sdk.chicory-sdk>0.3.0</version.org.extism.sdk.chicory-sdk>
-        <version.org.jetbrains.kotlin>2.1.21</version.org.jetbrains.kotlin>
+        <version.org.jetbrains.kotlin>2.2.0</version.org.jetbrains.kotlin>
         <version.org.mcp-java>1.0.0-Beta1</version.org.mcp-java>
-        <version.org.neo4j.cypher>2025.2.3</version.org.neo4j.cypher>
-        <version.org.neo4j.driver>6.0.2</version.org.neo4j.driver>
+        <version.org.neo4j.cypher>2025.2.7</version.org.neo4j.cypher>
+        <version.org.neo4j.driver>6.0.5</version.org.neo4j.driver>
         <version.org.ow2.asm>9.9.1</version.org.ow2.asm>
         <version.org.reactivestreams.reactive-streams>1.0.4</version.org.reactivestreams.reactive-streams>
 
@@ -307,7 +307,7 @@
             <dependency>
                 <groupId>com.azure</groupId>
                 <artifactId>azure-core-serializer-json-jackson</artifactId>
-                <version>1.5.8</version>
+                <version>1.6.3</version>
                 <exclusions>
                     <exclusion>
                         <groupId>*</groupId>
