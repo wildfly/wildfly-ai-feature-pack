@@ -75,7 +75,6 @@ The feature pack provides 37 Galleon layers organized by functionality. For each
 * Support for web search:
   * `web-search-engines`: Web search engine integration
 * Support for [Model Context Protocol (MCP)](https://modelcontextprotocol.io/):
-  * `mcp`: Base MCP support layer
   * `mcp-client-sse`: MCP Client using the Server-Sent Events (SSE) transport
   * `mcp-client-stdio`: MCP Client using the Standard Input/Output (stdio) transport
   * `mcp-client-streable`: MCP Client using the Streamable transport
