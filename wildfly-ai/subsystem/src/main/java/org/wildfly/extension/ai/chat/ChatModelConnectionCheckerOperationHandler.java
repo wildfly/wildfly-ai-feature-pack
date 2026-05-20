@@ -14,6 +14,7 @@ import org.jboss.as.controller.OperationStepHandler;
 import org.jboss.as.controller.SimpleOperationDefinitionBuilder;
 import org.jboss.as.controller.access.management.SensitiveTargetAccessConstraintDefinition;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
+import org.jboss.as.version.Stability;
 import org.jboss.dmr.ModelNode;
 import org.wildfly.extension.ai.AILogger;
 import org.wildfly.extension.ai.injection.chat.WildFlyChatModelConfig;
@@ -34,6 +35,7 @@ public class ChatModelConnectionCheckerOperationHandler implements OperationStep
                 .setReplyType(STRING)
                 .setRuntimeOnly()
                 .setReadOnly()
+                .setStability(Stability.EXPERIMENTAL)
                 .addAccessConstraint(SensitiveTargetAccessConstraintDefinition.READ_WHOLE_CONFIG)
                 .build(), new ChatModelConnectionCheckerOperationHandler(registry));
     }

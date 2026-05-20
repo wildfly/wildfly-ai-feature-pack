@@ -21,6 +21,7 @@ import org.jboss.as.controller.descriptions.ParentResourceDescriptionResolver;
 import org.jboss.as.controller.operations.validation.IntRangeValidator;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
 import org.jboss.as.controller.registry.RuntimePackageDependency;
+import org.jboss.as.version.Stability;
 import org.jboss.dmr.ModelType;
 import org.wildfly.subsystem.resource.ChildResourceDefinitionRegistrar;
 import org.wildfly.subsystem.resource.ManagementResourceRegistrar;
@@ -33,39 +34,48 @@ public class Neo4jEmbeddingStoreProviderRegistrar implements ChildResourceDefini
     public static final SimpleAttributeDefinition DATABASE_NAME
             = new SimpleAttributeDefinitionBuilder("database-name", ModelType.STRING, true)
                     .setAllowExpression(true)
+                    .setStability(Stability.EXPERIMENTAL)
                     .build();
     public static final SimpleAttributeDefinition DIMENSION
             = new SimpleAttributeDefinitionBuilder("dimension", ModelType.INT, false)
                     .setAllowExpression(true)
                     .setValidator(IntRangeValidator.POSITIVE)
+                    .setStability(Stability.EXPERIMENTAL)
                     .build();
     public static final SimpleAttributeDefinition EMBEDDING_PROPERTY
             = new SimpleAttributeDefinitionBuilder("embedding-property", ModelType.STRING, true)
                     .setAllowExpression(true)
+                    .setStability(Stability.EXPERIMENTAL)
                     .build();
     public static final SimpleAttributeDefinition ID_PROPERTY
             = new SimpleAttributeDefinitionBuilder("id-property", ModelType.STRING, true)
                     .setAllowExpression(true)
+                    .setStability(Stability.EXPERIMENTAL)
                     .build();
     public static final SimpleAttributeDefinition INDEX_NAME
             = new SimpleAttributeDefinitionBuilder("index-name", ModelType.STRING, true)
                     .setAllowExpression(true)
+                    .setStability(Stability.EXPERIMENTAL)
                     .build();
     public static final SimpleAttributeDefinition LABEL
             = new SimpleAttributeDefinitionBuilder("label", ModelType.STRING, true)
                     .setAllowExpression(true)
+                    .setStability(Stability.EXPERIMENTAL)
                     .build();
     public static final SimpleAttributeDefinition METADATA_PREFIX
             = new SimpleAttributeDefinitionBuilder("metadata-prefix", ModelType.STRING, true)
                     .setAllowExpression(true)
+                    .setStability(Stability.EXPERIMENTAL)
                     .build();
     public static final SimpleAttributeDefinition RETRIEVAL_QUERY
             = new SimpleAttributeDefinitionBuilder("retrieval-query", ModelType.STRING, true)
                     .setAllowExpression(true)
+                    .setStability(Stability.EXPERIMENTAL)
                     .build();
     public static final SimpleAttributeDefinition TEXT_PROPERTY
             = new SimpleAttributeDefinitionBuilder("text-property", ModelType.STRING, true)
                     .setAllowExpression(true)
+                    .setStability(Stability.EXPERIMENTAL)
                     .build();
 
     public static final Collection<AttributeDefinition> ATTRIBUTES = List.of(BOLT_URL, CREDENTIAL_REFERENCE, DATABASE_NAME,

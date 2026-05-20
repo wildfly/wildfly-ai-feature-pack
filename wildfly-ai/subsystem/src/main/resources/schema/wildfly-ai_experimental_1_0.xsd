@@ -6,8 +6,8 @@
 -->
 
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
-           targetNamespace="urn:jboss:domain:ai:1.0"
-           xmlns="urn:jboss:domain:ai:1.0"
+           targetNamespace="urn:jboss:domain:ai:experimental:1.0"
+           xmlns="urn:jboss:domain:ai:experimental:1.0"
            xmlns:credential-reference="urn:wildfly:credential-reference:1.1"
            elementFormDefault="qualified"
            attributeFormDefault="unqualified"

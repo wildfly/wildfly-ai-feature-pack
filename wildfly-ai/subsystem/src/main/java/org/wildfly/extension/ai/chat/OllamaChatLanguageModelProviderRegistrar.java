@@ -27,6 +27,7 @@ import org.jboss.as.controller.SimpleAttributeDefinitionBuilder;
 import org.jboss.as.controller.descriptions.ParentResourceDescriptionResolver;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
 import org.jboss.as.controller.registry.RuntimePackageDependency;
+import org.jboss.as.version.Stability;
 import org.jboss.dmr.ModelType;
 
 import static org.wildfly.extension.ai.AIAttributeDefinitions.RESPONSE_FORMAT;
@@ -45,12 +46,15 @@ public class OllamaChatLanguageModelProviderRegistrar implements ChildResourceDe
 
     public static final SimpleAttributeDefinition NUM_PREDICT = new SimpleAttributeDefinitionBuilder("num-predict", ModelType.INT, true)
             .setAllowExpression(true)
+            .setStability(Stability.EXPERIMENTAL)
             .build();
     public static final SimpleAttributeDefinition REPEAT_PENALTY = new SimpleAttributeDefinitionBuilder("repeat-penalty", ModelType.DOUBLE, true)
             .setAllowExpression(true)
+            .setStability(Stability.EXPERIMENTAL)
             .build();
     public static final SimpleAttributeDefinition TOP_K = new SimpleAttributeDefinitionBuilder("top-k", ModelType.INT, true)
             .setAllowExpression(true)
+            .setStability(Stability.EXPERIMENTAL)
             .build();
 
     public static final Collection<AttributeDefinition> ATTRIBUTES = List.of(BASE_URL, CONNECT_TIMEOUT,

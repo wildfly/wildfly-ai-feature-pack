@@ -17,6 +17,7 @@ import org.jboss.as.controller.SimpleAttributeDefinitionBuilder;
 import org.jboss.as.controller.StringListAttributeDefinition;
 import org.jboss.as.controller.descriptions.ParentResourceDescriptionResolver;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
+import org.jboss.as.version.Stability;
 import org.jboss.dmr.ModelType;
 import org.wildfly.subsystem.resource.ChildResourceDefinitionRegistrar;
 import org.wildfly.subsystem.resource.ManagementResourceRegistrar;
@@ -29,10 +30,12 @@ public class McpClientStdioProviderRegistrar implements ChildResourceDefinitionR
     public static final StringListAttributeDefinition COMMAND_ARGS = new StringListAttributeDefinition.Builder("args")
             .setAllowExpression(true)
             .setMinSize(0)
+            .setStability(Stability.EXPERIMENTAL)
             .build();
     public static final SimpleAttributeDefinition COMMAND = SimpleAttributeDefinitionBuilder.create("cmd", ModelType.STRING, false)
             .setAllowExpression(true)
             .setRestartAllServices()
+            .setStability(Stability.EXPERIMENTAL)
             .build();
 
     public static final Collection<AttributeDefinition> ATTRIBUTES = List.of(COMMAND, COMMAND_ARGS);

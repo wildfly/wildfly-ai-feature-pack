@@ -22,6 +22,7 @@ import org.jboss.as.controller.descriptions.ParentResourceDescriptionResolver;
 import org.jboss.as.controller.operations.validation.EnumValidator;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
 import org.jboss.as.controller.registry.RuntimePackageDependency;
+import org.jboss.as.version.Stability;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
 import org.wildfly.subsystem.resource.ChildResourceDefinitionRegistrar;
@@ -35,20 +36,24 @@ public class ChromaEmbeddingStoreProviderRegistrar implements ChildResourceDefin
     protected static final SimpleAttributeDefinition API_VERSION = new SimpleAttributeDefinitionBuilder("api-version", ModelType.STRING, false)
             .setValidator(EnumValidator.create(ChromaAPIVersion.class))
             .setAllowExpression(true)
+            .setStability(Stability.EXPERIMENTAL)
             .build();
     protected static final SimpleAttributeDefinition COLLECTION_NAME
             = new SimpleAttributeDefinitionBuilder("collection-name", ModelType.STRING, true)
                     .setAllowExpression(true)
+                    .setStability(Stability.EXPERIMENTAL)
                     .build();
     protected static final SimpleAttributeDefinition DATABASE_NAME
             = new SimpleAttributeDefinitionBuilder("database-name", ModelType.STRING, true)
                     .setDefaultValue(new ModelNode("default"))
                     .setAllowExpression(true)
+                    .setStability(Stability.EXPERIMENTAL)
                     .build();
     protected static final SimpleAttributeDefinition TENANT_NAME
             = new SimpleAttributeDefinitionBuilder("tenant-name", ModelType.STRING, true)
                     .setDefaultValue(new ModelNode("default"))
                     .setAllowExpression(true)
+                    .setStability(Stability.EXPERIMENTAL)
                     .build();
 
     private final ResourceDescriptor descriptor;

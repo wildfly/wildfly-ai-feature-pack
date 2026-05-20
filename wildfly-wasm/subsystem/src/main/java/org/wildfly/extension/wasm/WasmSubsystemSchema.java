@@ -10,6 +10,7 @@ import org.jboss.as.controller.persistence.xml.SubsystemResourceRegistrationXMLE
 import org.jboss.as.controller.persistence.xml.SubsystemResourceXMLSchema;
 import org.jboss.as.controller.xml.VersionedNamespace;
 import org.jboss.as.controller.xml.XMLCardinality;
+import org.jboss.as.version.Stability;
 import org.jboss.staxmapper.IntVersion;
 
 /**
@@ -23,7 +24,7 @@ enum WasmSubsystemSchema implements SubsystemResourceXMLSchema<WasmSubsystemSche
     private final ResourceXMLParticleFactory factory = ResourceXMLParticleFactory.newInstance(this);
 
     WasmSubsystemSchema(int major, int minor) {
-        this.namespace = SubsystemSchema.createLegacySubsystemURN(WasmSubsystemRegistrar.NAME, new IntVersion(major, minor));
+        this.namespace = SubsystemSchema.createLegacySubsystemURN(WasmSubsystemRegistrar.NAME, Stability.EXPERIMENTAL, new IntVersion(major, minor));
     }
 
     @Override

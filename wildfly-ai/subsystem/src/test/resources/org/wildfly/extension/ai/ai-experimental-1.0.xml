@@ -3,7 +3,7 @@
 ~ SPDX-License-Identifier: Apache-2.0
 -->
 
-<subsystem xmlns="urn:jboss:domain:ai:1.0">
+<subsystem xmlns="urn:jboss:domain:ai:experimental:1.0">
     <chat-language-models>
         <gemini-chat-model name="gemini" api-key="${env.GEMINI_API_KEY:key}" include-code-execution-output="true" harassment="${org.wildfly.ai.gemini.harassment,env.GEMINI_HARASSMENT:BLOCK_LOW_AND_ABOVE}" log-requests="${org.wildfly.ai.gemini.chat.log,env.GEMINI_CHAT_LOG:true}" log-responses="${org.wildfly.ai.gemini.chat.log,env.GEMINI_CHAT_LOG:true}" model-name="${org.wildfly.ai.gemini.chat.model.name,env.GEMINI_CHAT_MODEL_NAME:gpt-4o-mini}" streaming="false" temperature="${org.wildfly.ai.gemini.chat.temperature,env.GEMINI_CHAT_TEMPERATURE:0.9}" executor-service="default"/>
         <github-chat-model name="github" api-key="${env.GITHUB_API_KEY:key}" endpoint="${org.wildfly.ai.github.chat.url,env.GITHUB_CHAT_URL:https://models.inference.ai.azure.com}" log-requests-responses="${org.wildfly.ai.github.chat.log,env.GITHUB_CHAT_LOG:true}" model-name="${org.wildfly.ai.github.chat.model.name,env.GITHUB_CHAT_MODEL_NAME:gpt-4o-mini}" streaming="false" temperature="${org.wildfly.ai.github.chat.temperature,env.GITHUB_CHAT_TEMPERATURE:0.9}"/>

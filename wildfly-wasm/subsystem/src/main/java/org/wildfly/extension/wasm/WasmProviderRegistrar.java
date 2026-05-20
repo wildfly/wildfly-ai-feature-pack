@@ -20,6 +20,7 @@ import org.jboss.as.controller.descriptions.ParentResourceDescriptionResolver;
 import org.jboss.as.controller.operations.validation.StringLengthValidator;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
 import org.jboss.as.controller.services.path.PathManager;
+import org.jboss.as.version.Stability;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
 import org.wildfly.subsystem.resource.ChildResourceDefinitionRegistrar;
@@ -36,32 +37,38 @@ public class WasmProviderRegistrar implements ChildResourceDefinitionRegistrar {
                     .setAllowExpression(true)
                     .setValidator(new StringLengthValidator(1, Integer.MAX_VALUE, false, true))
                     .addArbitraryDescriptor(FILESYSTEM_PATH, ModelNode.TRUE)
+                    .setStability(Stability.EXPERIMENTAL)
                     .build();
     protected static final SimpleAttributeDefinition WASM_RELATIVE_TO
             = new SimpleAttributeDefinitionBuilder("relative-to", ModelType.STRING, true)
                     .setXmlName("relative-to")
                     .setValidator(new StringLengthValidator(1, Integer.MAX_VALUE, true, false))
                     .setCapabilityReference(PathManager.PATH_SERVICE_DESCRIPTOR.getName())
+                    .setStability(Stability.EXPERIMENTAL)
                     .build();
     protected static final SimpleAttributeDefinition WASM_AOT
             = new SimpleAttributeDefinitionBuilder("use-aot", ModelType.BOOLEAN, true)
                     .setAllowExpression(true)
                     .setDefaultValue(ModelNode.TRUE)
+                    .setStability(Stability.EXPERIMENTAL)
                     .build();
     protected static final SimpleAttributeDefinition WASM_MEMORY_CONSTRAINTS_MINIMAL
             = new SimpleAttributeDefinitionBuilder("min-memory-contraint", ModelType.INT, true)
                     .setAllowExpression(true)
                     .setValidator(IntRangeValidator.POSITIVE)
+                    .setStability(Stability.EXPERIMENTAL)
                     .build();
     protected static final SimpleAttributeDefinition WASM_MEMORY_CONSTRAINTS_MAXIMAL
             = new SimpleAttributeDefinitionBuilder("max-memory-contraint", ModelType.INT, true)
                     .setAllowExpression(true)
                     .setValidator(IntRangeValidator.POSITIVE)
+                    .setStability(Stability.EXPERIMENTAL)
                     .build();
     protected static final StringListAttributeDefinition WASM_ALLOWED_HOSTS
             = new StringListAttributeDefinition.Builder("allowed-hosts")
                     .setAllowExpression(true)
                     .setRequired(false)
+                    .setStability(Stability.EXPERIMENTAL)
                     .build();
 
     public static final Collection<AttributeDefinition> ATTRIBUTES = List.of(WASM_ALLOWED_HOSTS, WASM_AOT, 

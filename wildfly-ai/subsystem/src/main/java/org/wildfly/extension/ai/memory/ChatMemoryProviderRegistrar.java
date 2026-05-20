@@ -16,6 +16,7 @@ import org.jboss.as.controller.SimpleAttributeDefinition;
 import org.jboss.as.controller.SimpleAttributeDefinitionBuilder;
 import org.jboss.as.controller.descriptions.ParentResourceDescriptionResolver;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
+import org.jboss.as.version.Stability;
 import org.jboss.dmr.ModelType;
 
 import org.jboss.as.controller.operations.validation.EnumValidator;
@@ -31,14 +32,17 @@ public class ChatMemoryProviderRegistrar implements ChildResourceDefinitionRegis
     public static final SimpleAttributeDefinition USE_HTTP_SESSION = new SimpleAttributeDefinitionBuilder("use-http-session", ModelType.BOOLEAN, true)
             .setDefaultValue(ModelNode.TRUE)
             .setAllowExpression(true)
+            .setStability(Stability.EXPERIMENTAL)
             .build();
     public static final SimpleAttributeDefinition SIZE = new SimpleAttributeDefinitionBuilder("size", ModelType.INT, false)
             .setAllowExpression(true)
             .setValidator(IntRangeValidator.POSITIVE)
+            .setStability(Stability.EXPERIMENTAL)
             .build();
     public static final SimpleAttributeDefinition TYPE = new SimpleAttributeDefinitionBuilder("type", ModelType.STRING, false)
             .setAllowExpression(true)
             .setValidator(EnumValidator.create(org.wildfly.extension.ai.injection.memory.WildFlyChatMemoryProviderConfig.ChatMemoryType.class))
+            .setStability(Stability.EXPERIMENTAL)
             .build();
 
 

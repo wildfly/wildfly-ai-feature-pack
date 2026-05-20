@@ -32,6 +32,7 @@ import org.jboss.as.controller.SimpleAttributeDefinitionBuilder;
 import org.jboss.as.controller.descriptions.ParentResourceDescriptionResolver;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
 import org.jboss.as.controller.registry.RuntimePackageDependency;
+import org.jboss.as.version.Stability;
 import org.jboss.dmr.ModelType;
 import org.wildfly.extension.ai.injection.chat.WildFlyChatModelConfig;
 import org.wildfly.service.capture.ValueExecutorRegistry;
@@ -46,53 +47,68 @@ public class GeminiChatLanguageModelProviderRegistrar implements ChildResourceDe
     private static final String[] THRESHOLDS = new String[]{"HARM_BLOCK_THRESHOLD_UNSPECIFIED", "BLOCK_LOW_AND_ABOVE", "BLOCK_MEDIUM_AND_ABOVE", "BLOCK_ONLY_HIGH", "BLOCK_NONE"};
     public static final SimpleAttributeDefinition ALLOWED_CODE_EXECUTION = new SimpleAttributeDefinitionBuilder("allowed-code-execution", ModelType.BOOLEAN, true)
             .setAllowExpression(true)
+            .setStability(Stability.EXPERIMENTAL)
             .build();
     public static final SimpleAttributeDefinition CIVIC_INTEGRITY = new SimpleAttributeDefinitionBuilder("civic-integrity", ModelType.STRING, true)
             .setAllowedValues(THRESHOLDS)
             .setAllowExpression(true)
+            .setStability(Stability.EXPERIMENTAL)
             .build();
     public static final SimpleAttributeDefinition DANGEROUS_CONTENT = new SimpleAttributeDefinitionBuilder("dangerous-content", ModelType.STRING, true)
             .setAllowedValues(THRESHOLDS)
             .setAllowExpression(true)
+            .setStability(Stability.EXPERIMENTAL)
             .build();
     public static final SimpleAttributeDefinition ENABLE_ENHANCED_CIVIC_ANSWERS = new SimpleAttributeDefinitionBuilder("enable-enhanced-civic-answers", ModelType.BOOLEAN, true)
             .setAllowExpression(true)
+            .setStability(Stability.EXPERIMENTAL)
             .build();
     public static final SimpleAttributeDefinition HARASSMENT = new SimpleAttributeDefinitionBuilder("harassment", ModelType.STRING, true)
             .setAllowedValues(THRESHOLDS)
             .setAllowExpression(true)
+            .setStability(Stability.EXPERIMENTAL)
             .build();
     public static final SimpleAttributeDefinition HATE_SPEECH = new SimpleAttributeDefinitionBuilder("hate-speech", ModelType.STRING, true)
             .setAllowedValues(THRESHOLDS)
             .setAllowExpression(true)
+            .setStability(Stability.EXPERIMENTAL)
             .build();
     public static final SimpleAttributeDefinition INCLUDE_CODE_EXECUTION_OUTPUT = new SimpleAttributeDefinitionBuilder("include-code-execution-output", ModelType.BOOLEAN, true)
             .setAllowExpression(true)
+            .setStability(Stability.EXPERIMENTAL)
             .build();
     public static final SimpleAttributeDefinition INCLUDE_THOUGHTS = new SimpleAttributeDefinitionBuilder("include-thoughts", ModelType.BOOLEAN, true)
             .setAllowExpression(true)
+            .setStability(Stability.EXPERIMENTAL)
             .build();
     public static final SimpleAttributeDefinition LOG_PROBS = new SimpleAttributeDefinitionBuilder("log-probs", ModelType.INT, true)
             .setAllowExpression(true)
+            .setStability(Stability.EXPERIMENTAL)
             .build();
     public static final SimpleAttributeDefinition MAX_OUTPUT_TOKEN = new SimpleAttributeDefinitionBuilder("max-output-token", ModelType.INT, true)
             .setAllowExpression(true)
+            .setStability(Stability.EXPERIMENTAL)
             .build();
     public static final SimpleAttributeDefinition RESPONSE_LOG_PROBS = new SimpleAttributeDefinitionBuilder("response-log-probs", ModelType.BOOLEAN, true)
             .setAllowExpression(true)
+            .setStability(Stability.EXPERIMENTAL)
             .build();
     public static final SimpleAttributeDefinition RETURN_THINKING = new SimpleAttributeDefinitionBuilder("return-thinking", ModelType.BOOLEAN, true)
             .setAllowExpression(true)
+            .setStability(Stability.EXPERIMENTAL)
             .build();
     public static final SimpleAttributeDefinition SEXUALLY_EXPLICIT = new SimpleAttributeDefinitionBuilder("sexually-explicit", ModelType.STRING, true)
             .setAllowedValues(THRESHOLDS)
             .setAllowExpression(true)
+            .setStability(Stability.EXPERIMENTAL)
             .build();
     public static final SimpleAttributeDefinition THINKING_BUDGET = new SimpleAttributeDefinitionBuilder("thinking-budget", ModelType.INT, true)
             .setAllowExpression(true)
+            .setStability(Stability.EXPERIMENTAL)
             .build();
     public static final SimpleAttributeDefinition TOP_K = new SimpleAttributeDefinitionBuilder("top-k", ModelType.INT, true)
             .setAllowExpression(true)
+            .setStability(Stability.EXPERIMENTAL)
             .build();
 
 
