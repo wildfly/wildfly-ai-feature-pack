@@ -17,7 +17,6 @@ import org.jboss.as.controller.SimpleAttributeDefinition;
 import org.jboss.as.controller.SimpleAttributeDefinitionBuilder;
 import org.jboss.as.controller.descriptions.ParentResourceDescriptionResolver;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
-import org.jboss.as.version.Stability;
 import org.jboss.dmr.ModelType;
 import org.wildfly.subsystem.resource.ChildResourceDefinitionRegistrar;
 import org.wildfly.subsystem.resource.ManagementResourceRegistrar;
@@ -31,23 +30,19 @@ public class MCPEndpointConfigurationProviderRegistrar implements ChildResourceD
     public static final SimpleAttributeDefinition SSE_PATH = SimpleAttributeDefinitionBuilder.create("sse-path", ModelType.STRING, false)
             .setAllowExpression(true)
             .setRestartAllServices()
-            .setStability(Stability.EXPERIMENTAL)
             .build();
     public static final SimpleAttributeDefinition MESSAGES_PATH = SimpleAttributeDefinitionBuilder.create("messages-path", ModelType.STRING, false)
             .setAllowExpression(true)
             .setRestartAllServices()
-            .setStability(Stability.EXPERIMENTAL)
             .build();
     public static final SimpleAttributeDefinition STREAMABLE_PATH = SimpleAttributeDefinitionBuilder.create("streamable-path", ModelType.STRING, false)
             .setAllowExpression(true)
             .setRestartAllServices()
-            .setStability(Stability.EXPERIMENTAL)
             .build();
     public static final SimpleAttributeDefinition PAGE_SIZE = SimpleAttributeDefinitionBuilder.create("page-size", ModelType.INT, true)
             .setAllowExpression(true)
             .setDefaultValue(new org.jboss.dmr.ModelNode(0))
             .setRestartAllServices()
-            .setStability(Stability.EXPERIMENTAL)
             .build();
     public static final SimpleAttributeDefinition TIMEOUT = SimpleAttributeDefinitionBuilder.create("timeout", ModelType.LONG, true)
             .setAllowExpression(true)

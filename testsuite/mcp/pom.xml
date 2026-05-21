@@ -130,9 +130,9 @@
                         </goals>
                         <configuration>
                             <provisioning-file>${project.build.testOutputDirectory}/provisioning.xml</provisioning-file>
-                            <stability>experimental</stability>
                             <galleon-options>
                                 <jboss-fork-embedded>true</jboss-fork-embedded>
+                                <stability-level>default</stability-level>
                             </galleon-options>
                         </configuration>
                     </execution>

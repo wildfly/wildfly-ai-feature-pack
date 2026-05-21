@@ -11,7 +11,7 @@
             <property name="managementPort">9990</property>
             <property name="startupTimeoutInSeconds">120</property>
             <property name="allowConnectingToRunningServer">false</property>
-            <property name="jbossArguments">--stability=experimental</property>
+            <property name="jbossArguments">--stability=default</property>
         </configuration>
     </container>
 

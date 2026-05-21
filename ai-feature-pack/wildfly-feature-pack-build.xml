@@ -4,6 +4,7 @@
 -->
 
 <build xmlns="urn:wildfly:feature-pack-build:3.5" producer="org.wildfly.generative-ai:wildfly-ai-feature-pack">
+
     <transitive>
         <dependency group-id="org.wildfly" artifact-id="wildfly-ee-galleon-pack" allowedFamily="wildfly:jakarta-ee-10+">
             <name>org.wildfly:wildfly-ee-galleon-pack</name>

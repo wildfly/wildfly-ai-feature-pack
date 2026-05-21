@@ -27,6 +27,6 @@ public class MCPSubsystemTestCase extends AbstractSubsystemSchemaTest<MCPSubsyst
 
     @Override
     protected AdditionalInitialization createAdditionalInitialization() {
-        return AdditionalInitialization.withCapabilities(Stability.EXPERIMENTAL);
+        return AdditionalInitialization.withCapabilities(Stability.DEFAULT);
     }
 }

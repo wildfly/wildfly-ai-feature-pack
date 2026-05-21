@@ -29,7 +29,7 @@ class MCPSubsystemRegistrar implements SubsystemResourceDefinitionRegistrar {
 
     static final String NAME = "mcp";
     public static final RuntimeCapability<Void> MCP_CAPABILITY = RuntimeCapability.Builder.of(MCP_CAPABILITY_NAME).setAllowMultipleRegistrations(false).build();
-    static final SubsystemResourceRegistration REGISTRATION = SubsystemResourceRegistration.of(NAME, Stability.EXPERIMENTAL);
+    static final SubsystemResourceRegistration REGISTRATION = SubsystemResourceRegistration.of(NAME, Stability.DEFAULT);
     static final ParentResourceDescriptionResolver RESOLVER = new SubsystemResourceDescriptionResolver(NAME, MCPSubsystemRegistrar.class);
     private static final int PHASE_DEPENDENCIES_MCP = 0x1940;
     private static final int PHASE_POST_MODULE_MCP = 0x3840;

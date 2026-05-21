@@ -25,7 +25,7 @@ enum MCPSubsystemSchema implements SubsystemResourceXMLSchema<MCPSubsystemSchema
     private final ResourceXMLParticleFactory factory = ResourceXMLParticleFactory.newInstance(this);
 
     MCPSubsystemSchema(int major, int minor) {
-        this.namespace = SubsystemSchema.createLegacySubsystemURN(MCPSubsystemRegistrar.NAME, Stability.EXPERIMENTAL, new IntVersion(major, minor));
+        this.namespace = SubsystemSchema.createLegacySubsystemURN(MCPSubsystemRegistrar.NAME, Stability.DEFAULT, new IntVersion(major, minor));
     }
 
     @Override
