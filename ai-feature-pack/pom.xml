@@ -36,10 +36,6 @@
         </dependency>
         <dependency>
             <groupId>org.mcp-java</groupId>
-            <artifactId>mcp-annotations</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.mcp-java</groupId>
             <artifactId>mcp-model</artifactId>
         </dependency>
         <dependency>

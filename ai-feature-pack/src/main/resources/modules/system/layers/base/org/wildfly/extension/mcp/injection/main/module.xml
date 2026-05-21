@@ -14,7 +14,6 @@
 
     <resources>
         <artifact name="${org.wildfly.generative-ai:wildfly-mcp-injection}"/>
-        <artifact name="${org.mcp-java:mcp-annotations}"/>
         <artifact name="${org.mcp-java:mcp-model}"/>
         <artifact name="${org.mcp-java:mcp-server-api}"/>
     </resources>

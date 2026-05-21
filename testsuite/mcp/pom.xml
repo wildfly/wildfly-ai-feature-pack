@@ -74,12 +74,7 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- MCP annotations for test beans -->
-        <dependency>
-            <groupId>org.mcp-java</groupId>
-            <artifactId>mcp-annotations</artifactId>
-            <scope>provided</scope>
-        </dependency>
+        <!-- MCP server API for test beans -->
         <dependency>
             <groupId>org.mcp-java</groupId>
             <artifactId>mcp-model</artifactId>

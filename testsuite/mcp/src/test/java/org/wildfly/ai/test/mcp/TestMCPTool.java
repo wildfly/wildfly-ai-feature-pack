@@ -4,8 +4,8 @@
  */
 package org.wildfly.ai.test.mcp;
 
-import org.mcp_java.annotations.tools.Tool;
-import org.mcp_java.annotations.tools.ToolArg;
+import org.mcp_java.server.tools.Tool;
+import org.mcp_java.server.tools.ToolArg;
 
 public class TestMCPTool {
 

@@ -80,7 +80,7 @@
         <version.net.java.dev.jna>5.13.0</version.net.java.dev.jna>
         <version.org.extism.sdk.chicory-sdk>0.3.0</version.org.extism.sdk.chicory-sdk>
         <version.org.jetbrains.kotlin>2.2.0</version.org.jetbrains.kotlin>
-        <version.org.mcp-java>1.0.0-Beta1</version.org.mcp-java>
+        <version.org.mcp-java>1.0.0-Beta2</version.org.mcp-java>
         <version.org.neo4j.cypher>2025.2.7</version.org.neo4j.cypher>
         <version.org.neo4j.driver>6.0.5</version.org.neo4j.driver>
         <version.org.ow2.asm>9.9.1</version.org.ow2.asm>
@@ -146,17 +146,6 @@
                 <groupId>${project.groupId}</groupId>
                 <artifactId>wildfly-ai-subsystem</artifactId>
                 <version>${project.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>*</groupId>
-                        <artifactId>*</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>org.mcp-java</groupId>
-                <artifactId>mcp-annotations</artifactId>
-                <version>${version.org.mcp-java}</version>
                 <exclusions>
                     <exclusion>
                         <groupId>*</groupId>
