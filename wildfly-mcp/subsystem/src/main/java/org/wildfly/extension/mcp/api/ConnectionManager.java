@@ -71,7 +71,7 @@ public class ConnectionManager {
         }
         for (String id : stale) {
             Logger.getLogger(ConnectionManager.class.getName()).log(Level.INFO,
-                    "Closing stale MCP connection [{0}] due to inactivity timeout", id);
+                    "Closing stale MCP connection [{0}] due to inactivity idleTimeout", id);
             remove(id);
         }
     }

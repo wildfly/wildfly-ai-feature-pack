@@ -9,7 +9,7 @@ import static org.wildfly.extension.mcp.MCPEndpointConfigurationProviderRegistra
 import static org.wildfly.extension.mcp.MCPEndpointConfigurationProviderRegistrar.PAGE_SIZE;
 import static org.wildfly.extension.mcp.MCPEndpointConfigurationProviderRegistrar.SSE_PATH;
 import static org.wildfly.extension.mcp.MCPEndpointConfigurationProviderRegistrar.STREAMABLE_PATH;
-import static org.wildfly.extension.mcp.MCPEndpointConfigurationProviderRegistrar.TIMEOUT;
+import static org.wildfly.extension.mcp.MCPEndpointConfigurationProviderRegistrar.IDLE_TIMEOUT;
 
 import java.util.function.Supplier;
 import org.jboss.as.controller.OperationContext;
@@ -23,15 +23,15 @@ public class MCPEndpointConfigurationProviderServiceConfigurator implements Reso
 
     @Override
     public ResourceServiceInstaller configure(OperationContext context, ModelNode model) throws OperationFailedException {
-        final String ssePath = SSE_PATH.resolveModelAttribute(context, model).asString("sse");
-        final String messagesPath = MESSAGES_PATH.resolveModelAttribute(context, model).asString("messages");
-        final String streamablePath = STREAMABLE_PATH.resolveModelAttribute(context, model).asString("streamable");
+        final String ssePath = SSE_PATH.resolveModelAttribute(context, model).asString();
+        final String messagesPath = MESSAGES_PATH.resolveModelAttribute(context, model).asString();
+        final String streamablePath = STREAMABLE_PATH.resolveModelAttribute(context, model).asString();
         final int pageSize = PAGE_SIZE.resolveModelAttribute(context, model).asInt(0);
-        final long timeout = TIMEOUT.resolveModelAttribute(context, model).asLong(1800L);
+        final long idleTimeout = IDLE_TIMEOUT.resolveModelAttribute(context, model).asLong(1800L);
         Supplier<MCPEndpointConfiguration> factory = new Supplier<>() {
             @Override
             public MCPEndpointConfiguration get() {
-                return new MCPEndpointConfiguration(ssePath, messagesPath, streamablePath, pageSize, timeout);
+                return new MCPEndpointConfiguration(ssePath, messagesPath, streamablePath, pageSize, idleTimeout);
             }
         };
         return CapabilityServiceInstaller.builder(MCP_SERVER_PROVIDER_CAPABILITY, factory)

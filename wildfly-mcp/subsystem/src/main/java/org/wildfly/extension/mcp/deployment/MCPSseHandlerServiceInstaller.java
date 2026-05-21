@@ -95,7 +95,7 @@ public class MCPSseHandlerServiceInstaller implements DeploymentServiceInstaller
         Runnable start = new Runnable() {
             @Override
             public void run() {
-                connectionManager.start(configuration.timeout(), lookupScheduledExecutorService());
+                connectionManager.start(configuration.idleTimeout(), lookupScheduledExecutorService());
                 if (oidcSecured) {
                     HttpAuthenticationFactory httpAuthenticationFactory = HttpAuthenticationFactory.builder()
                             .setFactory(getHttpServerAuthenticationMechanismFactory(deploymentUnit))

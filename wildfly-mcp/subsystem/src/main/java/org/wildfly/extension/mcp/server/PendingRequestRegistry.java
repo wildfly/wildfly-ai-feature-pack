@@ -68,7 +68,7 @@ public class PendingRequestRegistry {
 
     /**
      * Removes the pending future for {@code id} without completing it.
-     * Used for timeout cleanup.
+     * Used for idleTimeout cleanup.
      *
      * @return {@code true} if a pending entry was removed
      */

@@ -17,9 +17,6 @@
     <feature spec="subsystem.mcp">
         <feature spec="subsystem.mcp.mcp-server">
             <param name="mcp-server" value="server"/>
-            <param name="sse-path" value="sse"/>
-            <param name="messages-path" value="messages"/>
-            <param name="streamable-path" value="stream"/>
         </feature>
     </feature>
 </layer-spec>

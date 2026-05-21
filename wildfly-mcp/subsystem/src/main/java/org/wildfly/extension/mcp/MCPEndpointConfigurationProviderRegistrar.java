@@ -15,8 +15,12 @@ import org.jboss.as.controller.ResourceDefinition;
 import org.jboss.as.controller.ResourceRegistration;
 import org.jboss.as.controller.SimpleAttributeDefinition;
 import org.jboss.as.controller.SimpleAttributeDefinitionBuilder;
+import org.jboss.as.controller.client.helpers.MeasurementUnit;
 import org.jboss.as.controller.descriptions.ParentResourceDescriptionResolver;
+import org.jboss.as.controller.operations.validation.IntRangeValidator;
+import org.jboss.as.controller.operations.validation.LongRangeValidator;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
+import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
 import org.wildfly.subsystem.resource.ChildResourceDefinitionRegistrar;
 import org.wildfly.subsystem.resource.ManagementResourceRegistrar;
@@ -27,29 +31,33 @@ import org.wildfly.subsystem.resource.operation.ResourceOperationRuntimeHandler;
 
 public class MCPEndpointConfigurationProviderRegistrar implements ChildResourceDefinitionRegistrar {
 
-    public static final SimpleAttributeDefinition SSE_PATH = SimpleAttributeDefinitionBuilder.create("sse-path", ModelType.STRING, false)
+    public static final SimpleAttributeDefinition SSE_PATH = SimpleAttributeDefinitionBuilder.create("sse-path", ModelType.STRING, true)
+            .setDefaultValue(new ModelNode("sse"))
             .setAllowExpression(true)
             .setRestartAllServices()
             .build();
-    public static final SimpleAttributeDefinition MESSAGES_PATH = SimpleAttributeDefinitionBuilder.create("messages-path", ModelType.STRING, false)
+    public static final SimpleAttributeDefinition MESSAGES_PATH = SimpleAttributeDefinitionBuilder.create("messages-path", ModelType.STRING, true)
+            .setDefaultValue(new ModelNode("messages"))
             .setAllowExpression(true)
             .setRestartAllServices()
             .build();
-    public static final SimpleAttributeDefinition STREAMABLE_PATH = SimpleAttributeDefinitionBuilder.create("streamable-path", ModelType.STRING, false)
+    public static final SimpleAttributeDefinition STREAMABLE_PATH = SimpleAttributeDefinitionBuilder.create("streamable-path", ModelType.STRING, true)
+            .setDefaultValue(new ModelNode("stream"))
             .setAllowExpression(true)
             .setRestartAllServices()
             .build();
     public static final SimpleAttributeDefinition PAGE_SIZE = SimpleAttributeDefinitionBuilder.create("page-size", ModelType.INT, true)
-            .setAllowExpression(true)
-            .setDefaultValue(new org.jboss.dmr.ModelNode(0))
+            .setDefaultValue(new ModelNode(0))
+            .setValidator(new IntRangeValidator(0, true, true))
             .setRestartAllServices()
             .build();
-    public static final SimpleAttributeDefinition TIMEOUT = SimpleAttributeDefinitionBuilder.create("timeout", ModelType.LONG, true)
-            .setAllowExpression(true)
-            .setDefaultValue(new org.jboss.dmr.ModelNode(1800L))
+    public static final SimpleAttributeDefinition IDLE_TIMEOUT = SimpleAttributeDefinitionBuilder.create("idle-timeout", ModelType.LONG, true)
+            .setDefaultValue(new ModelNode(1800L))
+            .setMeasurementUnit(MeasurementUnit.SECONDS)
+            .setValidator(new LongRangeValidator(0, Long.MAX_VALUE, true, true))
             .setRestartAllServices()
             .build();
-    public static final Collection<AttributeDefinition> ATTRIBUTES = List.of(MESSAGES_PATH, SSE_PATH, STREAMABLE_PATH, PAGE_SIZE, TIMEOUT);
+    public static final Collection<AttributeDefinition> ATTRIBUTES = List.of(MESSAGES_PATH, SSE_PATH, STREAMABLE_PATH, PAGE_SIZE, IDLE_TIMEOUT);
 
     private final ResourceDescriptor descriptor;
     static final String NAME = "mcp-server";

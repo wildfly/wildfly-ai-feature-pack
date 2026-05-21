@@ -38,34 +38,48 @@
     <xs:complexType name="mcpServerType">
         <xs:annotation>
             <xs:documentation>
-                The MCP endpoints.
+                The MCP server
             </xs:documentation>
         </xs:annotation>
         <xs:attribute name="name" type="xs:string" use="required">
             <xs:annotation>
                 <xs:documentation>
-                    The name of this provider.
+                    The name of this MCP server.
                 </xs:documentation>
             </xs:annotation>
         </xs:attribute>
         <xs:attribute name="sse-path" type="xs:string">
             <xs:annotation>
                 <xs:documentation>
-                    The sse path on the server.
+                    Context path for the Server-Sent Events (SSE) endpoint of the server.
                 </xs:documentation>
             </xs:annotation>
         </xs:attribute>
         <xs:attribute name="messages-path" type="xs:string">
             <xs:annotation>
                 <xs:documentation>
-                    The messages path on the server.
+                    Context path for the messages endpoint of the server.
                 </xs:documentation>
             </xs:annotation>
         </xs:attribute>
         <xs:attribute name="streamable-path" type="xs:string">
             <xs:annotation>
                 <xs:documentation>
-                    The streamable path on the server.
+                    Context path for the Streamable HTTP endpoint of the server.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="page-size" type="xs:nonNegativeInteger">
+            <xs:annotation>
+                <xs:documentation>
+                    Maximum number of items per paginated list response (tools, prompts, resources, resource templates). A value of 0 disables pagination and returns all items.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="idle-timeout" type="xs:nonNegativeInteger">
+            <xs:annotation>
+                <xs:documentation>
+                    The timeout to detect idle connections. Connections that have been inactive for longer than this value will be automatically closed.
                 </xs:documentation>
             </xs:annotation>
         </xs:attribute>

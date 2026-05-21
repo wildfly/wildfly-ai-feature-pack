@@ -36,7 +36,7 @@ import static org.wildfly.extension.mcp.MCPLogger.ROOT_LOGGER;
  * <ol>
  *   <li>A {@link CompletableFuture} is registered in the connection's {@link PendingRequestRegistry}.</li>
  *   <li>An {@code elicitation/create} JSON-RPC request is sent to the client via the {@link Responder}.</li>
- *   <li>The tool thread blocks on {@code future.get(timeout)} until the client responds.</li>
+ *   <li>The tool thread blocks on {@code future.get(idleTimeout)} until the client responds.</li>
  *   <li>When the client response arrives, {@link MCPMessageHandler} routes it to
  *       {@link PendingRequestRegistry#handleResponse}, completing the future.</li>
  *   <li>The result is parsed into an {@link ElicitationResponse} and returned to the tool.</li>
@@ -92,7 +92,7 @@ class ElicitationSenderImpl implements ElicitationSender {
         responder.send(Messages.newRequest(requestId, ELICITATION_CREATE, params));
         ROOT_LOGGER.debugf("Elicitation request sent [id: %d, message: %s]", requestId, request.message());
 
-        // Block the tool thread until the client responds or the timeout expires
+        // Block the tool thread until the client responds or the idleTimeout expires
         JsonObject responseMessage;
         try {
             responseMessage = future.get(request.timeoutMillis(), TimeUnit.MILLISECONDS);
