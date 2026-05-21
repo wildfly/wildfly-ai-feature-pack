@@ -96,24 +96,24 @@ Breaking Changes
 
 ### MCP Server Annotations (0.10.0+)
 
-The MCP server annotation API has moved to the **[`org.mcp-java:mcp-annotations`](https://github.com/mcp-java/java-mcp-annotations)** library to provide standardized annotations and APIs across Java runtimes.
+The MCP server annotation API has moved to the **[`org.mcp-java:mcp-server-api`](https://github.com/mcp-java/java-mcp-annotations)** library to provide standardized annotations and APIs across Java runtimes.
 
 If you were using the previous `wildfly-mcp/api` module annotations, you must update your dependency:
 
 ```xml
 <dependency>
     <groupId>org.mcp-java</groupId>
-    <artifactId>mcp-annotations</artifactId>
+    <artifactId>mcp-server-api</artifactId>
     <scope>provided</scope>
 </dependency>
 ```
 
-The annotation classes and package names have changed accordingly. See the [java-mcp-annotations](https://github.com/mcp-java/java-mcp-annotations) project for the updated API.
+The annotation classes have moved to the `org.mcp_java.server.*` package. See the [java-mcp-annotations](https://github.com/mcp-java/java-mcp-annotations) project for the updated API.
 
 Recent Features
 ========================
 
-* **Standardized MCP Annotations**: MCP server annotations are now provided by [`org.mcp-java:mcp-annotations`](https://github.com/mcp-java/java-mcp-annotations) for cross-runtime compatibility.
+* **Standardized MCP Annotations**: MCP server annotations are now provided by [`org.mcp-java:mcp-server-api`](https://github.com/mcp-java/java-mcp-annotations) for cross-runtime compatibility.
 * **Async Execution Support**: All chat model layers now support the `executor-service` attribute, allowing you to configure a ManagedExecutorService for asynchronous AI operations.
 * **WildFly Preview Support**: The feature pack is now compatible with WildFly Preview releases.
 * **Enhanced MCP Support**: Added MCP server capabilities and multiple transport options (SSE, stdio, streamable).
@@ -238,10 +238,10 @@ The feature pack can act as an MCP client with support for multiple transports:
 ## MCP Server Support
 
 The feature pack also supports exposing your Jakarta EE application as an MCP Server using the `mcp-server` Galleon layer.
-What you need to do in that case is to use the `org.mcp-java:mcp-annotations` artifact as a provided dependency and annotate the code you want to expose with the annotations provided by the API.
-For more information about `org.mcp-java:mcp-annotations` you can check [java-mcp-annotations](https://github.com/mcp-java/java-mcp-annotations).
+What you need to do in that case is to use the `org.mcp-java:mcp-server-api` artifact as a provided dependency and annotate the code you want to expose with the annotations from the `org.mcp_java.server.*` package.
+For more information about `org.mcp-java:mcp-server-api` you can check [java-mcp-annotations](https://github.com/mcp-java/java-mcp-annotations).
 
-> **Breaking change (0.10.0+):** The MCP annotation API has moved from the `wildfly-mcp/api` module to [`org.mcp-java:mcp-annotations`](https://github.com/mcp-java/java-mcp-annotations) for standardized annotations and APIs across runtimes. Update your dependency and package imports accordingly.
+> **Breaking change (0.10.0+):** The MCP annotation API has moved from the `wildfly-mcp/api` module to [`org.mcp-java:mcp-server-api`](https://github.com/mcp-java/java-mcp-annotations) for standardized annotations and APIs across runtimes. Update your dependency and package imports accordingly.
 
 You may want to take a look at [wildfly-weather](https://github.com/ehsavoie/wildfly-weather) example.
 

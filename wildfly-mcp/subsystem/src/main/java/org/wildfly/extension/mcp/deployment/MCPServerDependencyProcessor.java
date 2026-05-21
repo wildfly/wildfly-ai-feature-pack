@@ -32,16 +32,16 @@ import org.wildfly.extension.mcp.injection.tool.MCPFeatureMetadata;
 import org.wildfly.extension.mcp.injection.tool.MethodMetadata;
 import org.wildfly.extension.mcp.injection.elicitation.ElicitationSender;
 import org.mcp_java.server.McpLog;
-import org.mcp_java.annotations.tools.Tool;
-import org.mcp_java.annotations.tools.ToolArg;
-import org.mcp_java.annotations.prompts.Prompt;
-import org.mcp_java.annotations.prompts.PromptArg;
-import org.mcp_java.annotations.resources.Resource;
-import org.mcp_java.annotations.resources.ResourceTemplate;
-import org.mcp_java.annotations.resources.ResourceTemplateArg;
-import org.mcp_java.annotations.completion.CompletePrompt;
-import org.mcp_java.annotations.completion.CompleteResourceTemplate;
-import org.mcp_java.annotations.completion.CompleteArg;
+import org.mcp_java.server.tools.Tool;
+import org.mcp_java.server.tools.ToolArg;
+import org.mcp_java.server.prompts.Prompt;
+import org.mcp_java.server.prompts.PromptArg;
+import org.mcp_java.server.resources.Resource;
+import org.mcp_java.server.resources.ResourceTemplate;
+import org.mcp_java.server.resources.ResourceTemplateArg;
+import org.mcp_java.server.completion.CompletePrompt;
+import org.mcp_java.server.completion.CompleteResourceTemplate;
+import org.mcp_java.server.completion.CompleteArg;
 
 public class MCPServerDependencyProcessor implements DeploymentUnitProcessor {
 

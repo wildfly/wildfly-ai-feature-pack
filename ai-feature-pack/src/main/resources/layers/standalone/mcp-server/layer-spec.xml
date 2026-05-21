@@ -9,7 +9,7 @@
         <prop name="org.wildfly.description" value="Support for MCP Server"/>
         <prop name="org.wildfly.stability" value="experimental"/>
         <prop name="org.wildfly.rule.class" value="org.mcp_java.*"/>
-        <prop name="org.wildfly.rule.annotations" value="org.mcp_java.annotations.*"/>
+        <prop name="org.wildfly.rule.annotations" value="org.mcp_java.server.*"/>
     </props>
     <dependencies>
         <layer name="ee-concurrency"/>

@@ -4,7 +4,7 @@
  */
 package org.wildfly.ai.test.mcp;
 
-import org.mcp_java.annotations.resources.Resource;
+import org.mcp_java.server.resources.Resource;
 import org.mcp_java.model.resource.ResourceContents;
 
 public class TestMCPResource {

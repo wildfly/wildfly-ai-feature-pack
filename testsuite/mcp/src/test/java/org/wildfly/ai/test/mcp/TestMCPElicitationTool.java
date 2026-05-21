@@ -4,8 +4,8 @@
  */
 package org.wildfly.ai.test.mcp;
 
-import org.mcp_java.annotations.tools.Tool;
-import org.mcp_java.annotations.tools.ToolArg;
+import org.mcp_java.server.tools.Tool;
+import org.mcp_java.server.tools.ToolArg;
 import org.wildfly.extension.mcp.injection.elicitation.ElicitationRequest;
 import org.wildfly.extension.mcp.injection.elicitation.ElicitationResponse;
 import org.wildfly.extension.mcp.injection.elicitation.ElicitationSender;
