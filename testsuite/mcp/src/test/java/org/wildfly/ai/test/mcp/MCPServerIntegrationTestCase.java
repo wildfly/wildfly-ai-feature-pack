@@ -60,6 +60,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 public class MCPServerIntegrationTestCase {
 
     private static final long RESPONSE_TIMEOUT_SECONDS = 10;
+    private static final String NOTIFICATIONS_PROGRESS = "notifications/progress";
+    private static final String PROGRESS_TOKEN = "progressToken";
 
     private volatile boolean initialized;
     private String sessionId;
@@ -81,6 +83,7 @@ public class MCPServerIntegrationTestCase {
                 .addClass(TestMCPResource.class)
                 .addClass(TestMCPElicitationTool.class)
                 .addClass(TestMCPLoggingTool.class)
+                .addClass(TestMCPProgressTool.class)
                 .addAsLibraries(new File("target/test-libs/assertj-core-3.26.3.jar"))
                 .addAsWebInfResource(EmptyAsset.INSTANCE, "beans.xml");
         return archive;
@@ -556,6 +559,93 @@ public class MCPServerIntegrationTestCase {
         JsonObject resultJson = Json.createReader(new StringReader(toolResult)).readObject();
         JsonArray content = resultJson.getJsonObject("result").getJsonArray("content");
         assertThat(content.getJsonObject(0).getString("text")).as("Should contain sum result").contains("8");
+    }
+
+    // ==================== Progress Notifications ====================
+
+    @Test
+    public void testProgressToolListedWithoutProgressParam() throws Exception {
+        String response = sendAndReceive("tools/list", null);
+        assertThat(response).as("Should list the progress-test tool").contains("progress-test");
+        assertThat(response).as("Progress must not appear in inputSchema").doesNotContain("\"Progress\"");
+        assertThat(response).as("Progress must not appear as property name").doesNotContain("\"progress\"");
+    }
+
+    @Test
+    public void testProgressNotificationsSent() throws Exception {
+        long toolCallId = nextId.getAndIncrement();
+        CompletableFuture<String> toolResultFuture = new CompletableFuture<>();
+        pendingResponses.put(toolCallId, toolResultFuture);
+
+        String toolCallMessage = """
+                {"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":"progress-test","arguments":{"steps":"3"},"_meta":{"progressToken":"test-token-1"}}}"""
+                .formatted(toolCallId);
+        postToStreamable(toolCallMessage);
+
+        String toolResult = toolResultFuture.get(RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        assertThat(toolResult).as("Should receive tool result").isNotNull();
+
+        // Collect all progress notifications (3 steps expected)
+        for (int i = 0; i < 3; i++) {
+            String notification = serverInitiatedMessages.poll(RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            assertThat(notification).as("Should receive progress notification " + (i + 1)).isNotNull();
+
+            JsonObject notificationJson = Json.createReader(new StringReader(notification)).readObject();
+            assertThat(notificationJson.getString("method")).as("Should be notifications/progress")
+                    .isEqualTo(NOTIFICATIONS_PROGRESS);
+            JsonObject params = notificationJson.getJsonObject("params");
+            assertThat(params.getString(PROGRESS_TOKEN)).as("Token should match").isEqualTo("test-token-1");
+            assertThat(params.getJsonNumber("total").intValue()).as("Total should be 3").isEqualTo(3);
+            assertThat(params.getJsonNumber("progress").intValue()).as("Progress should be " + (i + 1))
+                    .isEqualTo(i + 1);
+        }
+
+        JsonObject resultJson = Json.createReader(new StringReader(toolResult)).readObject();
+        assertThat(resultJson.containsKey("result")).as("Should contain result").isTrue();
+        JsonArray content = resultJson.getJsonObject("result").getJsonArray("content");
+        assertThat(content.getJsonObject(0).getString("text")).as("Should confirm completion").contains("Completed 3 steps");
+    }
+
+    @Test
+    public void testProgressNotificationWithMessage() throws Exception {
+        long toolCallId = nextId.getAndIncrement();
+        CompletableFuture<String> toolResultFuture = new CompletableFuture<>();
+        pendingResponses.put(toolCallId, toolResultFuture);
+
+        String toolCallMessage = """
+                {"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":"progress-notification-test","arguments":{},"_meta":{"progressToken":"msg-token"}}}"""
+                .formatted(toolCallId);
+        postToStreamable(toolCallMessage);
+
+        String toolResult = toolResultFuture.get(RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        assertThat(toolResult).as("Should receive tool result").isNotNull();
+
+        String notification = serverInitiatedMessages.poll(RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        assertThat(notification).as("Should receive progress notification").isNotNull();
+
+        JsonObject notificationJson = Json.createReader(new StringReader(notification)).readObject();
+        assertThat(notificationJson.getString("method")).as("Should be notifications/progress")
+                .isEqualTo(NOTIFICATIONS_PROGRESS);
+        JsonObject params = notificationJson.getJsonObject("params");
+        assertThat(params.getString(PROGRESS_TOKEN)).as("Token should match").isEqualTo("msg-token");
+        assertThat(params.getJsonNumber("progress").intValue()).as("Progress should be 50").isEqualTo(50);
+        assertThat(params.getJsonNumber("total").intValue()).as("Total should be 100").isEqualTo(100);
+        assertThat(params.getString("message")).as("Message should be present").isEqualTo("Halfway done");
+    }
+
+    @Test
+    public void testProgressNoTokenDoesNotSendNotifications() throws Exception {
+        String response = sendAndReceive("tools/call", Json.createObjectBuilder()
+                .add("name", "progress-no-token")
+                .add("arguments", Json.createObjectBuilder())
+                .build());
+
+        JsonObject resultJson = Json.createReader(new StringReader(response)).readObject();
+        JsonArray content = resultJson.getJsonObject("result").getJsonArray("content");
+        assertThat(content.getJsonObject(0).getString("text")).as("Should report no-token").isEqualTo("no-token");
+
+        String notification = serverInitiatedMessages.poll(RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        assertThat(notification).as("No notifications should be sent without a token").isNull();
     }
 
     // ==================== MCP-Protocol-Version Header Validation ====================

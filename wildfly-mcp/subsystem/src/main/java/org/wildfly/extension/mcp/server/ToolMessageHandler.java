@@ -43,6 +43,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.StreamSupport;
+
+import org.mcp_java.server.progress.Progress;
+import org.mcp_java.server.progress.ProgressToken;
 import org.wildfly.extension.mcp.api.Cursor;
 import org.mcp_java.model.content.ContentBlock;
 import org.wildfly.extension.mcp.api.ContentMapper;
@@ -104,7 +107,8 @@ public class ToolMessageHandler {
             JsonArrayBuilder required = Json.createArrayBuilder();
             for (ArgumentMetadata a : toolMetadata.arguments()) {
                 if (a.type() instanceof Class<?> clazz
-                        && (ElicitationSender.class.isAssignableFrom(clazz) || McpLog.class.isAssignableFrom(clazz))) {
+                        && (ElicitationSender.class.isAssignableFrom(clazz) || McpLog.class.isAssignableFrom(clazz)
+                                || Progress.class.isAssignableFrom(clazz))) {
                     continue; // injected by the framework, not a client-supplied argument
                 }
                 properties.add(a.name(), generateSchema(a.type(), a));
@@ -182,6 +186,17 @@ public class ToolMessageHandler {
                 args.put(key, arguments.get(key));
             }
         }
+        ProgressToken progressToken = null;
+        JsonObject meta = params.getJsonObject("_meta");
+        if (meta != null && meta.containsKey(MCPMessageHandler.PROGRESS_TOKEN)) {
+            JsonValue tokenVal = meta.get(MCPMessageHandler.PROGRESS_TOKEN);
+            if (tokenVal.getValueType() == ValueType.STRING) {
+                progressToken = new ProgressTokenImpl(((JsonString) tokenVal).getString());
+            } else if (tokenVal.getValueType() == ValueType.NUMBER) {
+                progressToken = new ProgressTokenImpl(((jakarta.json.JsonNumber) tokenVal).longValue());
+            }
+        }
+        final ProgressToken finalProgressToken = progressToken;
         final MCPFeatureMetadata metadata = registry.getTool(toolName);
         if (metadata == null) {
             responder.sendError(id, INVALID_PARAMS, "Invalid tool name: " + toolName);
@@ -198,7 +213,7 @@ public class ToolMessageHandler {
                         Class<?> clazz = classLoader.loadClass(methodMetadata.declaringClassName());
                         Instance beanInstance = CDI.current().select(clazz, MCPTool.MCPToolLiteral.INSTANCE);
                         Object result = null;
-                        Object[] builtArgs = buildArguments(metadata, args, mapper, connection, responder);
+                        Object[] builtArgs = buildArguments(metadata, args, mapper, connection, responder, finalProgressToken);
                         if (beanInstance.isResolvable()) {
                             ROOT_LOGGER.debugf("The Singleton instance of the tool %s has been found", toolName);
                             try {
@@ -267,7 +282,8 @@ public class ToolMessageHandler {
             Map<String, JsonValue> jsonArgs,
             ObjectMapper objectMapper,
             MCPConnection connection,
-            Responder responder) throws MCPException {
+            Responder responder,
+            ProgressToken progressToken) throws MCPException {
         if (metadata.arguments().isEmpty()) {
             return new Object[0];
         }
@@ -281,6 +297,8 @@ public class ToolMessageHandler {
                         connection.initializeRequest());
             } else if (arg.type() instanceof Class<?> clazz && McpLog.class.isAssignableFrom(clazz)) {
                 ret[idx] = new McpLogImpl(connection, responder, metadata.name());
+            } else if (arg.type() instanceof Class<?> clazz && Progress.class.isAssignableFrom(clazz)) {
+                ret[idx] = new ProgressImpl(progressToken, responder);
             } else {
                 JsonValue val = jsonArgs.get(arg.name());
                 if (val == null && arg.required()) {
