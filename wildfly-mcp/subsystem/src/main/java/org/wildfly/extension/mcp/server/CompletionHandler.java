@@ -16,15 +16,20 @@ import jakarta.json.JsonArrayBuilder;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 import java.lang.invoke.MethodHandle;
-import java.util.Collection;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import org.mcp_java.model.common.CompleteContext;
 import org.wildfly.extension.mcp.api.MCPConnection;
 import org.wildfly.extension.mcp.api.Responder;
 import org.wildfly.extension.mcp.MCPLogger;
 import org.wildfly.extension.mcp.injection.WildFlyMCPRegistry;
+import org.wildfly.extension.mcp.injection.tool.ArgumentMetadata;
 import org.wildfly.extension.mcp.injection.tool.MCPFeatureMetadata;
 import org.wildfly.extension.mcp.injection.tool.MCPPrompt;
 import org.wildfly.extension.mcp.injection.tool.MCPResource;
+import org.wildfly.security.manager.WildFlySecurityManager;
 
 public class CompletionHandler {
 
@@ -59,6 +64,8 @@ public class CompletionHandler {
         String argumentValue = argument.getString("value", "");
         String completionKey = referenceName + "_" + argumentName;
 
+        Map<String, String> contextArguments = extractContextArguments(params);
+
         if ("ref/prompt".equals(referenceType)) {
             MCPFeatureMetadata metadata = registry.getPromptCompletion(completionKey);
             if (metadata == null) {
@@ -66,7 +73,7 @@ public class CompletionHandler {
                 return;
             }
             MethodHandle invoker = registry.getPromptCompletionInvoker(completionKey);
-            invokeCompletion(id, metadata, invoker, argumentValue, responder, MCPPrompt.MCPPromptLiteral.INSTANCE);
+            invokeCompletion(id, metadata, invoker, argumentValue, contextArguments, responder, MCPPrompt.MCPPromptLiteral.INSTANCE);
         } else if ("ref/resource".equals(referenceType)) {
             MCPFeatureMetadata metadata = registry.getResourceTemplateCompletion(completionKey);
             if (metadata == null) {
@@ -74,29 +81,73 @@ public class CompletionHandler {
                 return;
             }
             MethodHandle invoker = registry.getResourceTemplateCompletionInvoker(completionKey);
-            invokeCompletion(id, metadata, invoker, argumentValue, responder, MCPResource.MCPResourceLiteral.INSTANCE);
+            invokeCompletion(id, metadata, invoker, argumentValue, contextArguments, responder, MCPResource.MCPResourceLiteral.INSTANCE);
         } else {
             responder.sendError(id, INVALID_REQUEST, "Unsupported reference found: " + referenceType);
         }
     }
 
+    private Map<String, String> extractContextArguments(JsonObject params) {
+        JsonObject context = params.getJsonObject("context");
+        if (context == null) {
+            return Map.of();
+        }
+        JsonObject contextArgs = context.getJsonObject("arguments");
+        if (contextArgs == null) {
+            return Map.of();
+        }
+        Map<String, String> map = new LinkedHashMap<>();
+        for (String key : contextArgs.keySet()) {
+            map.put(key, contextArgs.getString(key));
+        }
+        return Map.copyOf(map);
+    }
+
     @SuppressWarnings("unchecked")
     private void invokeCompletion(String id, MCPFeatureMetadata metadata, MethodHandle invoker,
-            String argumentValue, Responder responder, jakarta.enterprise.util.AnnotationLiteral<?> qualifier) {
+            String argumentValue, Map<String, String> contextArguments,
+            Responder responder, jakarta.enterprise.util.AnnotationLiteral<?> qualifier) {
+        final ClassLoader prevCL = WildFlySecurityManager.getCurrentContextClassLoaderPrivileged();
         try {
+            WildFlySecurityManager.setCurrentContextClassLoaderPrivileged(classLoader);
             Class<?> clazz = classLoader.loadClass(metadata.method().declaringClassName());
             Instance beanInstance = CDI.current().select(clazz, qualifier);
-            Object result;
-            if (beanInstance.isResolvable()) {
-                result = invoker.invoke(beanInstance.get(), argumentValue);
-            } else {
-                result = invoker.invoke(clazz.getConstructor().newInstance(), argumentValue);
+            Object target = beanInstance.isResolvable()
+                    ? beanInstance.get()
+                    : clazz.getConstructor().newInstance();
+            Object[] args = buildCompletionArguments(metadata, argumentValue, contextArguments);
+            ArrayList<Object> preparedArgs = new ArrayList<>(args.length + 1);
+            preparedArgs.add(target);
+            for (Object arg : args) {
+                preparedArgs.add(arg);
             }
+            Object result = invoker.invokeWithArguments(preparedArgs);
             sendCompletionResponse(id, result, responder);
         } catch (Throwable ex) {
             ROOT_LOGGER.errorInvokingCompletion(ex, metadata.name());
             responder.sendError(id, INTERNAL_ERROR, ex.getMessage());
+        } finally {
+            WildFlySecurityManager.setCurrentContextClassLoaderPrivileged(prevCL);
         }
+    }
+
+    private Object[] buildCompletionArguments(MCPFeatureMetadata metadata,
+            String argumentValue, Map<String, String> contextArguments) {
+        List<ArgumentMetadata> argDefs = metadata.arguments();
+        if (argDefs.isEmpty()) {
+            return new Object[0];
+        }
+        Object[] result = new Object[argDefs.size()];
+        for (int i = 0; i < argDefs.size(); i++) {
+            ArgumentMetadata arg = argDefs.get(i);
+            if (arg.type() instanceof Class<?> clazz
+                    && CompleteContext.class.isAssignableFrom(clazz)) {
+                result[i] = new CompleteContextImpl(contextArguments);
+            } else {
+                result[i] = argumentValue;
+            }
+        }
+        return result;
     }
 
     @SuppressWarnings("unchecked")

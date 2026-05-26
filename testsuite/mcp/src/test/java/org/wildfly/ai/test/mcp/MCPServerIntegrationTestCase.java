@@ -83,6 +83,7 @@ public class MCPServerIntegrationTestCase {
                 .addClass(TestMCPResource.class)
                 .addClass(TestMCPElicitationTool.class)
                 .addClass(TestMCPProgressTool.class)
+                .addClass(TestMCPCompletion.class)
                 .addAsLibraries(new File("target/test-libs/assertj-core-3.26.3.jar"))
                 .addAsWebInfResource(EmptyAsset.INSTANCE, "beans.xml");
         return archive;
@@ -666,6 +667,171 @@ public class MCPServerIntegrationTestCase {
     public void testAbsentProtocolVersionHeaderSucceeds() throws Exception {
         String response = sendAndReceive("ping", null);
         assertThat(response).as("Ping should return a result").contains("\"result\"");
+    }
+
+    // ==================== Completion Tests ====================
+
+    @Test
+    public void testCompletionCompletePrompt() throws Exception {
+        String response = sendAndReceive("completion/complete", Json.createObjectBuilder()
+                .add("ref", Json.createObjectBuilder()
+                        .add("type", "ref/prompt")
+                        .add("name", "greeting"))
+                .add("argument", Json.createObjectBuilder()
+                        .add("name", "name")
+                        .add("value", "W"))
+                .build());
+
+        JsonObject jsonResponse = Json.createReader(new StringReader(response)).readObject();
+        JsonObject result = jsonResponse.getJsonObject("result");
+        assertThat(result).as("Should contain result").isNotNull();
+
+        JsonObject completion = result.getJsonObject("completion");
+        assertThat(completion).as("Should contain completion object").isNotNull();
+
+        JsonArray values = completion.getJsonArray("values");
+        assertThat(values).as("Should contain values array").isNotNull();
+        assertThat(values.size()).as("Should have matching completions").isEqualTo(2);
+        assertThat(values.getString(0)).as("First value should be WildFly").isEqualTo("WildFly");
+    }
+
+    @Test
+    public void testCompletionCompletePromptNoMatch() throws Exception {
+        String response = sendAndReceive("completion/complete", Json.createObjectBuilder()
+                .add("ref", Json.createObjectBuilder()
+                        .add("type", "ref/prompt")
+                        .add("name", "greeting"))
+                .add("argument", Json.createObjectBuilder()
+                        .add("name", "name")
+                        .add("value", "ZZZ"))
+                .build());
+
+        JsonObject jsonResponse = Json.createReader(new StringReader(response)).readObject();
+        JsonObject completion = jsonResponse.getJsonObject("result").getJsonObject("completion");
+        JsonArray values = completion.getJsonArray("values");
+        assertThat(values).as("Should return empty values for no match").isEmpty();
+    }
+
+    @Test
+    public void testCompletionCompletePromptWithContextPython() throws Exception {
+        String response = sendAndReceive("completion/complete", Json.createObjectBuilder()
+                .add("ref", Json.createObjectBuilder()
+                        .add("type", "ref/prompt")
+                        .add("name", "code-review"))
+                .add("argument", Json.createObjectBuilder()
+                        .add("name", "version")
+                        .add("value", "3"))
+                .add("context", Json.createObjectBuilder()
+                        .add("arguments", Json.createObjectBuilder()
+                                .add("language", "python")))
+                .build());
+
+        JsonObject jsonResponse = Json.createReader(new StringReader(response)).readObject();
+        JsonObject completion = jsonResponse.getJsonObject("result").getJsonObject("completion");
+        JsonArray values = completion.getJsonArray("values");
+        assertThat(values).as("Should contain values").isNotNull();
+        assertThat(values.size()).as("Should have 3 python versions").isEqualTo(3);
+        assertThat(values.getString(0)).isEqualTo("3.10");
+        assertThat(values.getString(1)).isEqualTo("3.11");
+        assertThat(values.getString(2)).isEqualTo("3.12");
+    }
+
+    @Test
+    public void testCompletionCompletePromptWithContextPerl() throws Exception {
+        String response = sendAndReceive("completion/complete", Json.createObjectBuilder()
+                .add("ref", Json.createObjectBuilder()
+                        .add("type", "ref/prompt")
+                        .add("name", "code-review"))
+                .add("argument", Json.createObjectBuilder()
+                        .add("name", "version")
+                        .add("value", "3"))
+                .add("context", Json.createObjectBuilder()
+                        .add("arguments", Json.createObjectBuilder()
+                                .add("language", "perl")))
+                .build());
+
+        JsonObject jsonResponse = Json.createReader(new StringReader(response)).readObject();
+        JsonObject completion = jsonResponse.getJsonObject("result").getJsonObject("completion");
+        JsonArray values = completion.getJsonArray("values");
+        assertThat(values).as("Should return empty for perl with version starting with 3").isEmpty();
+    }
+
+    @Test
+    public void testCompletionCompletePromptWithoutContext() throws Exception {
+        String response = sendAndReceive("completion/complete", Json.createObjectBuilder()
+                .add("ref", Json.createObjectBuilder()
+                        .add("type", "ref/prompt")
+                        .add("name", "code-review"))
+                .add("argument", Json.createObjectBuilder()
+                        .add("name", "version")
+                        .add("value", "3"))
+                .build());
+
+        JsonObject jsonResponse = Json.createReader(new StringReader(response)).readObject();
+        JsonObject completion = jsonResponse.getJsonObject("result").getJsonObject("completion");
+        JsonArray values = completion.getJsonArray("values");
+        assertThat(values).as("Should return empty without context").isEmpty();
+    }
+
+    @Test
+    public void testCompletionCompleteResourceTemplate() throws Exception {
+        String response = sendAndReceive("completion/complete", Json.createObjectBuilder()
+                .add("ref", Json.createObjectBuilder()
+                        .add("type", "ref/resource")
+                        .add("name", "test-weather"))
+                .add("argument", Json.createObjectBuilder()
+                        .add("name", "city")
+                        .add("value", "L"))
+                .build());
+
+        JsonObject jsonResponse = Json.createReader(new StringReader(response)).readObject();
+        JsonObject result = jsonResponse.getJsonObject("result");
+        assertThat(result).as("Should contain result").isNotNull();
+
+        JsonObject completion = result.getJsonObject("completion");
+        assertThat(completion).as("Should contain completion object").isNotNull();
+
+        JsonArray values = completion.getJsonArray("values");
+        assertThat(values).as("Should contain values array").isNotNull();
+        assertThat(values.size()).as("Should have 5 cities starting with L").isEqualTo(5);
+        assertThat(values.getString(0)).isEqualTo("London");
+        assertThat(values.getString(1)).isEqualTo("Lisbon");
+        assertThat(values.getString(2)).isEqualTo("Lima");
+        assertThat(values.getString(3)).isEqualTo("Lyon");
+        assertThat(values.getString(4)).isEqualTo("Ljubljana");
+    }
+
+    @Test
+    public void testCompletionCompleteNoHandler() throws Exception {
+        String response = sendAndReceive("completion/complete", Json.createObjectBuilder()
+                .add("ref", Json.createObjectBuilder()
+                        .add("type", "ref/prompt")
+                        .add("name", "nonexistent-prompt"))
+                .add("argument", Json.createObjectBuilder()
+                        .add("name", "arg")
+                        .add("value", "x"))
+                .build());
+
+        JsonObject jsonResponse = Json.createReader(new StringReader(response)).readObject();
+        JsonObject completion = jsonResponse.getJsonObject("result").getJsonObject("completion");
+        assertThat(completion.getJsonArray("values")).as("Should return empty values").isEmpty();
+        assertThat(completion.getInt("total")).as("Total should be 0").isEqualTo(0);
+        assertThat(completion.getBoolean("hasMore")).as("hasMore should be false").isFalse();
+    }
+
+    @Test
+    public void testCompletionCompleteUnsupportedRefType() throws Exception {
+        String response = sendAndReceive("completion/complete", Json.createObjectBuilder()
+                .add("ref", Json.createObjectBuilder()
+                        .add("type", "ref/unknown")
+                        .add("name", "foo"))
+                .add("argument", Json.createObjectBuilder()
+                        .add("name", "bar")
+                        .add("value", "baz"))
+                .build());
+
+        JsonObject jsonResponse = Json.createReader(new StringReader(response)).readObject();
+        assertThat(jsonResponse.containsKey("error")).as("Should return an error for unsupported ref type").isTrue();
     }
 
     /**

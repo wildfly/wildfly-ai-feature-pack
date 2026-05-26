@@ -42,6 +42,7 @@ import org.mcp_java.server.resources.ResourceTemplateArg;
 import org.mcp_java.server.completion.CompletePrompt;
 import org.mcp_java.server.completion.CompleteResourceTemplate;
 import org.mcp_java.server.completion.CompleteArg;
+import org.mcp_java.model.common.CompleteContext;
 
 public class MCPServerDependencyProcessor implements DeploymentUnitProcessor {
 
@@ -103,6 +104,7 @@ public class MCPServerDependencyProcessor implements DeploymentUnitProcessor {
 
     private static final DotName ELICITATION_SENDER = DotName.createSimple(ElicitationSender.class);
     private static final DotName PROGRESS = DotName.createSimple(Progress.class);
+    private static final DotName COMPLETE_CONTEXT = DotName.createSimple(CompleteContext.class);
 
     private void processTools(WildFlyMCPRegistry registry, List<AnnotationInstance> annotations) {
         if (annotations == null || annotations.isEmpty()) {
@@ -206,65 +208,46 @@ public class MCPServerDependencyProcessor implements DeploymentUnitProcessor {
     }
 
     private void processPromptCompletions(WildFlyMCPRegistry registry, List<AnnotationInstance> annotations) {
-        if (annotations == null || annotations.isEmpty()) {
-            return;
-        }
-        DotName completeArgDotName = DotName.createSimple(CompleteArg.class);
-        for (AnnotationInstance annotation : annotations) {
-            String promptName = annotation.value().asString();
-            MethodInfo info = annotation.target().asMethod();
-            List<AnnotationInstance> params = info.annotations(completeArgDotName);
-            String argName = null;
-            List<ArgumentMetadata> arguments = new ArrayList<>();
-            for (AnnotationInstance param : params) {
-                argName = param.value("name") != null ? param.value("name").asString() : param.target().asMethodParameter().name();
-                Class<?> type = JandexReflection.loadRawType(param.target().asMethodParameter().type());
-                arguments.add(new ArgumentMetadata(argName, "", true, type));
-            }
-            if (argName == null && !info.parameters().isEmpty()) {
-                argName = info.parameterName(0);
-                arguments.add(new ArgumentMetadata(argName, "", true, String.class));
-            }
-            String completionKey = promptName + "_" + argName;
-            ROOT_LOGGER.debugf("CompletePrompt detected on class %s with method %s for prompt %s arg %s", info.declaringClass(), info.name(), promptName, argName);
-            MCPFeatureMetadata metadata = new MCPFeatureMetadata(MCPFeatureMetadata.Kind.PROMPT_COMPLETE,
-                    completionKey,
-                    new MethodMetadata(
-                            info.name(),
-                            "",
-                            null,
-                            null,
-                            arguments,
-                            info.declaringClass().toString(),
-                            info.returnType().name().toString())
-            );
-            registry.addPromptCompletion(completionKey, metadata);
-        }
+        processCompletions(registry, annotations, MCPFeatureMetadata.Kind.PROMPT_COMPLETE, "CompletePrompt", "prompt",
+                (key, metadata) -> registry.addPromptCompletion(key, metadata));
     }
 
     private void processResourceTemplateCompletions(WildFlyMCPRegistry registry, List<AnnotationInstance> annotations) {
+        processCompletions(registry, annotations, MCPFeatureMetadata.Kind.RESOURCE_TEMPLATE_COMPLETE, "CompleteResourceTemplate", "template",
+                (key, metadata) -> registry.addResourceTemplateCompletion(key, metadata));
+    }
+
+    private void processCompletions(WildFlyMCPRegistry registry, List<AnnotationInstance> annotations,
+            MCPFeatureMetadata.Kind kind, String logPrefix, String logLabel,
+            java.util.function.BiConsumer<String, MCPFeatureMetadata> registrar) {
         if (annotations == null || annotations.isEmpty()) {
             return;
         }
         DotName completeArgDotName = DotName.createSimple(CompleteArg.class);
         for (AnnotationInstance annotation : annotations) {
-            String templateName = annotation.value().asString();
+            String refName = annotation.value().asString();
             MethodInfo info = annotation.target().asMethod();
-            List<AnnotationInstance> params = info.annotations(completeArgDotName);
             String argName = null;
             List<ArgumentMetadata> arguments = new ArrayList<>();
-            for (AnnotationInstance param : params) {
-                argName = param.value("name") != null ? param.value("name").asString() : param.target().asMethodParameter().name();
-                Class<?> type = JandexReflection.loadRawType(param.target().asMethodParameter().type());
-                arguments.add(new ArgumentMetadata(argName, "", true, type));
+            for (MethodParameterInfo param : info.parameters()) {
+                DotName paramTypeName = param.type().name();
+                if (COMPLETE_CONTEXT.equals(paramTypeName)) {
+                    arguments.add(new ArgumentMetadata(param.name(), "", false, CompleteContext.class));
+                } else {
+                    AnnotationInstance completeArgAnnotation = param.annotation(completeArgDotName);
+                    if (completeArgAnnotation != null) {
+                        argName = completeArgAnnotation.value("name") != null ? completeArgAnnotation.value("name").asString() : param.name();
+                        Class<?> type = JandexReflection.loadRawType(param.type());
+                        arguments.add(new ArgumentMetadata(argName, "", true, type));
+                    } else if (argName == null) {
+                        argName = info.parameterName(param.position());
+                        arguments.add(new ArgumentMetadata(argName, "", true, String.class));
+                    }
+                }
             }
-            if (argName == null && !info.parameters().isEmpty()) {
-                argName = info.parameterName(0);
-                arguments.add(new ArgumentMetadata(argName, "", true, String.class));
-            }
-            String completionKey = templateName + "_" + argName;
-            ROOT_LOGGER.debugf("CompleteResourceTemplate detected on class %s with method %s for template %s arg %s", info.declaringClass(), info.name(), templateName, argName);
-            MCPFeatureMetadata metadata = new MCPFeatureMetadata(MCPFeatureMetadata.Kind.RESOURCE_TEMPLATE_COMPLETE,
+            String completionKey = refName + "_" + argName;
+            ROOT_LOGGER.debugf("%s detected on class %s with method %s for %s %s arg %s", logPrefix, info.declaringClass(), info.name(), logLabel, refName, argName);
+            MCPFeatureMetadata metadata = new MCPFeatureMetadata(kind,
                     completionKey,
                     new MethodMetadata(
                             info.name(),
@@ -275,7 +258,7 @@ public class MCPServerDependencyProcessor implements DeploymentUnitProcessor {
                             info.declaringClass().toString(),
                             info.returnType().name().toString())
             );
-            registry.addResourceTemplateCompletion(completionKey, metadata);
+            registrar.accept(completionKey, metadata);
         }
     }
 
