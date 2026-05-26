@@ -140,6 +140,8 @@ public class MCPMessageHandler {
     static final String PING = "ping";
     static final String COMPLETION_COMPLETE = "completion/complete";
     static final String LOGGING_SET_LEVEL = "logging/setLevel";
+    static final String NOTIFICATIONS_PROGRESS = "notifications/progress";
+    static final String PROGRESS_TOKEN = "progressToken";
     // non-standard messages
     static final String Q_CLOSE = "q/close";
 

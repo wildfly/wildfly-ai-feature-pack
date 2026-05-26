@@ -32,6 +32,7 @@ import org.wildfly.extension.mcp.injection.tool.MCPFeatureMetadata;
 import org.wildfly.extension.mcp.injection.tool.MethodMetadata;
 import org.wildfly.extension.mcp.injection.elicitation.ElicitationSender;
 import org.mcp_java.server.McpLog;
+import org.mcp_java.server.progress.Progress;
 import org.mcp_java.server.tools.Tool;
 import org.mcp_java.server.tools.ToolArg;
 import org.mcp_java.server.prompts.Prompt;
@@ -103,6 +104,7 @@ public class MCPServerDependencyProcessor implements DeploymentUnitProcessor {
 
     private static final DotName ELICITATION_SENDER = DotName.createSimple(ElicitationSender.class);
     private static final DotName MCP_LOG = DotName.createSimple(McpLog.class);
+    private static final DotName PROGRESS = DotName.createSimple(Progress.class);
 
     private void processTools(WildFlyMCPRegistry registry, List<AnnotationInstance> annotations) {
         if (annotations == null || annotations.isEmpty()) {
@@ -124,6 +126,8 @@ public class MCPServerDependencyProcessor implements DeploymentUnitProcessor {
                     arguments.add(new ArgumentMetadata(param.name(), "", false, ElicitationSender.class));
                 } else if (MCP_LOG.equals(paramTypeName)) {
                     arguments.add(new ArgumentMetadata(param.name(), "", false, McpLog.class));
+                } else if (PROGRESS.equals(paramTypeName)) {
+                    arguments.add(new ArgumentMetadata(param.name(), "", false, Progress.class));
                 } else {
                     AnnotationInstance toolArgAnnotation = param.annotation(toolArg);
                     if (toolArgAnnotation != null) {
