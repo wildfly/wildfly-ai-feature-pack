@@ -7,14 +7,17 @@ package org.wildfly.extension.mcp.deployment;
 import static org.wildfly.extension.mcp.MCPLogger.ROOT_LOGGER;
 import static org.wildfly.extension.mcp.deployment.MCPAttachments.MCP_REGISTRY_METADATA;
 import static org.wildfly.extension.mcp.injection.MCPFieldNames.ANNOTATIONS;
+import static org.wildfly.extension.mcp.injection.MCPFieldNames.AUDIENCE;
 import static org.wildfly.extension.mcp.injection.MCPFieldNames.DESCRIPTION;
 import static org.wildfly.extension.mcp.injection.MCPFieldNames.DESTRUCTIVE_HINT;
 import static org.wildfly.extension.mcp.injection.MCPFieldNames.IDEMPOTENT_HINT;
 import static org.wildfly.extension.mcp.injection.MCPFieldNames.MIME_TYPE;
 import static org.wildfly.extension.mcp.injection.MCPFieldNames.NAME;
 import static org.wildfly.extension.mcp.injection.MCPFieldNames.OPEN_WORLD_HINT;
+import static org.wildfly.extension.mcp.injection.MCPFieldNames.PRIORITY;
 import static org.wildfly.extension.mcp.injection.MCPFieldNames.READ_ONLY_HINT;
 import static org.wildfly.extension.mcp.injection.MCPFieldNames.REQUIRED;
+import static org.wildfly.extension.mcp.injection.MCPFieldNames.SIZE;
 import static org.wildfly.extension.mcp.injection.MCPFieldNames.STRUCTURED_CONTENT;
 import static org.wildfly.extension.mcp.injection.MCPFieldNames.TITLE;
 import static org.wildfly.extension.mcp.injection.MCPFieldNames.URI;
@@ -33,6 +36,7 @@ import org.jboss.as.server.deployment.annotation.CompositeIndex;
 import org.jboss.as.server.deployment.module.ModuleDependency;
 import org.jboss.as.server.deployment.module.ModuleSpecification;
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.JandexReflection;
 import org.jboss.jandex.MethodInfo;
@@ -43,6 +47,7 @@ import org.wildfly.extension.mcp.injection.WildFlyMCPRegistry;
 import org.wildfly.extension.mcp.injection.tool.ArgumentMetadata;
 import org.wildfly.extension.mcp.injection.tool.MCPFeatureMetadata;
 import org.wildfly.extension.mcp.injection.tool.MethodMetadata;
+import org.mcp_java.model.common.Annotations;
 import org.mcp_java.model.tool.ToolAnnotations;
 import org.wildfly.extension.mcp.injection.elicitation.ElicitationSender;
 import org.mcp_java.server.progress.Progress;
@@ -216,6 +221,12 @@ public class MCPServerDependencyProcessor implements DeploymentUnitProcessor {
             String description = annotation.value(DESCRIPTION) != null ? annotation.value(DESCRIPTION).asString() : "";
             String uri = annotation.value(URI) != null ? annotation.value(URI).asString() : "";
             String mimeType = annotation.value(MIME_TYPE) != null ? annotation.value(MIME_TYPE).asString() : "";
+            String title = annotation.value(TITLE) != null ? annotation.value(TITLE).asString() : null;
+            if (title != null && title.isEmpty()) {
+                title = null;
+            }
+            int size = annotation.value(SIZE) != null ? annotation.value(SIZE).asInt() : -1;
+            Annotations resourceAnnotations = extractAnnotations(annotation);
             MethodInfo info = annotation.target().asMethod();
             ROOT_LOGGER.debugf("Resource detected on class %s with method %s", info.declaringClass(), info.name());
             MCPFeatureMetadata metadata = new MCPFeatureMetadata(MCPFeatureMetadata.Kind.RESOURCE,
@@ -227,7 +238,8 @@ public class MCPServerDependencyProcessor implements DeploymentUnitProcessor {
                             mimeType,
                             List.of(),
                             info.declaringClass().toString(),
-                            annotation.target().asMethod().returnType().name().toString())
+                            annotation.target().asMethod().returnType().name().toString()),
+                    title, size, resourceAnnotations
             );
             registry.addResource(uri, metadata);
         }
@@ -243,6 +255,11 @@ public class MCPServerDependencyProcessor implements DeploymentUnitProcessor {
             String description = annotation.value(DESCRIPTION) != null ? annotation.value(DESCRIPTION).asString() : "";
             String uriTemplate = annotation.value(URI_TEMPLATE) != null ? annotation.value(URI_TEMPLATE).asString() : "";
             String mimeType = annotation.value(MIME_TYPE) != null ? annotation.value(MIME_TYPE).asString() : "";
+            String title = annotation.value(TITLE) != null ? annotation.value(TITLE).asString() : null;
+            if (title != null && title.isEmpty()) {
+                title = null;
+            }
+            Annotations resourceAnnotations = extractAnnotations(annotation);
             MethodInfo info = annotation.target().asMethod();
             List<ArgumentMetadata> arguments = buildArguments(info, resourceTemplateArg);
             ROOT_LOGGER.debugf("ResourceTemplate detected on class %s with method %s with the following annotated parameters %s", info.declaringClass(), info.name(), arguments);
@@ -255,7 +272,8 @@ public class MCPServerDependencyProcessor implements DeploymentUnitProcessor {
                             mimeType,
                             arguments,
                             info.declaringClass().toString(),
-                            annotation.target().asMethod().returnType().name().toString())
+                            annotation.target().asMethod().returnType().name().toString()),
+                    title, -1, resourceAnnotations
             );
             registry.addResourceTemplate(uriTemplate, metadata);
         }
@@ -318,6 +336,20 @@ public class MCPServerDependencyProcessor implements DeploymentUnitProcessor {
 
     private static Boolean extractBoxedBooleanHint(AnnotationInstance annotation, String name) {
         return annotation.value(name) == null ? null : annotation.value(name).asBoolean();
+    }
+
+    private Annotations extractAnnotations(AnnotationInstance annotation) {
+        AnnotationValue annotationsValue = annotation.value(ANNOTATIONS);
+        if (annotationsValue == null) {
+            return null;
+        }
+        AnnotationInstance nested = annotationsValue.asNested();
+        String audience = null;
+        if (nested.value(AUDIENCE) != null) {
+            audience = nested.value(AUDIENCE).asEnum().toLowerCase();
+        }
+        Double priority = nested.value(PRIORITY) != null ? nested.value(PRIORITY).asDouble() : null;
+        return new Annotations(audience, priority);
     }
 
     private List<ArgumentMetadata> buildArguments(MethodInfo info, DotName argAnnotation) {

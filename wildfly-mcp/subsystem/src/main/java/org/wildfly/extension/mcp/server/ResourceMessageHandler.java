@@ -17,7 +17,9 @@ import static org.wildfly.extension.mcp.injection.MCPFieldNames.NAME;
 import static org.wildfly.extension.mcp.injection.MCPFieldNames.NEXT_CURSOR;
 import static org.wildfly.extension.mcp.injection.MCPFieldNames.PARAMS;
 import static org.wildfly.extension.mcp.injection.MCPFieldNames.RESOURCES;
+import static org.wildfly.extension.mcp.injection.MCPFieldNames.SIZE;
 import static org.wildfly.extension.mcp.injection.MCPFieldNames.TEXT;
+import static org.wildfly.extension.mcp.injection.MCPFieldNames.TITLE;
 import static org.wildfly.extension.mcp.injection.MCPFieldNames.URI;
 
 import static org.wildfly.extension.mcp.server.MCPServerUtils.SHARED_MAPPER;
@@ -41,11 +43,14 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import org.mcp_java.model.resource.ResourceContents;
 import org.wildfly.extension.mcp.api.ContentMapper;
 import org.wildfly.extension.mcp.api.Cursor;
 import org.wildfly.extension.mcp.api.MCPConnection;
+import org.wildfly.extension.mcp.api.Messages;
 import org.wildfly.extension.mcp.api.Responder;
 import org.wildfly.extension.mcp.injection.WildFlyMCPRegistry;
 import org.wildfly.extension.mcp.injection.tool.MCPFeatureMetadata;
@@ -60,6 +65,7 @@ public class ResourceMessageHandler {
     private final ClassLoader classLoader;
     private final ExecutorService executorService;
     private final int pageSize;
+    private final ConcurrentHashMap<String, Set<MCPConnection>> subscriptions = new ConcurrentHashMap<>();
 
     ResourceMessageHandler(WildFlyMCPRegistry registry, ClassLoader classLoader, ExecutorService executorService) {
         this(registry, classLoader, executorService, 0);
@@ -89,6 +95,13 @@ public class ResourceMessageHandler {
                     .add(DESCRIPTION, resourceMetadata.description())
                     .add(URI, resourceMetadata.method().uri())
                     .add(MIME_TYPE, resourceMetadata.method().mimeType());
+            if (resourceMetadata.title() != null) {
+                resource.add(TITLE, resourceMetadata.title());
+            }
+            if (resourceMetadata.size() >= 0) {
+                resource.add(SIZE, resourceMetadata.size());
+            }
+            ResourceAnnotationsUtil.addAnnotations(resource, resourceMetadata.annotations());
             resources.add(resource);
         }
         JsonObjectBuilder resultBuilder = Json.createObjectBuilder().add(RESOURCES, resources);
@@ -98,7 +111,7 @@ public class ResourceMessageHandler {
         responder.sendResult(id, resultBuilder);
     }
 
-    void resourcesSubscribe(JsonObject message, Responder responder) {
+    void resourcesSubscribe(JsonObject message, Responder responder, MCPConnection connection) {
         String id = getRequestId(message);
         JsonValue paramsValue = message.get(PARAMS);
         if (paramsValue == null || paramsValue.getValueType() != JsonValue.ValueType.OBJECT) {
@@ -110,11 +123,12 @@ public class ResourceMessageHandler {
             responder.sendError(id, INVALID_PARAMS, ROOT_LOGGER.resourceUriNotDefined());
             return;
         }
+        subscriptions.computeIfAbsent(resourceUri, k -> ConcurrentHashMap.newKeySet()).add(connection);
         ROOT_LOGGER.debugf("Subscribe to resource %s [id: %s]", resourceUri, id);
         responder.sendResult(id, Json.createObjectBuilder());
     }
 
-    void resourcesUnsubscribe(JsonObject message, Responder responder) {
+    void resourcesUnsubscribe(JsonObject message, Responder responder, MCPConnection connection) {
         String id = getRequestId(message);
         JsonValue paramsValue = message.get(PARAMS);
         if (paramsValue == null || paramsValue.getValueType() != JsonValue.ValueType.OBJECT) {
@@ -126,8 +140,37 @@ public class ResourceMessageHandler {
             responder.sendError(id, INVALID_PARAMS, ROOT_LOGGER.resourceUriNotDefined());
             return;
         }
+        Set<MCPConnection> subscribers = subscriptions.get(resourceUri);
+        if (subscribers != null) {
+            subscribers.remove(connection);
+        }
         ROOT_LOGGER.debugf("Unsubscribe from resource %s [id: %s]", resourceUri, id);
         responder.sendResult(id, Json.createObjectBuilder());
+    }
+
+    void removeConnection(MCPConnection connection) {
+        for (Map.Entry<String, Set<MCPConnection>> entry : subscriptions.entrySet()) {
+            entry.getValue().remove(connection);
+        }
+    }
+
+    //TODO expose this somehow to the user to be actually used.
+    void notifyResourceUpdated(String uri) {
+        Set<MCPConnection> subscribers = subscriptions.get(uri);
+        if (subscribers == null || subscribers.isEmpty()) {
+            return;
+        }
+        JsonObject notification = Messages.newNotification("notifications/resources/updated",
+                Json.createObjectBuilder().add("uri", uri));
+        for (MCPConnection connection : subscribers) {
+            if (connection instanceof Responder responder) {
+                try {
+                    responder.send(notification);
+                } catch (Exception e) {
+                    ROOT_LOGGER.debugf("Failed to send resource updated notification to connection %s", connection.id());
+                }
+            }
+        }
     }
 
     void resourceCall(JsonObject message, Responder responder, MCPConnection connection) {

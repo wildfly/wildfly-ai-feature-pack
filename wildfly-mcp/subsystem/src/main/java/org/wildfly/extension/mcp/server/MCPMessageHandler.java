@@ -57,7 +57,7 @@ public class MCPMessageHandler {
         Map<String, Map<String, Object>> capabilities = new HashMap<>();
         capabilities.put("prompts", Map.of());
         capabilities.put("tools", Map.of());
-        capabilities.put("resources", Map.of("subscribe", true));
+        capabilities.put("resources", Map.of("subscribe", true, "listChanged", true));
         capabilities.put("completions", Map.of());
         capabilities.put("elicitation", Map.of());
         this.serverInfo.put("capabilities", capabilities);
@@ -152,8 +152,8 @@ public class MCPMessageHandler {
             case NOTIFICATIONS_CANCEL -> connection.cancel();
             case PING -> ping(message, responder);
             case RESOURCES_LIST -> resourceHandler.resourcesList(message, responder);
-            case RESOURCES_SUBSCRIBE -> resourceHandler.resourcesSubscribe(message, responder);
-            case RESOURCES_UNSUBSCRIBE -> resourceHandler.resourcesUnsubscribe(message, responder);
+            case RESOURCES_SUBSCRIBE -> resourceHandler.resourcesSubscribe(message, responder, connection);
+            case RESOURCES_UNSUBSCRIBE -> resourceHandler.resourcesUnsubscribe(message, responder, connection);
             case RESOURCES_READ -> {
                 String resourceUri = message.getJsonObject("params") != null ? message.getJsonObject("params").getString("uri", "") : "";
                 if (registry.getResource(resourceUri) != null) {
@@ -185,6 +185,7 @@ public class MCPMessageHandler {
     }
 
     private void close(JsonObject message, Responder responder, MCPConnection connection) {
+        resourceHandler.removeConnection(connection);
         if (connectionManager.remove(connection.id())) {
             ROOT_LOGGER.debugf("Connection %s closed", connection.id());
         } else {
