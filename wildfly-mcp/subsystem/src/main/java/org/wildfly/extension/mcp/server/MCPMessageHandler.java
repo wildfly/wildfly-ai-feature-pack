@@ -24,7 +24,6 @@ import org.wildfly.extension.mcp.api.MCPConnection;
 import org.wildfly.extension.mcp.api.Messages;
 import org.wildfly.extension.mcp.api.Responder;
 import org.wildfly.extension.mcp.injection.WildFlyMCPRegistry;
-import org.mcp_java.server.McpLog;
 
 import static org.wildfly.extension.mcp.MCPLogger.ROOT_LOGGER;
 
@@ -60,7 +59,6 @@ public class MCPMessageHandler {
         capabilities.put("tools", Map.of());
         capabilities.put("resources", Map.of("subscribe", true));
         capabilities.put("completions", Map.of());
-        capabilities.put("logging", Map.of());
         capabilities.put("elicitation", Map.of());
         this.serverInfo.put("capabilities", capabilities);
     }
@@ -139,7 +137,6 @@ public class MCPMessageHandler {
     static final String RESOURCES_UNSUBSCRIBE = "resources/unsubscribe";
     static final String PING = "ping";
     static final String COMPLETION_COMPLETE = "completion/complete";
-    static final String LOGGING_SET_LEVEL = "logging/setLevel";
     static final String NOTIFICATIONS_PROGRESS = "notifications/progress";
     static final String PROGRESS_TOKEN = "progressToken";
     // non-standard messages
@@ -170,8 +167,6 @@ public class MCPMessageHandler {
                 resourceTemplateHandler.resourceTemplatesList(message, responder);
             case COMPLETION_COMPLETE ->
                 complete(message, responder, connection);
-            case LOGGING_SET_LEVEL ->
-                setLogLevel(message, responder, connection);
             case Q_CLOSE -> close(message, responder, connection);
             default ->
                 responder.send(
@@ -181,28 +176,6 @@ public class MCPMessageHandler {
 
     private void complete(JsonObject message, Responder responder, MCPConnection connection) {
         completionHandler.complete(message, responder, connection);
-    }
-
-    private void setLogLevel(JsonObject message, Responder responder, MCPConnection connection) {
-        String id = message.get("id").toString();
-        JsonObject params = message.getJsonObject("params");
-        if (params == null) {
-            responder.sendError(id, JsonRPC.INVALID_PARAMS, "Params not found");
-            return;
-        }
-        String level = params.getString("level", null);
-        if (level == null) {
-            responder.sendError(id, JsonRPC.INVALID_PARAMS, "Log level not specified");
-            return;
-        }
-        McpLog.LogLevel logLevel = McpLog.LogLevel.from(level);
-        if (logLevel == null) {
-            responder.sendError(id, JsonRPC.INVALID_PARAMS, "Invalid log level: " + level);
-            return;
-        }
-        connection.setLogLevel(logLevel);
-        ROOT_LOGGER.logLevelSet(logLevel, connection.id());
-        responder.sendResult(id, Json.createObjectBuilder());
     }
 
     private void ping(JsonObject message, Responder responder) {

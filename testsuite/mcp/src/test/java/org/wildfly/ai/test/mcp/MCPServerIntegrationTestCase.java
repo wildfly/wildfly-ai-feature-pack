@@ -82,7 +82,6 @@ public class MCPServerIntegrationTestCase {
                 .addClass(TestMCPPrompt.class)
                 .addClass(TestMCPResource.class)
                 .addClass(TestMCPElicitationTool.class)
-                .addClass(TestMCPLoggingTool.class)
                 .addClass(TestMCPProgressTool.class)
                 .addAsLibraries(new File("target/test-libs/assertj-core-3.26.3.jar"))
                 .addAsWebInfResource(EmptyAsset.INSTANCE, "beans.xml");
@@ -98,12 +97,6 @@ public class MCPServerIntegrationTestCase {
             System.err.println("[WARN] " + staleCount + " stale server-initiated message(s) drained after test");
         }
         serverInitiatedMessages.clear();
-
-        if (initialized) {
-            sendAndReceive("logging/setLevel", Json.createObjectBuilder()
-                    .add("level", "warning")
-                    .build());
-        }
     }
 
     @AfterAll
@@ -432,14 +425,6 @@ public class MCPServerIntegrationTestCase {
     }
 
     @Test
-    public void testLoggingSetLevel() throws Exception {
-        String response = sendAndReceive("logging/setLevel", Json.createObjectBuilder()
-                .add("level", "info")
-                .build());
-        assertThat(response).as("Should contain result").contains("\"result\"");
-    }
-
-    @Test
     public void testElicitationToolListedWithoutSenderParam() throws Exception {
         String response = sendAndReceive("tools/list", null);
         assertThat(response).as("Should list the greet-with-name tool").contains("greet-with-name");
@@ -681,139 +666,6 @@ public class MCPServerIntegrationTestCase {
     public void testAbsentProtocolVersionHeaderSucceeds() throws Exception {
         String response = sendAndReceive("ping", null);
         assertThat(response).as("Ping should return a result").contains("\"result\"");
-    }
-
-    // ==================== Logging / McpLog Injection ====================
-
-    @Test
-    public void testLoggingToolListedWithoutMcpLogParam() throws Exception {
-        String response = sendAndReceive("tools/list", null);
-        assertThat(response).as("Should list the log-test tool").contains("log-test");
-        assertThat(response).as("McpLog must not appear in inputSchema").doesNotContain("McpLog");
-        assertThat(response).as("McpLog must not appear as property name").doesNotContain("\"mcpLog\"");
-    }
-
-    @Test
-    public void testLoggingToolSendsNotification() throws Exception {
-        // Set log level to DEBUG so all messages pass the filter
-        sendAndReceive("logging/setLevel", Json.createObjectBuilder()
-                .add("level", "debug")
-                .build());
-
-        // Call the log-test tool — expect both a notification and a tool result
-        long toolCallId = nextId.getAndIncrement();
-        CompletableFuture<String> toolResultFuture = new CompletableFuture<>();
-        pendingResponses.put(toolCallId, toolResultFuture);
-
-        String toolCallMessage = """
-                {"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":"log-test","arguments":{"level":"info"}}}"""
-                .formatted(toolCallId);
-        postToStreamable(toolCallMessage);
-
-        // The tool result arrives via the future (correlated by id)
-        String toolResult = toolResultFuture.get(RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-        assertThat(toolResult).as("Should receive tool result").isNotNull();
-
-        // The notification arrives via serverInitiatedMessages (no correlated id)
-        String notification = serverInitiatedMessages.poll(RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-        assertThat(notification).as("Should receive logging notification").isNotNull();
-
-        // Verify the notification
-        JsonObject notificationJson = Json.createReader(new StringReader(notification)).readObject();
-        assertThat(notificationJson.getString("method")).as("Should be notifications/message").isEqualTo("notifications/message");
-        JsonObject params = notificationJson.getJsonObject("params");
-        assertThat(params.getString("level")).as("Notification level should be info").isEqualTo("info");
-        assertThat(params.getString("logger")).as("Logger name should be the tool name").isEqualTo("log-test");
-        assertThat(params.getString("data")).as("Data should contain the log message").contains("Info message from tool");
-
-        // Verify the tool result
-        JsonObject resultJson = Json.createReader(new StringReader(toolResult)).readObject();
-        assertThat(resultJson.containsKey("result")).as("Should contain result").isTrue();
-        JsonArray content = resultJson.getJsonObject("result").getJsonArray("content");
-        assertThat(content.getJsonObject(0).getString("text")).as("Should contain logged level").contains("Logged at info");
-    }
-
-    @Test
-    public void testLoggingLevelFiltersMessages() throws Exception {
-        // Set log level to ERROR so INFO messages are filtered out
-        sendAndReceive("logging/setLevel", Json.createObjectBuilder()
-                .add("level", "error")
-                .build());
-
-        // Call the log-test tool with level=info — notification should be filtered
-        String response = sendAndReceive("tools/call", Json.createObjectBuilder()
-                .add("name", "log-test")
-                .add("arguments", Json.createObjectBuilder().add("level", "info"))
-                .build());
-
-        JsonObject resultJson = Json.createReader(new StringReader(response)).readObject();
-        assertThat(resultJson.containsKey("result")).as("Should be a tool result, not a notification").isTrue();
-        assertThat(resultJson.containsKey("method")).as("Should not be a notification").isFalse();
-
-        // Verify no notification arrived
-        String extra = serverInitiatedMessages.poll(2, TimeUnit.SECONDS);
-        assertThat(extra).as("No notification should be sent when level is below threshold").isNull();
-    }
-
-    @Test
-    public void testLoggingErrorPassesWhenLevelIsError() throws Exception {
-        sendAndReceive("logging/setLevel", Json.createObjectBuilder()
-                .add("level", "error")
-                .build());
-
-        // Call log-test with level=error — should pass the filter
-        long toolCallId = nextId.getAndIncrement();
-        CompletableFuture<String> toolResultFuture = new CompletableFuture<>();
-        pendingResponses.put(toolCallId, toolResultFuture);
-
-        String toolCallMessage = """
-                {"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":"log-test","arguments":{"level":"error"}}}"""
-                .formatted(toolCallId);
-        postToStreamable(toolCallMessage);
-
-        String toolResult = toolResultFuture.get(RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-        assertThat(toolResult).as("Should receive tool result").isNotNull();
-
-        String notification = serverInitiatedMessages.poll(RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-        assertThat(notification).as("Should receive logging notification").isNotNull();
-
-        JsonObject notificationJson = Json.createReader(new StringReader(notification)).readObject();
-        assertThat(notificationJson.getString("method")).as("Should be notifications/message").isEqualTo("notifications/message");
-        JsonObject params = notificationJson.getJsonObject("params");
-        assertThat(params.getString("level")).as("Notification level should be error").isEqualTo("error");
-        assertThat(params.getString("data")).as("Data should contain the error message").contains("Error message from tool");
-
-        JsonObject resultJson = Json.createReader(new StringReader(toolResult)).readObject();
-        assertThat(resultJson.containsKey("result")).as("Should contain result").isTrue();
-    }
-
-    @Test
-    public void testLoggingSetLevelInvalidLevel() throws Exception {
-        String response = sendAndReceive("logging/setLevel", Json.createObjectBuilder()
-                .add("level", "nonexistent")
-                .build());
-
-        JsonObject json = Json.createReader(new StringReader(response)).readObject();
-        assertThat(json.containsKey("error")).as("Invalid level should return an error").isTrue();
-        assertThat(json.getJsonObject("error").getInt("code")).as("Should be INVALID_PARAMS (-32602)").isEqualTo(-32602);
-    }
-
-    @Test
-    public void testLoggingSetLevelMissingParams() throws Exception {
-        String response = sendAndReceive("logging/setLevel", null);
-
-        JsonObject json = Json.createReader(new StringReader(response)).readObject();
-        assertThat(json.containsKey("error")).as("Missing params should return an error").isTrue();
-        assertThat(json.getJsonObject("error").getInt("code")).as("Should be INVALID_PARAMS (-32602)").isEqualTo(-32602);
-    }
-
-    @Test
-    public void testLoggingSetLevelMissingLevel() throws Exception {
-        String response = sendAndReceive("logging/setLevel", Json.createObjectBuilder().build());
-
-        JsonObject json = Json.createReader(new StringReader(response)).readObject();
-        assertThat(json.containsKey("error")).as("Missing level should return an error").isTrue();
-        assertThat(json.getJsonObject("error").getInt("code")).as("Should be INVALID_PARAMS (-32602)").isEqualTo(-32602);
     }
 
     /**

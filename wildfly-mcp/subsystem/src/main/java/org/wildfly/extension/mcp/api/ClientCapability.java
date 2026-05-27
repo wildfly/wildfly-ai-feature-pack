@@ -7,6 +7,4 @@ package org.wildfly.extension.mcp.api;
 public record ClientCapability(String name, java.util.Map<String, Object> properties) {
 
     public static final String ELICITATION = "elicitation";
-    public static final String SAMPLING = "sampling";
-    public static final String ROOTS = "roots";
 }

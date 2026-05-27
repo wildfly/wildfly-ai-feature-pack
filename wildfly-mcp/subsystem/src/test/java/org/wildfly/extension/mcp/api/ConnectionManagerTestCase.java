@@ -15,7 +15,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.mcp_java.server.McpLog;
 import org.wildfly.extension.mcp.server.PendingRequestRegistry;
 
 public class ConnectionManagerTestCase {
@@ -195,16 +194,6 @@ public class ConnectionManagerTestCase {
         @Override
         public long lastActivity() {
             return lastActivity;
-        }
-
-        @Override
-        public McpLog.LogLevel logLevel() {
-            return null;
-        }
-
-        @Override
-        public void setLogLevel(McpLog.LogLevel level) {
-
         }
     }
 }

@@ -19,7 +19,6 @@ import org.jboss.logging.annotations.Cause;
 import org.jboss.logging.annotations.LogMessage;
 import org.jboss.logging.annotations.Message;
 import org.jboss.logging.annotations.MessageLogger;
-import org.mcp_java.server.McpLog;
 
 @MessageLogger(projectCode = "WFMCP", length = 5)
 public interface MCPLogger extends BasicLogger {
@@ -48,10 +47,6 @@ public interface MCPLogger extends BasicLogger {
     @LogMessage(level = ERROR)
     @Message(id = 6, value = "Invalid value for HTTP header: %s")
     void invalidAcceptHeaders(String header);
-
-    @LogMessage(level = INFO)
-    @Message(id = 7, value = "Log level set to %s [connection: %s]")
-    void logLevelSet(McpLog.LogLevel logLevel, String connectionId);
 
     @LogMessage(level = WARN)
     @Message(id = 8, value = "Managed executor service not available, using default executor service")

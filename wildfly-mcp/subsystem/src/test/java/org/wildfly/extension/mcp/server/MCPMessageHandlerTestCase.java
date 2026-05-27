@@ -107,7 +107,6 @@ public class MCPMessageHandlerTestCase {
         assertNotNull(capabilities.getJsonObject("prompts"));
         assertNotNull(capabilities.getJsonObject("resources"));
         assertNotNull(capabilities.getJsonObject("completions"));
-        assertNotNull(capabilities.getJsonObject("logging"));
     }
 
     @Test
@@ -507,52 +506,6 @@ public class MCPMessageHandlerTestCase {
                                 .add("value", "baz")))
                 .build();
         handler.handle(message, connection, responder);
-
-        assertTrue(responder.hasError());
-    }
-
-    // ==================== Logging Tests ====================
-
-    @Test
-    public void testLoggingSetLevel() {
-        moveToOperation();
-        responder.clear();
-
-        JsonObject message = Json.createObjectBuilder()
-                .add("jsonrpc", "2.0")
-                .add("id", 11)
-                .add("method", "logging/setLevel")
-                .add("params", Json.createObjectBuilder()
-                        .add("level", "debug"))
-                .build();
-        handler.handle(message, connection, responder);
-
-        assertTrue(responder.hasResult());
-    }
-
-    @Test
-    public void testLoggingSetLevelInvalid() {
-        moveToOperation();
-        responder.clear();
-
-        JsonObject message = Json.createObjectBuilder()
-                .add("jsonrpc", "2.0")
-                .add("id", 12)
-                .add("method", "logging/setLevel")
-                .add("params", Json.createObjectBuilder()
-                        .add("level", "invalid_level"))
-                .build();
-        handler.handle(message, connection, responder);
-
-        assertTrue(responder.hasError());
-    }
-
-    @Test
-    public void testLoggingSetLevelMissingParams() {
-        moveToOperation();
-        responder.clear();
-
-        handler.handle(jsonRpcRequest(13, "logging/setLevel"), connection, responder);
 
         assertTrue(responder.hasError());
     }

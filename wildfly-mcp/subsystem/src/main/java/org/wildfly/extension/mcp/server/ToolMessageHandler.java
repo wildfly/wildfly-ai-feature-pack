@@ -59,7 +59,6 @@ import org.wildfly.extension.mcp.injection.tool.MCPFeatureMetadata;
 import org.wildfly.extension.mcp.injection.tool.MCPTool;
 import org.wildfly.extension.mcp.injection.tool.MethodMetadata;
 import org.wildfly.extension.mcp.injection.elicitation.ElicitationSender;
-import org.mcp_java.server.McpLog;
 import org.wildfly.security.manager.WildFlySecurityManager;
 
 public class ToolMessageHandler {
@@ -107,7 +106,7 @@ public class ToolMessageHandler {
             JsonArrayBuilder required = Json.createArrayBuilder();
             for (ArgumentMetadata a : toolMetadata.arguments()) {
                 if (a.type() instanceof Class<?> clazz
-                        && (ElicitationSender.class.isAssignableFrom(clazz) || McpLog.class.isAssignableFrom(clazz)
+                        && (ElicitationSender.class.isAssignableFrom(clazz)
                                 || Progress.class.isAssignableFrom(clazz))) {
                     continue; // injected by the framework, not a client-supplied argument
                 }
@@ -295,8 +294,6 @@ public class ToolMessageHandler {
                         connection.pendingRequests(),
                         responder,
                         connection.initializeRequest());
-            } else if (arg.type() instanceof Class<?> clazz && McpLog.class.isAssignableFrom(clazz)) {
-                ret[idx] = new McpLogImpl(connection, responder, metadata.name());
             } else if (arg.type() instanceof Class<?> clazz && Progress.class.isAssignableFrom(clazz)) {
                 ret[idx] = new ProgressImpl(progressToken, responder);
             } else {
