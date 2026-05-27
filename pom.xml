@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.jboss</groupId>
         <artifactId>jboss-parent</artifactId>
-        <version>51</version>
+        <version>53</version>
     </parent>
     <groupId>org.wildfly.generative-ai</groupId>
     <artifactId>wildfly-ai-feature-pack-parent</artifactId>
