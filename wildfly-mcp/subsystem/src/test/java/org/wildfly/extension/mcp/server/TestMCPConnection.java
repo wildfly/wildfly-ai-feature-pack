@@ -5,7 +5,6 @@
 package org.wildfly.extension.mcp.server;
 
 import java.util.concurrent.Future;
-import org.mcp_java.server.McpLog;
 import org.wildfly.extension.mcp.api.InitializeRequest;
 import org.wildfly.extension.mcp.api.MCPConnection;
 import org.wildfly.extension.mcp.server.PendingRequestRegistry;
@@ -16,7 +15,6 @@ public class TestMCPConnection implements MCPConnection {
     private Status status = Status.NEW;
     private InitializeRequest initializeRequest;
     private boolean cancelled = false;
-    private McpLog.LogLevel logLevel = McpLog.LogLevel.WARNING;
     private final PendingRequestRegistry pendingRequestRegistry = new PendingRequestRegistry();
 
     public TestMCPConnection(String id) {
@@ -82,16 +80,6 @@ public class TestMCPConnection implements MCPConnection {
     @Override
     public InitializeRequest initializeRequest() {
         return initializeRequest;
-    }
-
-    @Override
-    public McpLog.LogLevel logLevel() {
-        return logLevel;
-    }
-
-    @Override
-    public void setLogLevel(McpLog.LogLevel level) {
-        this.logLevel = level;
     }
 
     @Override

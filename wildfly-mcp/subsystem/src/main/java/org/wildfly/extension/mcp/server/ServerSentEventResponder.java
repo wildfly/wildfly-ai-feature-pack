@@ -16,7 +16,6 @@ import java.io.StringWriter;
 import java.util.Collections;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
-import org.mcp_java.server.McpLog;
 import org.wildfly.extension.mcp.api.InitializeRequest;
 import org.wildfly.extension.mcp.api.MCPConnection;
 import org.wildfly.extension.mcp.api.Responder;
@@ -31,7 +30,6 @@ public class ServerSentEventResponder implements Responder, MCPConnection {
     private final AtomicReference<Status> status;
     private final AtomicReference<InitializeRequest> initializeRequest;
     private final PendingRequestRegistry pendingRequestRegistry = new PendingRequestRegistry();
-    private final AtomicReference<McpLog.LogLevel> logLevel = new AtomicReference<>(McpLog.LogLevel.NOTICE);
     private volatile long lastActivity;
     private Future future;
 
@@ -144,16 +142,6 @@ public class ServerSentEventResponder implements Responder, MCPConnection {
     @Override
     public InitializeRequest initializeRequest() {
         return initializeRequest.get();
-    }
-
-    @Override
-    public McpLog.LogLevel logLevel() {
-        return logLevel.get();
-    }
-
-    @Override
-    public void setLogLevel(McpLog.LogLevel level) {
-        logLevel.set(level);
     }
 
     @Override
