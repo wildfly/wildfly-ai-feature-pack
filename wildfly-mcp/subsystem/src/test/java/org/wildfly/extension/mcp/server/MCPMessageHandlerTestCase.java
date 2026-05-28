@@ -510,6 +510,64 @@ public class MCPMessageHandlerTestCase {
         assertTrue(responder.hasError());
     }
 
+    @Test
+    public void testCompletionCompletePromptWithContext() {
+        moveToOperation();
+        responder.clear();
+
+        JsonObject message = Json.createObjectBuilder()
+                .add("jsonrpc", "2.0")
+                .add("id", 11)
+                .add("method", "completion/complete")
+                .add("params", Json.createObjectBuilder()
+                        .add("ref", Json.createObjectBuilder()
+                                .add("type", "ref/prompt")
+                                .add("name", "code-review"))
+                        .add("argument", Json.createObjectBuilder()
+                                .add("name", "language")
+                                .add("value", "py"))
+                        .add("context", Json.createObjectBuilder()
+                                .add("arguments", Json.createObjectBuilder()
+                                        .add("code", "def hello(): pass"))))
+                .build();
+        handler.handle(message, connection, responder);
+
+        assertTrue(responder.hasResult());
+        JsonObject completion = responder.lastResult().getJsonObject("completion");
+        assertNotNull(completion);
+        assertEquals(0, completion.getJsonArray("values").size());
+        assertFalse(completion.getBoolean("hasMore"));
+    }
+
+    @Test
+    public void testCompletionCompleteResourceWithContext() {
+        moveToOperation();
+        responder.clear();
+
+        JsonObject message = Json.createObjectBuilder()
+                .add("jsonrpc", "2.0")
+                .add("id", 12)
+                .add("method", "completion/complete")
+                .add("params", Json.createObjectBuilder()
+                        .add("ref", Json.createObjectBuilder()
+                                .add("type", "ref/resource")
+                                .add("name", "db-table"))
+                        .add("argument", Json.createObjectBuilder()
+                                .add("name", "table")
+                                .add("value", "us"))
+                        .add("context", Json.createObjectBuilder()
+                                .add("arguments", Json.createObjectBuilder()
+                                        .add("database", "mydb"))))
+                .build();
+        handler.handle(message, connection, responder);
+
+        assertTrue(responder.hasResult());
+        JsonObject completion = responder.lastResult().getJsonObject("completion");
+        assertNotNull(completion);
+        assertEquals(0, completion.getJsonArray("values").size());
+    }
+
+
     // ==================== Cancellation Test ====================
 
     @Test

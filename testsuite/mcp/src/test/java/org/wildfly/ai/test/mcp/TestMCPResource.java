@@ -5,6 +5,8 @@
 package org.wildfly.ai.test.mcp;
 
 import org.mcp_java.server.resources.Resource;
+import org.mcp_java.server.resources.ResourceTemplate;
+import org.mcp_java.server.resources.ResourceTemplateArg;
 import org.mcp_java.model.resource.ResourceContents;
 
 public class TestMCPResource {
@@ -17,5 +19,10 @@ public class TestMCPResource {
     @Resource(uri = "test://status", mimeType = "application/json", name = "test-status")
     ResourceContents status() {
         return ResourceContents.text("test://status", "{\"status\":\"running\",\"version\":\"1.0\"}");
+    }
+
+    @ResourceTemplate(uriTemplate = "test://weather/{city}", mimeType = "application/json", name = "test-weather")
+    ResourceContents weather(@ResourceTemplateArg(name = "city") String city) {
+        return ResourceContents.text("test://weather/" + city, "{\"city\":\"" + city + "\",\"temp\":\"22C\"}");
     }
 }
