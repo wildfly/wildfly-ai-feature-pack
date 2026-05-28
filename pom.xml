@@ -83,7 +83,7 @@
         <version.org.mcp-java>1.0.0-Beta2</version.org.mcp-java>
         <version.org.neo4j.cypher>2025.2.7</version.org.neo4j.cypher>
         <version.org.neo4j.driver>6.0.5</version.org.neo4j.driver>
-        <version.org.ow2.asm>9.9.1</version.org.ow2.asm>
+        <version.org.ow2.asm>9.10.1</version.org.ow2.asm>
         <version.org.reactivestreams.reactive-streams>1.0.4</version.org.reactivestreams.reactive-streams>
 
         <version.junit>5.11.4</version.junit>
