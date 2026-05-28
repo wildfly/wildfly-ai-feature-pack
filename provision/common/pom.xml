@@ -3,29 +3,16 @@
 
     <parent>
         <groupId>org.wildfly.generative-ai</groupId>
-        <artifactId>wildfly-ai-feature-pack-parent</artifactId>
+        <artifactId>wildfly-ai-provision-parent</artifactId>
         <version>0.11.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
-    <artifactId>wildfly-ai-feature-pack</artifactId>
+    <artifactId>wildfly-ai-provision-common</artifactId>
     <packaging>pom</packaging>
 
-    <name>AI Feature pack for WildFly</name>
-  
-    <description>Feature pack to provide AI integration for WildFly</description>
+    <name>WildFly AI Feature Pack - Provision Common resources</name>
 
-    <licenses>
-        <license>
-            <name>Apache License, Version 2.0</name>
-            <url>http://www.apache.org/licenses/LICENSE-2.0.html</url>
-            <distribution>repo</distribution>
-        </license>
-    </licenses>
     <dependencies>
-        <dependency>
-            <groupId>org.wildfly</groupId>
-            <artifactId>wildfly-galleon-pack</artifactId>
-            <type>zip</type>
-        </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>wildfly-ai-injection</artifactId>
@@ -139,7 +126,7 @@
         <dependency>
             <groupId>com.github.victools</groupId>
             <artifactId>jsonschema-generator</artifactId>
-        </dependency> 
+        </dependency>
         <dependency>
             <groupId>com.google.apis</groupId>
             <artifactId>google-api-services-customsearch</artifactId>
@@ -303,7 +290,7 @@
         <dependency>
             <groupId>io.projectreactor.netty</groupId>
             <artifactId>reactor-netty-core</artifactId>
-        </dependency> 
+        </dependency>
 
         <dependency>
             <groupId>io.weaviate</groupId>
@@ -360,42 +347,49 @@
             <artifactId>reactive-streams</artifactId>
         </dependency>
     </dependencies>
-    
+
     <build>
-        <finalName>ai-galleon-pack-${project.version}</finalName>
         <plugins>
             <plugin>
-                <!-- Feature pack generation is vulnerable to leftover files in the target
-                folder from previous builds, so always clean even if the clean lifecycle is not invoked -->
-                <artifactId>maven-clean-plugin</artifactId>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>auto-clean</id>
-                        <phase>initialize</phase>
+                        <id>copy-resources</id>
+                        <phase>process-resources</phase>
                         <goals>
-                            <goal>clean</goal>
+                            <goal>copy-resources</goal>
                         </goals>
+                        <configuration>
+                            <outputDirectory>${basedir}/target/resources</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${basedir}/src/main/resources</directory>
+                                </resource>
+                            </resources>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
             <plugin>
-                <groupId>org.wildfly.galleon-plugins</groupId>
-                <artifactId>wildfly-galleon-maven-plugin</artifactId>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>feature-pack-build</id>
+                        <id>assemble</id>
+                        <phase>package</phase>
                         <goals>
-                            <goal>build-feature-pack</goal>
+                            <goal>single</goal>
                         </goals>
-                        <phase>prepare-package</phase>
                         <configuration>
-                            <release-name>ai-feature-pack</release-name>
-                            <fork-embedded>true</fork-embedded>
-                            <generate-channel-manifest>true</generate-channel-manifest>
-                            <deploy-channel-manifest>false</deploy-channel-manifest>
-                            <minimum-stability-level>experimental</minimum-stability-level>
-                            <config-stability-level>experimental</config-stability-level>
-                            <package-stability-level>experimental</package-stability-level>
+                            <descriptors>
+                                <descriptor>assembly.xml</descriptor>
+                            </descriptors>
+                            <recompressZippedFiles>true</recompressZippedFiles>
+                            <finalName>${project.build.finalName}</finalName>
+                            <appendAssemblyId>false</appendAssemblyId>
+                            <outputDirectory>${project.build.directory}</outputDirectory>
+                            <workDirectory>${project.build.directory}/assembly/work</workDirectory>
                         </configuration>
                     </execution>
                 </executions>
