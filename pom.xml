@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.jboss</groupId>
         <artifactId>jboss-parent</artifactId>
-        <version>51</version>
+        <version>53</version>
     </parent>
     <groupId>org.wildfly.generative-ai</groupId>
     <artifactId>wildfly-ai-feature-pack-parent</artifactId>
@@ -41,9 +41,10 @@
 
 
     <properties>
-        <maven.compiler.target>17</maven.compiler.target>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.release>17</maven.compiler.release>
+        <jdk.min.version>17</jdk.min.version>
+        <maven.compiler.target>${jdk.min.version}</maven.compiler.target>
+        <maven.compiler.source>${jdk.min.version}</maven.compiler.source>
+        <maven.compiler.release>${jdk.min.version}</maven.compiler.release>
 
         <version.org.wildfly>39.0.1.Final</version.org.wildfly>
         <version.org.wildfly.core>32.0.0.Final</version.org.wildfly.core>
