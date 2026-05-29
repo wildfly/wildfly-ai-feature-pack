@@ -46,7 +46,7 @@
         <maven.compiler.source>${jdk.min.version}</maven.compiler.source>
         <maven.compiler.release>${jdk.min.version}</maven.compiler.release>
 
-        <version.org.wildfly>39.0.1.Final</version.org.wildfly>
+        <version.org.wildfly>40.0.0.Final</version.org.wildfly>
         <version.org.wildfly.core>32.0.0.Final</version.org.wildfly.core>
         <version.org.wildfly.common>1.7.0.Final</version.org.wildfly.common>
         <version.org.wildfly.galleon-plugins>8.1.0.Final</version.org.wildfly.galleon-plugins>
