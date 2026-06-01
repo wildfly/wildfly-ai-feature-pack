@@ -8,9 +8,6 @@ The Galleon layers defined in these feature-packs are decorator layers. This mea
 in addition to a WildFly base layer. The WildFly [Installation Guide](https://docs.wildfly.org/33/#installation-guides) covers the 
 [base layers](https://docs.wildfly.org/33/Galleon_Guide.html#wildfly_foundational_galleon_layers) that WildFly defines.
 
-NOTE: The base layer `ai` (that provisions WildFly AI subsystem) is the minimal base layer to use when provisioning Galleon layers that these
-feature-packs define.
-
 Full documentation for each layer, including required environment variables, can be found in the `doc/glow-layer-doc/` directory.
 
 Resources:
