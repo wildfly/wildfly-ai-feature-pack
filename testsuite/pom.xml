@@ -19,7 +19,7 @@
         <version.arquillian>1.10.0.Final</version.arquillian>
         <version.wildfly.arquillian>5.1.0.Final</version.wildfly.arquillian>
         <version.maven.surefire>3.5.5</version.maven.surefire>
-        <version.testcontainers>1.21.4</version.testcontainers>
+        <version.testcontainers>2.0.5</version.testcontainers>
     </properties>
 
     <dependencyManagement>
