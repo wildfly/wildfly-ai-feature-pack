@@ -40,6 +40,16 @@ public class ElicitationSenderImplTestCase {
     }
 
     @Test
+    public void testIsNotSupportedWhenUrlOnlyCapability() {
+        InitializeRequest req = new InitializeRequest(CLIENT_INFO, "2025-03-26",
+                List.of(new ClientCapability("elicitation", java.util.Map.of("url", java.util.Map.of()))));
+        ElicitationSenderImpl sender = new ElicitationSenderImpl(
+                new PendingRequestRegistry(), new TestResponder(), req);
+        assertFalse("Form mode should not be supported when only url is declared", sender.isSupported());
+        assertTrue("URL mode should be supported", sender.isUrlSupported());
+    }
+
+    @Test
     public void testIsNotSupportedWhenNoElicitationCapability() {
         InitializeRequest req = new InitializeRequest(CLIENT_INFO, "2025-03-26", List.of());
         ElicitationSenderImpl sender = new ElicitationSenderImpl(

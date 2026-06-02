@@ -58,7 +58,7 @@ class ElicitationSenderImpl implements ElicitationSender {
 
     @Override
     public boolean isSupported() {
-        return initializeRequest != null && initializeRequest.supportsElicitation();
+        return initializeRequest != null && initializeRequest.supportsElicitationForm();
     }
 
     @Override
@@ -84,7 +84,7 @@ class ElicitationSenderImpl implements ElicitationSender {
 
     private Elicitation.Response sendForm(Elicitation request) throws Exception {
         if (!isSupported()) {
-            throw new IllegalStateException("Client does not support the 'elicitation' capability");
+            throw new IllegalStateException("Client does not support form-mode elicitation");
         }
 
         CompletableFuture<JsonObject> future = new CompletableFuture<>();
