@@ -44,4 +44,38 @@ public interface ElicitationSender {
      * Returns {@code true} if the connected client declared the {@code "elicitation"} capability.
      */
     boolean isSupported();
+
+    /**
+     * Returns {@code true} if the connected client declared URL mode support
+     * within the {@code "elicitation"} capability.
+     */
+    default boolean isUrlSupported() {
+        return false;
+    }
+
+    /**
+     * Send a URL-mode elicitation request to the client. The client will present
+     * the URL to the user for out-of-band interaction (e.g. OAuth, password entry).
+     * The response contains only an action (accept/decline/cancel) — no content,
+     * since data flows out-of-band through the URL.
+     *
+     * @param request the URL elicitation request
+     * @return the client's response (action only)
+     * @throws IllegalStateException if the client does not support URL-mode elicitation
+     * @throws UnsupportedOperationException if this sender does not implement URL mode
+     * @throws java.util.concurrent.TimeoutException if the client does not respond within the timeout
+     * @throws InterruptedException if the calling thread is interrupted while waiting
+     */
+    default ElicitationResponse sendUrl(UrlElicitationRequest request) throws Exception {
+        throw new UnsupportedOperationException("URL-mode elicitation is not supported by this sender");
+    }
+
+    /**
+     * Send a {@code notifications/elicitation/complete} notification to the client,
+     * indicating that the out-of-band interaction for the given elicitation has finished.
+     *
+     * @param elicitationId the ID of the completed elicitation
+     */
+    default void notifyElicitationComplete(String elicitationId) {
+    }
 }

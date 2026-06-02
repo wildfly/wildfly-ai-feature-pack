@@ -92,6 +92,13 @@
             <artifactId>wildfly-mcp-injection</artifactId>
             <scope>provided</scope>
         </dependency>
+
+        <!-- JAX-RS API for test REST endpoints -->
+        <dependency>
+            <groupId>jakarta.ws.rs</groupId>
+            <artifactId>jakarta.ws.rs-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 
     <build>

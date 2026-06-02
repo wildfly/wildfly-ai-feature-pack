@@ -1,0 +1,30 @@
+/*
+ * Copyright The WildFly Authors
+ * SPDX-License-Identifier: Apache-2.0
+ */
+package org.wildfly.ai.test.mcp;
+
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.core.Response;
+
+/**
+ * Simulates an OAuth callback endpoint that a user's browser would hit
+ * after completing an out-of-band authentication flow.
+ */
+@Path("/oauth/callback")
+public class TestOAuthCallbackEndpoint {
+
+    @GET
+    @Path("/{elicitationId}")
+    public Response callback(@PathParam("elicitationId") String elicitationId) {
+        boolean completed = TestMCPElicitationTool.completeOutOfBandInteraction(elicitationId);
+        if (completed) {
+            return Response.ok("Interaction completed for " + elicitationId).build();
+        }
+        return Response.status(Response.Status.NOT_FOUND)
+                .entity("No pending interaction for " + elicitationId)
+                .build();
+    }
+}

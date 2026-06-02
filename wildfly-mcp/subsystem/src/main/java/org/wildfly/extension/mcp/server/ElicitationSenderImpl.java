@@ -26,6 +26,7 @@ import org.wildfly.extension.mcp.injection.elicitation.ElicitationRequest;
 import org.wildfly.extension.mcp.injection.elicitation.ElicitationResponse;
 import org.wildfly.extension.mcp.injection.elicitation.ElicitationSender;
 import org.wildfly.extension.mcp.injection.elicitation.PrimitiveSchema;
+import org.wildfly.extension.mcp.injection.elicitation.UrlElicitationRequest;
 
 import static org.wildfly.extension.mcp.MCPLogger.ROOT_LOGGER;
 
@@ -46,6 +47,7 @@ import static org.wildfly.extension.mcp.MCPLogger.ROOT_LOGGER;
 class ElicitationSenderImpl implements ElicitationSender {
 
     static final String ELICITATION_CREATE = "elicitation/create";
+    static final String NOTIFICATIONS_ELICITATION_COMPLETE = "notifications/elicitation/complete";
 
     private final PendingRequestRegistry registry;
     private final Responder responder;
@@ -86,6 +88,7 @@ class ElicitationSenderImpl implements ElicitationSender {
                 .add("required", required);
 
         JsonObjectBuilder params = Json.createObjectBuilder()
+                .add("mode", "form")
                 .add("message", request.message())
                 .add("requestedSchema", schema);
 
@@ -103,6 +106,63 @@ class ElicitationSenderImpl implements ElicitationSender {
         }
 
         return parseResponse(responseMessage);
+    }
+
+    @Override
+    public boolean isUrlSupported() {
+        return initializeRequest != null && initializeRequest.supportsElicitationUrl();
+    }
+
+    @Override
+    public ElicitationResponse sendUrl(UrlElicitationRequest request) throws Exception {
+        if (!isUrlSupported()) {
+            throw new IllegalStateException("Client does not support URL-mode elicitation");
+        }
+
+        CompletableFuture<JsonObject> future = new CompletableFuture<>();
+        long requestId = registry.register(future);
+
+        JsonObjectBuilder params = Json.createObjectBuilder()
+                .add("mode", "url")
+                .add("message", request.message())
+                .add("url", request.url())
+                .add("elicitationId", request.elicitationId());
+
+        responder.send(Messages.newRequest(requestId, ELICITATION_CREATE, params));
+        ROOT_LOGGER.debugf("URL elicitation request sent [id: %d, url: %s, elicitationId: %s]",
+                requestId, request.url(), request.elicitationId());
+
+        JsonObject responseMessage;
+        try {
+            responseMessage = future.get(request.timeoutMillis(), TimeUnit.MILLISECONDS);
+        } catch (TimeoutException te) {
+            registry.remove(requestId);
+            ROOT_LOGGER.elicitationTimedOut(requestId, request.timeoutMillis());
+            throw te;
+        }
+
+        return parseUrlResponse(responseMessage);
+    }
+
+    @Override
+    public void notifyElicitationComplete(String elicitationId) {
+        JsonObjectBuilder params = Json.createObjectBuilder()
+                .add("elicitationId", elicitationId);
+        responder.send(Messages.newNotification(NOTIFICATIONS_ELICITATION_COMPLETE, params));
+        ROOT_LOGGER.debugf("Elicitation complete notification sent [elicitationId: %s]", elicitationId);
+    }
+
+    private ElicitationResponse parseUrlResponse(JsonObject responseMessage) {
+        JsonObject result = responseMessage.getJsonObject("result");
+        if (result == null) {
+            throw new IllegalStateException("Invalid elicitation response (no result): " + responseMessage);
+        }
+        String actionStr = result.getString("action", null);
+        if (actionStr == null) {
+            throw new IllegalStateException("Invalid elicitation response (no action): " + responseMessage);
+        }
+        ElicitationResponse.Action action = ElicitationResponse.Action.valueOf(actionStr.toUpperCase());
+        return new ElicitationResponse(action, Map.of());
     }
 
     private ElicitationResponse parseResponse(JsonObject responseMessage) {

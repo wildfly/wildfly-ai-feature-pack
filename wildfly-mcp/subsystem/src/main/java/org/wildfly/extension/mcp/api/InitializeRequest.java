@@ -13,4 +13,10 @@ public record InitializeRequest(Implementation implementation, String protocolVe
         return clientCapabilities != null && clientCapabilities.stream()
                 .anyMatch(c -> ClientCapability.ELICITATION.equals(c.name()));
     }
+
+    public boolean supportsElicitationUrl() {
+        return clientCapabilities != null && clientCapabilities.stream()
+                .filter(c -> ClientCapability.ELICITATION.equals(c.name()))
+                .anyMatch(c -> c.properties().containsKey("url"));
+    }
 }

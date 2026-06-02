@@ -4,6 +4,7 @@
  */
 package org.wildfly.extension.mcp.server;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.wildfly.extension.mcp.server.MCPTestHelpers.initializeMessage;
@@ -140,6 +141,64 @@ public class MCPMessageHandlerElicitationTestCase {
         assertTrue(responder.hasResult());
         // Connection should now know client supports elicitation
         assertTrue(connection.initializeRequest().supportsElicitation());
+    }
+
+    // ==================== URL mode capability ====================
+
+    @Test
+    public void testElicitationAdvertisesFormAndUrlModes() {
+        handler.handle(initializeMessage(), connection, responder);
+
+        JsonObject elicitation = responder.lastResult().getJsonObject("capabilities").getJsonObject("elicitation");
+        assertNotNull("elicitation capability must be advertised", elicitation);
+        assertNotNull("form mode must be advertised", elicitation.getJsonObject("form"));
+        assertNotNull("url mode must be advertised", elicitation.getJsonObject("url"));
+    }
+
+    @Test
+    public void testInitializeWithElicitationUrlCapability() {
+        JsonObject initMsg = Json.createObjectBuilder()
+                .add("jsonrpc", "2.0")
+                .add("id", 1)
+                .add("method", "initialize")
+                .add("params", Json.createObjectBuilder()
+                        .add("protocolVersion", "2025-03-26")
+                        .add("clientInfo", Json.createObjectBuilder()
+                                .add("name", "mcp-client")
+                                .add("version", "2.0"))
+                        .add("capabilities", Json.createObjectBuilder()
+                                .add("elicitation", Json.createObjectBuilder()
+                                        .add("form", Json.createObjectBuilder())
+                                        .add("url", Json.createObjectBuilder()))))
+                .build();
+
+        handler.handle(initMsg, connection, responder);
+
+        assertTrue(responder.hasResult());
+        assertTrue(connection.initializeRequest().supportsElicitation());
+        assertTrue(connection.initializeRequest().supportsElicitationUrl());
+    }
+
+    @Test
+    public void testInitializeWithElicitationNoUrlCapability() {
+        JsonObject initMsg = Json.createObjectBuilder()
+                .add("jsonrpc", "2.0")
+                .add("id", 1)
+                .add("method", "initialize")
+                .add("params", Json.createObjectBuilder()
+                        .add("protocolVersion", "2025-03-26")
+                        .add("clientInfo", Json.createObjectBuilder()
+                                .add("name", "mcp-client")
+                                .add("version", "2.0"))
+                        .add("capabilities", Json.createObjectBuilder()
+                                .add("elicitation", Json.createObjectBuilder())))
+                .build();
+
+        handler.handle(initMsg, connection, responder);
+
+        assertTrue(responder.hasResult());
+        assertTrue(connection.initializeRequest().supportsElicitation());
+        assertFalse(connection.initializeRequest().supportsElicitationUrl());
     }
 
     // ==================== Helpers ====================

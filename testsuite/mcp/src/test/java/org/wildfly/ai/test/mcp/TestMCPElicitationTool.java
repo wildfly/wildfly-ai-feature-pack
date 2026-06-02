@@ -4,14 +4,34 @@
  */
 package org.wildfly.ai.test.mcp;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+
 import org.mcp_java.server.tools.Tool;
 import org.mcp_java.server.tools.ToolArg;
 import org.wildfly.extension.mcp.injection.elicitation.ElicitationRequest;
 import org.wildfly.extension.mcp.injection.elicitation.ElicitationResponse;
 import org.wildfly.extension.mcp.injection.elicitation.ElicitationSender;
 import org.wildfly.extension.mcp.injection.elicitation.StringSchema;
+import org.wildfly.extension.mcp.injection.elicitation.UrlElicitationRequest;
 
 public class TestMCPElicitationTool {
+
+    private static final ConcurrentHashMap<String, CompletableFuture<Void>> pendingCallbacks = new ConcurrentHashMap<>();
+
+    /**
+     * Called by {@link TestOAuthCallbackEndpoint} when the simulated OAuth callback arrives,
+     * unblocking the tool thread that is waiting for the out-of-band interaction to complete.
+     */
+    static boolean completeOutOfBandInteraction(String elicitationId) {
+        CompletableFuture<Void> future = pendingCallbacks.remove(elicitationId);
+        if (future != null) {
+            future.complete(null);
+            return true;
+        }
+        return false;
+    }
 
     @Tool(name = "greet-with-name", description = "Asks the user for their name via elicitation and greets them")
     String greetWithName(ElicitationSender elicitationSender) throws Exception {
@@ -49,5 +69,36 @@ public class TestMCPElicitationTool {
             return "Result: " + (a + b);
         }
         return "Operation not confirmed.";
+    }
+
+    @Tool(name = "authenticate-via-url", description = "Directs user to authenticate via an external URL")
+    String authenticateViaUrl(ElicitationSender elicitationSender) throws Exception {
+        if (!elicitationSender.isUrlSupported()) {
+            return "URL elicitation not supported by client";
+        }
+
+        String elicitationId = "auth-integration-test";
+
+        UrlElicitationRequest request = UrlElicitationRequest.builder("Please authenticate with your identity provider")
+                .url("https://example.com/oauth/authorize")
+                .elicitationId(elicitationId)
+                .timeout(30_000)
+                .build();
+
+        ElicitationResponse response = elicitationSender.sendUrl(request);
+        if (!response.isAccepted()) {
+            return response.isDeclined() ? "Authentication declined" : "Authentication cancelled";
+        }
+
+        // The client accepted — the user consented to open the URL.
+        // Now block until the out-of-band interaction completes (i.e. the
+        // OAuth callback endpoint is hit by the user's browser).
+        CompletableFuture<Void> callbackFuture = new CompletableFuture<>();
+        pendingCallbacks.put(elicitationId, callbackFuture);
+        callbackFuture.get(30, TimeUnit.SECONDS);
+
+        // The out-of-band interaction is complete — notify the client.
+        elicitationSender.notifyElicitationComplete(elicitationId);
+        return "Authentication successful";
     }
 }

@@ -84,6 +84,8 @@ public class MCPServerIntegrationTestCase {
                 .addClass(TestMCPElicitationTool.class)
                 .addClass(TestMCPProgressTool.class)
                 .addClass(TestMCPCompletion.class)
+                .addClass(TestJaxrsApplication.class)
+                .addClass(TestOAuthCallbackEndpoint.class)
                 .addAsWebInfResource(EmptyAsset.INSTANCE, "beans.xml");
         return archive;
     }
@@ -121,7 +123,7 @@ public class MCPServerIntegrationTestCase {
         pendingResponses.put(initId, initFuture);
 
         String initMessage = """
-                {"jsonrpc":"2.0","id":%d,"method":"initialize","params":{"protocolVersion":"2025-03-26","clientInfo":{"name":"test-client","version":"1.0.0"},"capabilities":{"elicitation":{}}}}"""
+                {"jsonrpc":"2.0","id":%d,"method":"initialize","params":{"protocolVersion":"2025-03-26","clientInfo":{"name":"test-client","version":"1.0.0"},"capabilities":{"elicitation":{"form":{},"url":{}}}}}"""
                 .formatted(initId);
 
         URL streamUrl = deploymentUrl.toURI().resolve("stream").toURL();
@@ -544,6 +546,97 @@ public class MCPServerIntegrationTestCase {
         JsonObject resultJson = Json.createReader(new StringReader(toolResult)).readObject();
         JsonArray content = resultJson.getJsonObject("result").getJsonArray("content");
         assertThat(content.getJsonObject(0).getString("text")).as("Should contain sum result").contains("8");
+    }
+
+    // ==================== URL Mode Elicitation ====================
+
+    @Test
+    public void testUrlElicitationAcceptRoundTrip() throws Exception {
+        long toolCallId = nextId.getAndIncrement();
+        CompletableFuture<String> toolResultFuture = new CompletableFuture<>();
+        pendingResponses.put(toolCallId, toolResultFuture);
+
+        String toolCallMessage = """
+                {"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":"authenticate-via-url","arguments":{}}}"""
+                .formatted(toolCallId);
+
+        postToStreamable(toolCallMessage);
+
+        String elicitationJson = serverInitiatedMessages.poll(RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        assertThat(elicitationJson).as("Should receive elicitation/create request").isNotNull();
+        assertThat(elicitationJson).as("Should be an elicitation/create request").contains("elicitation/create");
+        assertThat(elicitationJson).as("Should contain mode url").contains("\"mode\":\"url\"");
+        assertThat(elicitationJson).as("Should contain the URL").contains("https://example.com/oauth/authorize");
+        assertThat(elicitationJson).as("Should contain the elicitationId").contains("auth-integration-test");
+
+        JsonObject elicitationMessage = Json.createReader(new StringReader(elicitationJson)).readObject();
+        long elicitationId = elicitationMessage.getJsonNumber("id").longValue();
+
+        String clientResponse = """
+                {"jsonrpc":"2.0","id":%d,"result":{"action":"accept"}}"""
+                .formatted(elicitationId);
+        int statusCode = postToStreamable(clientResponse);
+        assertThat(statusCode).as("Client response POST should succeed").isEqualTo(200);
+
+        // The tool is now blocked, waiting for the out-of-band interaction to complete.
+        // Simulate the OAuth callback by hitting the REST endpoint — this is what
+        // the user's browser would do after completing the auth flow.
+        URL callbackUrl = deploymentUrl.toURI().resolve("api/oauth/callback/auth-integration-test").toURL();
+        HttpURLConnection callbackConn = (HttpURLConnection) callbackUrl.openConnection();
+        callbackConn.setRequestMethod("GET");
+        assertThat(callbackConn.getResponseCode()).as("OAuth callback should succeed").isEqualTo(200);
+        callbackConn.disconnect();
+
+        // The callback unblocks the tool, which sends notifications/elicitation/complete
+        String notificationJson = serverInitiatedMessages.poll(RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        assertThat(notificationJson).as("Should receive elicitation complete notification").isNotNull();
+        assertThat(notificationJson).as("Should be notifications/elicitation/complete")
+                .contains("notifications/elicitation/complete");
+        assertThat(notificationJson).as("Should contain the elicitationId").contains("auth-integration-test");
+
+        // Then the tool returns its result
+        String toolResult = toolResultFuture.get(RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        assertThat(toolResult).as("Should receive tool result after URL elicitation").isNotNull();
+
+        JsonObject resultJson = Json.createReader(new StringReader(toolResult)).readObject();
+        assertThat(resultJson.containsKey("result")).as("Should contain result").isTrue();
+
+        JsonArray content = resultJson.getJsonObject("result").getJsonArray("content");
+        assertThat(content.getJsonObject(0).getString("text")).as("Should indicate success")
+                .contains("Authentication successful");
+    }
+
+    @Test
+    public void testUrlElicitationDeclineRoundTrip() throws Exception {
+        long toolCallId = nextId.getAndIncrement();
+        CompletableFuture<String> toolResultFuture = new CompletableFuture<>();
+        pendingResponses.put(toolCallId, toolResultFuture);
+
+        String toolCallMessage = """
+                {"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":"authenticate-via-url","arguments":{}}}"""
+                .formatted(toolCallId);
+
+        postToStreamable(toolCallMessage);
+
+        String elicitationJson = serverInitiatedMessages.poll(RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        assertThat(elicitationJson).as("Should receive elicitation/create request").isNotNull();
+        assertThat(elicitationJson).as("Should contain mode url").contains("\"mode\":\"url\"");
+
+        JsonObject elicitationMessage = Json.createReader(new StringReader(elicitationJson)).readObject();
+        long elicitationId = elicitationMessage.getJsonNumber("id").longValue();
+
+        String clientResponse = """
+                {"jsonrpc":"2.0","id":%d,"result":{"action":"decline"}}"""
+                .formatted(elicitationId);
+        postToStreamable(clientResponse);
+
+        String toolResult = toolResultFuture.get(RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        assertThat(toolResult).as("Should receive tool result after decline").isNotNull();
+
+        JsonObject resultJson = Json.createReader(new StringReader(toolResult)).readObject();
+        JsonArray content = resultJson.getJsonObject("result").getJsonArray("content");
+        assertThat(content.getJsonObject(0).getString("text")).as("Should indicate declined")
+                .contains("Authentication declined");
     }
 
     // ==================== Progress Notifications ====================
