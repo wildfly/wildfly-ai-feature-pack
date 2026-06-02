@@ -16,12 +16,25 @@ import jakarta.json.Json;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
 
+import org.jboss.arquillian.container.test.api.Deployment;
+import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.asset.EmptyAsset;
+import org.jboss.shrinkwrap.api.spec.WebArchive;
 import org.junit.jupiter.api.Test;
 
 /**
  * Integration tests for MCP elicitation (form mode and URL mode).
  */
 public class ElicitationIntegrationTestCase extends AbstractMCPIntegrationTestCase {
+
+    @Deployment(testable = false)
+    public static WebArchive createDeployment() {
+        return ShrinkWrap.create(WebArchive.class, "mcp-test.war")
+                .addClass(TestMCPElicitationTool.class)
+                .addClass(TestThirdPartyApplication.class)
+                .addClass(TestThirdPartyApplication.TestOAuthCallbackEndpoint.class)
+                .addAsWebInfResource(EmptyAsset.INSTANCE, "beans.xml");
+    }
 
     // ==================== Form Mode Elicitation ====================
 
@@ -163,12 +176,17 @@ public class ElicitationIntegrationTestCase extends AbstractMCPIntegrationTestCa
 
         String elicitationJson = serverInitiatedMessages.poll(RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
         assertThat(elicitationJson).as("Should receive elicitation/create request").isNotNull();
-        assertThat(elicitationJson).as("Should be an elicitation/create request").contains("elicitation/create");
-        assertThat(elicitationJson).as("Should contain mode url").contains("\"mode\":\"url\"");
-        assertThat(elicitationJson).as("Should contain the URL").contains("https://example.com/oauth/authorize");
-        assertThat(elicitationJson).as("Should contain the elicitationId").contains("auth-integration-test");
 
         JsonObject elicitationMessage = Json.createReader(new StringReader(elicitationJson)).readObject();
+        assertThat(elicitationMessage.getString("method")).as("Should be elicitation/create").isEqualTo("elicitation/create");
+
+        JsonObject elicitationParams = elicitationMessage.getJsonObject("params");
+        assertThat(elicitationParams.getString("mode")).as("Mode should be url").isEqualTo("url");
+        assertThat(elicitationParams.getString("url")).as("Should contain the authorization URL").isEqualTo("/my-app/oauth/authorize");
+        String toolElicitationId = elicitationParams.getString("elicitationId");
+        assertThat(toolElicitationId).as("Should start with known prefix").startsWith("auth-integration-test");
+        assertThat(elicitationParams.getString("message")).as("Should contain the prompt message").isEqualTo("Please authenticate with your identity provider");
+
         long elicitationId = elicitationMessage.getJsonNumber("id").longValue();
 
         String clientResponse = """
@@ -177,21 +195,20 @@ public class ElicitationIntegrationTestCase extends AbstractMCPIntegrationTestCa
         int statusCode = postToStreamable(clientResponse);
         assertThat(statusCode).as("Client response POST should succeed").isEqualTo(200);
 
-        // The tool is now blocked, waiting for the out-of-band interaction to complete.
-        // Simulate the OAuth callback by hitting the REST endpoint — this is what
-        // the user's browser would do after completing the auth flow.
-        URL callbackUrl = deploymentUrl.toURI().resolve("api/oauth/callback/auth-integration-test").toURL();
+        URL callbackUrl = deploymentUrl.toURI().resolve("my-app/oauth/callback/" + toolElicitationId).toURL();
         HttpURLConnection callbackConn = (HttpURLConnection) callbackUrl.openConnection();
         callbackConn.setRequestMethod("GET");
         assertThat(callbackConn.getResponseCode()).as("OAuth callback should succeed").isEqualTo(200);
         callbackConn.disconnect();
 
-        // The callback unblocks the tool, which sends notifications/elicitation/complete
         String notificationJson = serverInitiatedMessages.poll(RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
         assertThat(notificationJson).as("Should receive elicitation complete notification").isNotNull();
-        assertThat(notificationJson).as("Should be notifications/elicitation/complete")
-                .contains("notifications/elicitation/complete");
-        assertThat(notificationJson).as("Should contain the elicitationId").contains("auth-integration-test");
+
+        JsonObject notificationMessage = Json.createReader(new StringReader(notificationJson)).readObject();
+        assertThat(notificationMessage.getString("method")).as("Should be notifications/elicitation/complete")
+                .isEqualTo("notifications/elicitation/complete");
+        assertThat(notificationMessage.getJsonObject("params").getString("elicitationId"))
+                .as("Notification should reference the correct elicitationId").isEqualTo(toolElicitationId);
 
         // Then the tool returns its result
         String toolResult = toolResultFuture.get(RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);

@@ -24,13 +24,9 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
-import org.jboss.arquillian.container.test.api.Deployment;
 import org.jboss.arquillian.container.test.api.RunAsClient;
 import org.jboss.arquillian.junit5.ArquillianExtension;
 import org.jboss.arquillian.test.api.ArquillianResource;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.asset.EmptyAsset;
-import org.jboss.shrinkwrap.api.spec.WebArchive;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -59,21 +55,6 @@ abstract class AbstractMCPIntegrationTestCase {
 
     @ArquillianResource
     protected URL deploymentUrl;
-
-    @Deployment(testable = false)
-    public static WebArchive createDeployment() {
-        WebArchive archive = ShrinkWrap.create(WebArchive.class, "mcp-test.war")
-                .addClass(TestMCPTool.class)
-                .addClass(TestMCPPrompt.class)
-                .addClass(TestMCPResource.class)
-                .addClass(TestMCPElicitationTool.class)
-                .addClass(TestMCPProgressTool.class)
-                .addClass(TestMCPCompletion.class)
-                .addClass(TestJaxrsApplication.class)
-                .addClass(TestOAuthCallbackEndpoint.class)
-                .addAsWebInfResource(EmptyAsset.INSTANCE, "beans.xml");
-        return archive;
-    }
 
     @AfterEach
     public void cleanUpState() throws Exception {

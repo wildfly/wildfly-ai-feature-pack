@@ -14,6 +14,10 @@ import jakarta.json.Json;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
 
+import org.jboss.arquillian.container.test.api.Deployment;
+import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.asset.EmptyAsset;
+import org.jboss.shrinkwrap.api.spec.WebArchive;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -25,6 +29,18 @@ import org.junit.jupiter.api.Test;
  * <p>Elicitation tests are in {@link ElicitationIntegrationTestCase}.</p>
  */
 public class MCPServerIntegrationTestCase extends AbstractMCPIntegrationTestCase {
+
+    @Deployment(testable = false)
+    public static WebArchive createDeployment() {
+        return ShrinkWrap.create(WebArchive.class, "mcp-test.war")
+                .addClass(TestMCPTool.class)
+                .addClass(TestMCPTool.AddResult.class)
+                .addClass(TestMCPPrompt.class)
+                .addClass(TestMCPResource.class)
+                .addClass(TestMCPProgressTool.class)
+                .addClass(TestMCPCompletion.class)
+                .addAsWebInfResource(EmptyAsset.INSTANCE, "beans.xml");
+    }
 
     private static final String NOTIFICATIONS_PROGRESS = "notifications/progress";
     private static final String PROGRESS_TOKEN = "progressToken";

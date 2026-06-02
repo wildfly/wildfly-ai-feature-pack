@@ -4,6 +4,7 @@
  */
 package org.wildfly.ai.test.mcp;
 
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -21,7 +22,7 @@ public class TestMCPElicitationTool {
     private static final ConcurrentHashMap<String, CompletableFuture<Void>> pendingCallbacks = new ConcurrentHashMap<>();
 
     /**
-     * Called by {@link TestOAuthCallbackEndpoint} when the simulated OAuth callback arrives,
+     * Called by {@link TestThirdPartyApplication.TestOAuthCallbackEndpoint} when the simulated OAuth callback arrives,
      * unblocking the tool thread that is waiting for the out-of-band interaction to complete.
      */
     static boolean completeOutOfBandInteraction(String elicitationId) {
@@ -77,10 +78,10 @@ public class TestMCPElicitationTool {
             return "URL elicitation not supported by client";
         }
 
-        String elicitationId = "auth-integration-test";
+        String elicitationId = "auth-integration-test" + UUID.randomUUID();
 
         UrlElicitationRequest request = UrlElicitationRequest.builder("Please authenticate with your identity provider")
-                .url("https://example.com/oauth/authorize")
+                .url("/my-app/oauth/authorize")
                 .elicitationId(elicitationId)
                 .timeout(30_000)
                 .build();
