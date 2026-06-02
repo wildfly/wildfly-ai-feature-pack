@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.UUID.randomUUID;
@@ -25,7 +26,7 @@ import static java.util.UUID.randomUUID;
  *
  * <p>Form mode example:</p>
  * <pre>{@code
- * Elicitation req = Elicitation.formBuilder("Please provide your GitHub username")
+ * Elicitation elicitation = Elicitation.formBuilder("Please provide your GitHub username")
  *     .addSchemaProperty("username", new StringSchema(true))
  *     .addSchemaProperty("notify", new BooleanSchema(false))
  *     .build();
@@ -33,7 +34,7 @@ import static java.util.UUID.randomUUID;
  *
  * <p>URL mode example:</p>
  * <pre>{@code
- * Elicitation req = Elicitation.urlBuilder("Please authenticate",
+ * Elicitation elicitation = Elicitation.urlBuilder("Please authenticate",
  *          "https://example.com/oauth")
  *     .elicitationId("auth-123")
  *     .build();
@@ -103,6 +104,8 @@ public final class Elicitation {
 
     /**
      * Creates a builder for a URL-mode elicitation request.
+     * If the {@code elicitationId} is not set on the builder, a random ID
+     * is generated.
      */
     public static UrlBuilder urlBuilder(String message, String url) {
         return new UrlBuilder(message, url);
@@ -169,6 +172,7 @@ public final class Elicitation {
         }
 
         public Elicitation build() {
+            String elicitationId = this.elicitationId != null ? this.elicitationId : randomUUID().toString();
             return new Elicitation(Mode.URL, message, timeoutMillis,
                     null, url, elicitationId);
         }
