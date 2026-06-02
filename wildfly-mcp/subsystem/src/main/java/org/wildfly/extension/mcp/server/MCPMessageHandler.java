@@ -61,7 +61,6 @@ public class MCPMessageHandler {
         capabilities.put("tools", Map.of());
         capabilities.put("resources", Map.of("subscribe", true));
         capabilities.put("completions", Map.of());
-        capabilities.put("elicitation", Map.of("form", Map.of(), "url", Map.of()));
         this.serverInfo.put("capabilities", capabilities);
     }
 
