@@ -59,7 +59,7 @@ public final class Elicitation {
         this.message = message;
         this.timeoutMillis = timeoutMillis;
         this.schemaProperties = schemaProperties;
-        this.elicitationId = elicitationId != null ? elicitationId : randomUUID().toString();
+        this.elicitationId = elicitationId;
         this.url = url;
     }
 
@@ -113,15 +113,9 @@ public final class Elicitation {
         private final String message;
         private final Map<String, PrimitiveSchema> schemaProperties = new LinkedHashMap<>();
         private long timeoutMillis = 30_000L;
-        private String elicitationId;
 
         public FormBuilder(String message) {
             this.message = requireNonNull(message, "message must not be null");
-        }
-
-        public FormBuilder elicitationId(String elicitationId) {
-            this.elicitationId = requireNonNull(elicitationId, "elicitationId must not be null");
-            return this;
         }
 
         public FormBuilder addSchemaProperty(String key, PrimitiveSchema schema) {
@@ -145,7 +139,7 @@ public final class Elicitation {
             }
             return new Elicitation(Mode.FORM, message, timeoutMillis,
                     Collections.unmodifiableMap(new LinkedHashMap<>(schemaProperties)),
-                    null, elicitationId);
+                    null, null);
         }
     }
 

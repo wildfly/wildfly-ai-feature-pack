@@ -34,8 +34,8 @@ public class TestMCPElicitationTool {
 
     @Tool(name = "greet-with-name", description = "Asks the user for their name via elicitation and greets them")
     String greetWithName(ElicitationSender elicitationSender) throws Exception {
-        if (!elicitationSender.isSupported()) {
-            return "Elicitation not supported by client";
+        if (!elicitationSender.isFormSupported()) {
+            return "Elicitation Form Mode not supported by client";
         }
         Elicitation elicitation = Elicitation.builder("What is your name?")
                 .addSchemaProperty("name", new StringSchema(true, "Your Name", "Enter your first name"))
@@ -54,7 +54,7 @@ public class TestMCPElicitationTool {
             @ToolArg(description = "First number") int a,
             @ToolArg(description = "Second number") int b,
             ElicitationSender elicitationSender) throws Exception {
-        if (!elicitationSender.isSupported()) {
+        if (!elicitationSender.isFormSupported()) {
             return String.valueOf(a + b);
         }
         Elicitation elicitation = Elicitation.builder("Confirm: add " + a + " + " + b + "?")

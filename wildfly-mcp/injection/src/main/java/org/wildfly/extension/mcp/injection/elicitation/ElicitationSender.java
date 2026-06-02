@@ -9,7 +9,7 @@ package org.wildfly.extension.mcp.injection.elicitation;
  * user input from the MCP client.
  *
  * <p>The client must declare the {@code "elicitation"} capability during initialization.
- * Use {@link #isSupported()} to check before calling {@link #send}.</p>
+ * Use {@link #isFormSupported()} or {@link #isUrlSupported()} ()}  to check before calling {@link #send}.</p>
  *
  * <p>Example tool method signature:</p>
  * <pre>{@code
@@ -42,9 +42,10 @@ public interface ElicitationSender {
     Elicitation.Response send(Elicitation elicitation) throws Exception;
 
     /**
-     * Returns {@code true} if the connected client declared the {@code "elicitation"} capability.
+     * Returns {@code true} if the connected client declared Form mode support
+     * within the {@code "elicitation"} capability.
      */
-    boolean isSupported();
+    boolean isFormSupported();
 
     /**
      * Returns {@code true} if the connected client declared URL mode support

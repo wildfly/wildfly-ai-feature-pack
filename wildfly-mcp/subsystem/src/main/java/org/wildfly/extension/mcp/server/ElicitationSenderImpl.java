@@ -26,6 +26,8 @@ import org.wildfly.extension.mcp.injection.elicitation.ElicitationSender;
 import org.wildfly.extension.mcp.injection.elicitation.PrimitiveSchema;
 
 import static org.wildfly.extension.mcp.MCPLogger.ROOT_LOGGER;
+import static org.wildfly.extension.mcp.injection.elicitation.Elicitation.Mode.FORM;
+import static org.wildfly.extension.mcp.injection.elicitation.Elicitation.Mode.URL;
 
 /**
  * Subsystem-side implementation of {@link ElicitationSender}.
@@ -57,7 +59,7 @@ class ElicitationSenderImpl implements ElicitationSender {
     }
 
     @Override
-    public boolean isSupported() {
+    public boolean isFormSupported() {
         return initializeRequest != null && initializeRequest.supportsElicitationForm();
     }
 
@@ -83,8 +85,8 @@ class ElicitationSenderImpl implements ElicitationSender {
     }
 
     private Elicitation.Response sendForm(Elicitation request) throws Exception {
-        if (!isSupported()) {
-            throw new IllegalStateException("Client does not support form-mode elicitation");
+        if (!isFormSupported()) {
+            throw ROOT_LOGGER.elicitationModeNotSupported(FORM);
         }
 
         CompletableFuture<JsonObject> future = new CompletableFuture<>();
@@ -117,7 +119,7 @@ class ElicitationSenderImpl implements ElicitationSender {
 
     private Elicitation.Response sendUrl(Elicitation request) throws Exception {
         if (!isUrlSupported()) {
-            throw new IllegalStateException("Client does not support URL-mode elicitation");
+            throw ROOT_LOGGER.elicitationModeNotSupported(URL);
         }
 
         CompletableFuture<JsonObject> future = new CompletableFuture<>();
