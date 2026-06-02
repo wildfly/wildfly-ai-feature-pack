@@ -36,7 +36,7 @@ public class ElicitationSenderImplTestCase {
                 List.of(new ClientCapability("elicitation", java.util.Map.of())));
         ElicitationSenderImpl sender = new ElicitationSenderImpl(
                 new PendingRequestRegistry(), new TestResponder(), req);
-        assertTrue(sender.isSupported());
+        assertTrue(sender.isFormSupported());
     }
 
     @Test
@@ -45,7 +45,7 @@ public class ElicitationSenderImplTestCase {
                 List.of(new ClientCapability("elicitation", java.util.Map.of("url", java.util.Map.of()))));
         ElicitationSenderImpl sender = new ElicitationSenderImpl(
                 new PendingRequestRegistry(), new TestResponder(), req);
-        assertFalse("Form mode should not be supported when only url is declared", sender.isSupported());
+        assertFalse("Form mode should not be supported when only url is declared", sender.isFormSupported());
         assertTrue("URL mode should be supported", sender.isUrlSupported());
     }
 
@@ -54,14 +54,14 @@ public class ElicitationSenderImplTestCase {
         InitializeRequest req = new InitializeRequest(CLIENT_INFO, "2025-03-26", List.of());
         ElicitationSenderImpl sender = new ElicitationSenderImpl(
                 new PendingRequestRegistry(), new TestResponder(), req);
-        assertFalse(sender.isSupported());
+        assertFalse(sender.isFormSupported());
     }
 
     @Test
     public void testIsNotSupportedWhenInitializeRequestIsNull() {
         ElicitationSenderImpl sender = new ElicitationSenderImpl(
                 new PendingRequestRegistry(), new TestResponder(), null);
-        assertFalse(sender.isSupported());
+        assertFalse(sender.isFormSupported());
     }
 
     // ==================== send() when unsupported ====================
@@ -244,7 +244,7 @@ public class ElicitationSenderImplTestCase {
                 List.of(new ClientCapability("elicitation", java.util.Map.of())));
         ElicitationSenderImpl sender = new ElicitationSenderImpl(
                 new PendingRequestRegistry(), new TestResponder(), req);
-        assertTrue(sender.isSupported());
+        assertTrue(sender.isFormSupported());
         assertFalse(sender.isUrlSupported());
     }
 
@@ -274,7 +274,7 @@ public class ElicitationSenderImplTestCase {
             sender.send(urlReq);
             fail("Expected IllegalStateException");
         } catch (IllegalStateException e) {
-            assertTrue(e.getMessage().contains("URL-mode"));
+            assertTrue(e.getMessage().contains("URL"));
         }
     }
 

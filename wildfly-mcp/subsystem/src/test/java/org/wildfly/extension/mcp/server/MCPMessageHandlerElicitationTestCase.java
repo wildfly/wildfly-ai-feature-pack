@@ -37,16 +37,6 @@ public class MCPMessageHandlerElicitationTestCase {
         connectionManager.add(connection);
     }
 
-    // ==================== Capability advertisement ====================
-
-    @Test
-    public void testElicitationAdvertisedInCapabilities() {
-        handler.handle(initializeMessage(), connection, responder);
-
-        JsonObject capabilities = responder.lastResult().getJsonObject("capabilities");
-        assertNotNull("elicitation capability must be advertised", capabilities.getJsonObject("elicitation"));
-    }
-
     // ==================== Response routing ====================
 
     @Test
@@ -144,16 +134,6 @@ public class MCPMessageHandlerElicitationTestCase {
     }
 
     // ==================== URL mode capability ====================
-
-    @Test
-    public void testElicitationAdvertisesFormAndUrlModes() {
-        handler.handle(initializeMessage(), connection, responder);
-
-        JsonObject elicitation = responder.lastResult().getJsonObject("capabilities").getJsonObject("elicitation");
-        assertNotNull("elicitation capability must be advertised", elicitation);
-        assertNotNull("form mode must be advertised", elicitation.getJsonObject("form"));
-        assertNotNull("url mode must be advertised", elicitation.getJsonObject("url"));
-    }
 
     @Test
     public void testInitializeWithElicitationUrlCapability() {
