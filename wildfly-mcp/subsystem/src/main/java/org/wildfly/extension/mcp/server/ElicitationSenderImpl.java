@@ -151,33 +151,31 @@ class ElicitationSenderImpl implements ElicitationSender {
     }
 
     private Elicitation.Response parseUrlResponse(JsonObject responseMessage) {
-        JsonObject result = responseMessage.getJsonObject("result");
-        if (result == null) {
-            throw new IllegalStateException("Invalid elicitation response (no result): " + responseMessage);
-        }
-        String actionStr = result.getString("action", null);
-        if (actionStr == null) {
-            throw new IllegalStateException("Invalid elicitation response (no action): " + responseMessage);
-        }
-        Elicitation.Response.Action action = Elicitation.Response.Action.valueOf(actionStr.toUpperCase());
+        JsonObject result = parseResult(responseMessage);
+        Elicitation.Response.Action action = parseAction(result, responseMessage);
         return new Elicitation.Response(action, Map.of());
     }
 
     private Elicitation.Response parseFormResponse(JsonObject responseMessage) {
+        JsonObject result = parseResult(responseMessage);
+        Elicitation.Response.Action action = parseAction(result, responseMessage);
+        return new Elicitation.Response(action, parseContent(result.getJsonObject("content")));
+    }
+
+    private static JsonObject parseResult(JsonObject responseMessage) {
         JsonObject result = responseMessage.getJsonObject("result");
         if (result == null) {
             throw new IllegalStateException("Invalid elicitation response (no result): " + responseMessage);
         }
+        return result;
+    }
+
+    private static Elicitation.Response.Action parseAction(JsonObject result, JsonObject responseMessage) {
         String actionStr = result.getString("action", null);
         if (actionStr == null) {
             throw new IllegalStateException("Invalid elicitation response (no action): " + responseMessage);
         }
-        Elicitation.Response.Action action = Elicitation.Response.Action.valueOf(actionStr.toUpperCase());
-
-        JsonObject contentJson = result.getJsonObject("content");
-        Map<String, Object> content = parseContent(contentJson);
-
-        return new Elicitation.Response(action, content);
+        return Elicitation.Response.Action.valueOf(actionStr.toUpperCase());
     }
 
     private Map<String, Object> parseContent(JsonObject contentJson) {

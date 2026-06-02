@@ -110,14 +110,7 @@ public class ElicitationSenderImplTestCase {
             }
         });
 
-        // Wait for the outgoing elicitation/create message to arrive at responder
-        long deadline = System.currentTimeMillis() + 2000;
-        JsonObject outgoing = null;
-        while (System.currentTimeMillis() < deadline) {
-            outgoing = responder.lastMessage();
-            if (outgoing != null) break;
-            Thread.sleep(20);
-        }
+        JsonObject outgoing = awaitOutgoingMessage(responder);
         assertNotNull("Sender should have sent an elicitation/create message", outgoing);
         assertEquals("elicitation/create", outgoing.getString("method"));
 
@@ -171,14 +164,7 @@ public class ElicitationSenderImplTestCase {
             }
         });
 
-        // Wait for outgoing message
-        long deadline = System.currentTimeMillis() + 2000;
-        JsonObject outgoing = null;
-        while (System.currentTimeMillis() < deadline) {
-            outgoing = responder.lastMessage();
-            if (outgoing != null) break;
-            Thread.sleep(20);
-        }
+        JsonObject outgoing = awaitOutgoingMessage(responder);
         assertNotNull(outgoing);
 
         long requestId = outgoing.getJsonNumber("id").longValue();
@@ -304,13 +290,7 @@ public class ElicitationSenderImplTestCase {
             }
         });
 
-        long deadline = System.currentTimeMillis() + 2000;
-        JsonObject outgoing = null;
-        while (System.currentTimeMillis() < deadline) {
-            outgoing = responder.lastMessage();
-            if (outgoing != null) break;
-            Thread.sleep(20);
-        }
+        JsonObject outgoing = awaitOutgoingMessage(responder);
         assertNotNull("Sender should have sent an elicitation/create message", outgoing);
         assertEquals("elicitation/create", outgoing.getString("method"));
 
@@ -359,13 +339,7 @@ public class ElicitationSenderImplTestCase {
             }
         });
 
-        long deadline = System.currentTimeMillis() + 2000;
-        JsonObject outgoing = null;
-        while (System.currentTimeMillis() < deadline) {
-            outgoing = responder.lastMessage();
-            if (outgoing != null) break;
-            Thread.sleep(20);
-        }
+        JsonObject outgoing = awaitOutgoingMessage(responder);
         assertNotNull(outgoing);
 
         long requestId = outgoing.getJsonNumber("id").longValue();
@@ -458,13 +432,7 @@ public class ElicitationSenderImplTestCase {
             }
         });
 
-        long deadline = System.currentTimeMillis() + 2000;
-        JsonObject outgoing = null;
-        while (System.currentTimeMillis() < deadline) {
-            outgoing = responder.lastMessage();
-            if (outgoing != null) break;
-            Thread.sleep(20);
-        }
+        JsonObject outgoing = awaitOutgoingMessage(responder);
         assertNotNull(outgoing);
         assertEquals("form", outgoing.getJsonObject("params").getString("mode"));
 
@@ -480,5 +448,15 @@ public class ElicitationSenderImplTestCase {
                 .build();
         registry.handleResponse(clientResponse.get("id"), clientResponse);
         responseFuture.get(2, TimeUnit.SECONDS);
+    }
+
+    private static JsonObject awaitOutgoingMessage(TestResponder responder) throws InterruptedException {
+        long deadline = System.currentTimeMillis() + 2000;
+        while (System.currentTimeMillis() < deadline) {
+            JsonObject msg = responder.lastMessage();
+            if (msg != null) return msg;
+            Thread.sleep(20);
+        }
+        return null;
     }
 }

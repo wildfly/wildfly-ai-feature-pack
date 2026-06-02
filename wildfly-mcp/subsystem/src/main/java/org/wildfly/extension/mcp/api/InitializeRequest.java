@@ -5,6 +5,7 @@
 package org.wildfly.extension.mcp.api;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.wildfly.extension.mcp.api.ClientCapability.ELICITATION;
 import static org.wildfly.extension.mcp.api.ClientCapability.FORM;
@@ -14,14 +15,23 @@ public record InitializeRequest(Implementation implementation, String protocolVe
         List<ClientCapability> clientCapabilities) {
 
     public boolean supportsElicitationForm() {
-        return clientCapabilities != null && clientCapabilities.stream()
-                .filter(c -> ELICITATION.equals(c.name()))
-                .anyMatch(c -> c.properties().isEmpty() || c.properties().containsKey(FORM));
+        return findElicitationCapability()
+                .map(c -> c.properties().isEmpty() || c.properties().containsKey(FORM))
+                .orElse(false);
     }
 
     public boolean supportsElicitationUrl() {
-        return clientCapabilities != null && clientCapabilities.stream()
+        return findElicitationCapability()
+                .map(c -> c.properties().containsKey(URL))
+                .orElse(false);
+    }
+
+    private Optional<ClientCapability> findElicitationCapability() {
+        if (clientCapabilities == null) {
+            return Optional.empty();
+        }
+        return clientCapabilities.stream()
                 .filter(c -> ELICITATION.equals(c.name()))
-                .anyMatch(c -> c.properties().containsKey(URL));
+                .findFirst();
     }
 }
