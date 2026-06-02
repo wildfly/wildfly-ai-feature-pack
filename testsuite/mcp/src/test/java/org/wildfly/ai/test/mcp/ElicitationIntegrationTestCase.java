@@ -29,10 +29,10 @@ public class ElicitationIntegrationTestCase extends AbstractMCPIntegrationTestCa
 
     @Deployment(testable = false)
     public static WebArchive createDeployment() {
-        return ShrinkWrap.create(WebArchive.class, "mcp-test.war")
+        return ShrinkWrap.create(WebArchive.class, "mcp-elicitation.war")
                 .addClass(TestMCPElicitationTool.class)
                 .addClass(TestThirdPartyApplication.class)
-                .addClass(TestThirdPartyApplication.TestOAuthCallbackEndpoint.class)
+                .addClass(TestThirdPartyApplication.TestCallbackEndpoint.class)
                 .addAsWebInfResource(EmptyAsset.INSTANCE, "beans.xml");
     }
 
@@ -182,7 +182,8 @@ public class ElicitationIntegrationTestCase extends AbstractMCPIntegrationTestCa
 
         JsonObject elicitationParams = elicitationMessage.getJsonObject("params");
         assertThat(elicitationParams.getString("mode")).as("Mode should be url").isEqualTo("url");
-        assertThat(elicitationParams.getString("url")).as("Should contain the authorization URL").isEqualTo("/my-app/oauth/authorize");
+        String elicitationUrl = elicitationParams.getString("url");
+        assertThat(elicitationUrl).as("Should contain the authorization URL").isEqualTo("/my-app/callback");
         String toolElicitationId = elicitationParams.getString("elicitationId");
         assertThat(toolElicitationId).as("Should start with known prefix").startsWith("auth-integration-test");
         assertThat(elicitationParams.getString("message")).as("Should contain the prompt message").isEqualTo("Please authenticate with your identity provider");
@@ -195,10 +196,12 @@ public class ElicitationIntegrationTestCase extends AbstractMCPIntegrationTestCa
         int statusCode = postToStreamable(clientResponse);
         assertThat(statusCode).as("Client response POST should succeed").isEqualTo(200);
 
-        URL callbackUrl = deploymentUrl.toURI().resolve("my-app/oauth/callback/" + toolElicitationId).toURL();
+        String relativePath = elicitationUrl.startsWith("/") ? elicitationUrl.substring(1) : elicitationUrl;
+        URL callbackUrl = deploymentUrl.toURI().resolve("%s/%s".formatted(relativePath, toolElicitationId)).toURL();
+        System.out.println(">>> callbackUrl = " + callbackUrl);
         HttpURLConnection callbackConn = (HttpURLConnection) callbackUrl.openConnection();
         callbackConn.setRequestMethod("GET");
-        assertThat(callbackConn.getResponseCode()).as("OAuth callback should succeed").isEqualTo(200);
+        assertThat(callbackConn.getResponseCode()).as("callback should succeed").isEqualTo(200);
         callbackConn.disconnect();
 
         String notificationJson = serverInitiatedMessages.poll(RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
@@ -219,7 +222,7 @@ public class ElicitationIntegrationTestCase extends AbstractMCPIntegrationTestCa
 
         JsonArray content = resultJson.getJsonObject("result").getJsonArray("content");
         assertThat(content.getJsonObject(0).getString("text")).as("Should indicate success")
-                .contains("Authentication successful");
+                .contains("Tool finished");
     }
 
     @Test

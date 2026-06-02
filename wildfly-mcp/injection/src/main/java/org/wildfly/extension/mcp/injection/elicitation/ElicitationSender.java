@@ -17,7 +17,7 @@ package org.wildfly.extension.mcp.injection.elicitation;
  * public String createAccount(String email, ElicitationSender elicitation) throws Exception {
  *     if (elicitation.isSupported()) {
  *         ElicitationResponse response = elicitation.send(
- *             ElicitationRequest.builder("Please confirm the account details")
+ *             ElicitationRequest.formBuilder("Please confirm the account details")
  *                 .addSchemaProperty("confirm", new BooleanSchema(true))
  *                 .build());
  *         if (!response.isAccepted()) return "Cancelled";
@@ -30,15 +30,16 @@ public interface ElicitationSender {
 
     /**
      * Send an elicitation request to the client and block until the client responds
-     * or the timeout (default 30 s) expires.
+     * or the timeout (default 30 s) expires. Supports both form-mode and URL-mode
+     * requests — the mode is determined by the request's {@link Elicitation#mode()}.
      *
-     * @param request the request describing the message and schema
+     * @param elicitation the elicitation request (form or URL mode)
      * @return the client's response
-     * @throws IllegalStateException if the client does not support elicitation
+     * @throws IllegalStateException if the client does not support the required elicitation mode
      * @throws java.util.concurrent.TimeoutException if the client does not respond within the timeout
      * @throws InterruptedException if the calling thread is interrupted while waiting
      */
-    ElicitationResponse send(ElicitationRequest request) throws Exception;
+    Elicitation.Response send(Elicitation elicitation) throws Exception;
 
     /**
      * Returns {@code true} if the connected client declared the {@code "elicitation"} capability.
@@ -51,23 +52,6 @@ public interface ElicitationSender {
      */
     default boolean isUrlSupported() {
         return false;
-    }
-
-    /**
-     * Send a URL-mode elicitation request to the client. The client will present
-     * the URL to the user for out-of-band interaction (e.g. OAuth, password entry).
-     * The response contains only an action (accept/decline/cancel) — no content,
-     * since data flows out-of-band through the URL.
-     *
-     * @param request the URL elicitation request
-     * @return the client's response (action only)
-     * @throws IllegalStateException if the client does not support URL-mode elicitation
-     * @throws UnsupportedOperationException if this sender does not implement URL mode
-     * @throws java.util.concurrent.TimeoutException if the client does not respond within the timeout
-     * @throws InterruptedException if the calling thread is interrupted while waiting
-     */
-    default ElicitationResponse sendUrl(UrlElicitationRequest request) throws Exception {
-        throw new UnsupportedOperationException("URL-mode elicitation is not supported by this sender");
     }
 
     /**

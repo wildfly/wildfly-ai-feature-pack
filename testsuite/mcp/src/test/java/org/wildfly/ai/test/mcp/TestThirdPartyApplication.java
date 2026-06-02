@@ -14,11 +14,11 @@ import jakarta.ws.rs.core.Response;
 @ApplicationPath("/my-app")
 public class TestThirdPartyApplication extends Application {
     /**
-     * Simulates an OAuth callback endpoint that a user's browser would hit
+     * Simulates a callback endpoint that a user's browser would hit
      * after completing an out-of-band authentication flow.
      */
-    @Path("/oauth/callback")
-    public static class TestOAuthCallbackEndpoint {
+    @Path("/callback")
+    public static class TestCallbackEndpoint {
 
         @GET
         @Path("/{elicitationId}")

@@ -11,18 +11,16 @@ import java.util.concurrent.TimeUnit;
 
 import org.mcp_java.server.tools.Tool;
 import org.mcp_java.server.tools.ToolArg;
-import org.wildfly.extension.mcp.injection.elicitation.ElicitationRequest;
-import org.wildfly.extension.mcp.injection.elicitation.ElicitationResponse;
+import org.wildfly.extension.mcp.injection.elicitation.Elicitation;
 import org.wildfly.extension.mcp.injection.elicitation.ElicitationSender;
 import org.wildfly.extension.mcp.injection.elicitation.StringSchema;
-import org.wildfly.extension.mcp.injection.elicitation.UrlElicitationRequest;
 
 public class TestMCPElicitationTool {
 
     private static final ConcurrentHashMap<String, CompletableFuture<Void>> pendingCallbacks = new ConcurrentHashMap<>();
 
     /**
-     * Called by {@link TestThirdPartyApplication.TestOAuthCallbackEndpoint} when the simulated OAuth callback arrives,
+     * Called by {@link TestThirdPartyApplication.TestCallbackEndpoint} when the simulated OAuth callback arrives,
      * unblocking the tool thread that is waiting for the out-of-band interaction to complete.
      */
     static boolean completeOutOfBandInteraction(String elicitationId) {
@@ -39,18 +37,16 @@ public class TestMCPElicitationTool {
         if (!elicitationSender.isSupported()) {
             return "Elicitation not supported by client";
         }
-        ElicitationRequest request = ElicitationRequest.builder("What is your name?")
+        Elicitation elicitation = Elicitation.builder("What is your name?")
                 .addSchemaProperty("name", new StringSchema(true, "Your Name", "Enter your first name"))
                 .timeout(30_000)
                 .build();
-        ElicitationResponse response = elicitationSender.send(request);
-        if (response.isAccepted()) {
-            return "Hello, " + response.getString("name") + "!";
-        } else if (response.isDeclined()) {
-            return "You declined to provide your name.";
-        } else {
-            return "Request was cancelled.";
-        }
+        Elicitation.Response response = elicitationSender.send(elicitation);
+        return switch (response.action()) {
+            case ACCEPT -> "Hello, " + response.getString("name") + "!";
+            case CANCEL -> "Request was cancelled.";
+            case DECLINE -> "You declined to provide your name.";
+        };
     }
 
     @Tool(name = "add-with-confirmation", description = "Adds two numbers after user confirms the operation")
@@ -61,11 +57,11 @@ public class TestMCPElicitationTool {
         if (!elicitationSender.isSupported()) {
             return String.valueOf(a + b);
         }
-        ElicitationRequest request = ElicitationRequest.builder("Confirm: add " + a + " + " + b + "?")
+        Elicitation elicitation = Elicitation.builder("Confirm: add " + a + " + " + b + "?")
                 .addSchemaProperty("confirm", new org.wildfly.extension.mcp.injection.elicitation.BooleanSchema(true))
                 .timeout(30_000)
                 .build();
-        ElicitationResponse response = elicitationSender.send(request);
+        Elicitation.Response response = elicitationSender.send(elicitation);
         if (response.isAccepted() && Boolean.TRUE.equals(response.getBoolean("confirm"))) {
             return "Result: " + (a + b);
         }
@@ -78,17 +74,22 @@ public class TestMCPElicitationTool {
             return "URL elicitation not supported by client";
         }
 
-        String elicitationId = "auth-integration-test" + UUID.randomUUID();
+        String elicitationId = "auth-integration-test-" + UUID.randomUUID();
 
-        UrlElicitationRequest request = UrlElicitationRequest.builder("Please authenticate with your identity provider")
-                .url("/my-app/oauth/authorize")
+        Elicitation elicitation = Elicitation
+                .urlBuilder("Please authenticate with your identity provider",
+                        "/my-app/callback")
                 .elicitationId(elicitationId)
-                .timeout(30_000)
                 .build();
 
-        ElicitationResponse response = elicitationSender.sendUrl(request);
-        if (!response.isAccepted()) {
-            return response.isDeclined() ? "Authentication declined" : "Authentication cancelled";
+        Elicitation.Response response = elicitationSender.send(elicitation);
+        switch (response.action()) {
+            case CANCEL -> {
+                return "Authentication cancelled";
+            }
+            case DECLINE -> {
+                return "Authentication declined";
+            }
         }
 
         // The client accepted — the user consented to open the URL.
@@ -100,6 +101,8 @@ public class TestMCPElicitationTool {
 
         // The out-of-band interaction is complete — notify the client.
         elicitationSender.notifyElicitationComplete(elicitationId);
-        return "Authentication successful";
+
+        // At this point the tool can perform any operation with the authenticated client.
+        return "Tool finished";
     }
 }
