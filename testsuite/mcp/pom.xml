@@ -133,31 +133,6 @@
                     </execution>
                 </executions>
             </plugin>
-
-            <!-- Maven Dependency Plugin - Copy test libraries for Arquillian deployments -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-dependency-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>copy-test-libs</id>
-                        <phase>process-test-classes</phase>
-                        <goals>
-                            <goal>copy</goal>
-                        </goals>
-                        <configuration>
-                            <artifactItems>
-                                <artifactItem>
-                                    <groupId>org.assertj</groupId>
-                                    <artifactId>assertj-core</artifactId>
-                                    <version>${version.assertj}</version>
-                                    <outputDirectory>${project.build.directory}/test-libs</outputDirectory>
-                                </artifactItem>
-                            </artifactItems>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
         </plugins>
     </build>
 

@@ -7,7 +7,6 @@ package org.wildfly.ai.test.mcp;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.StringReader;
@@ -83,7 +82,6 @@ public class MCPPaginationIntegrationTestCase {
     public static WebArchive createDeployment() {
         return ShrinkWrap.create(WebArchive.class, "mcp-pagination-test.war")
                 .addClass(TestMCPPaginationFixtures.class)
-                .addAsLibraries(new File("target/test-libs/assertj-core-3.26.3.jar"))
                 .addAsWebInfResource(EmptyAsset.INSTANCE, "beans.xml");
     }
 
