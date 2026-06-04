@@ -65,6 +65,18 @@ public class ConnectionManager {
 
     /**
      * Removes and closes the connection with the given session ID.
+     * <p>
+     * I/O design: {@code connection.close()} runs outside any {@code synchronized} block intentionally.
+     * Holding the lock during I/O would block {@code cleanup}, {@code add}, and {@code get} on slow
+     * or blocking transports. The connection is removed from the map <em>before</em> being closed, so
+     * concurrent callers cannot double-close the same connection.
+     * </p>
+     * <p>
+     * Trade-off: {@link #broadcastThenShutdown(JsonObject...)} cannot guarantee that zero connections
+     * are closed between its two synchronized phases (broadcast and teardown). A concurrent
+     * {@code cleanup} firing in that window may close a connection after its notification was sent.
+     * This race is benign on a shutdown path.
+     * </p>
      *
      * @param id the session ID of the connection to remove
      * @return {@code true} if the connection existed and was successfully closed; {@code false} otherwise

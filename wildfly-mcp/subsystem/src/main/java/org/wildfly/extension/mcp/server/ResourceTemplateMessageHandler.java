@@ -113,7 +113,7 @@ public class ResourceTemplateMessageHandler {
 
         final MCPFeatureMetadata metadata = registry.findResourceTemplateByUri(resourceUri);
         if (metadata == null) {
-            responder.sendError(id, INVALID_PARAMS, ROOT_LOGGER.noMatchingResourceTempate(resourceUri));
+            responder.sendError(id, INVALID_PARAMS, ROOT_LOGGER.noMatchingResourceTemplate(resourceUri));
             return;
         }
         Map<String, JsonValue> args = extractTemplateArguments(metadata.method().uri(), resourceUri);

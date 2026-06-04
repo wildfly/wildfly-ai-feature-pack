@@ -15,6 +15,7 @@ import jakarta.json.Json;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
 import java.util.List;
+import java.util.Optional;
 import org.junit.Test;
 import org.mcp_java.model.tool.ToolAnnotations;
 import org.wildfly.extension.mcp.api.ConnectionManager;
@@ -196,7 +197,7 @@ public class ToolAnnotationsTestCase {
                 new MethodMetadata("method", "Tool with unloadable return type", null, null,
                         List.of(),
                         "org.test.TestTool", "org.nonexistent.NoSuchType"),
-                null, true, "", "", ""));
+                null, true, Optional.empty(), Optional.empty(), Optional.empty()));
 
         ctx.handler().handle(jsonRpcRequest(3, "tools/list"), ctx.connection(), ctx.responder());
         assertTrue(ctx.responder().hasResult());
@@ -231,7 +232,7 @@ public class ToolAnnotationsTestCase {
                         List.of(new ArgumentMetadata("ignored", "This is ignored", true, String.class)),
                         "org.test.TestTool", "java.lang.String"),
                 null, false,
-                TestInputSchemaGenerator.class.getName(), "", ""));
+                Optional.of(TestInputSchemaGenerator.class.getName()), Optional.empty(), Optional.empty()));
 
         ctx.handler().handle(jsonRpcRequest(3, "tools/list"), ctx.connection(), ctx.responder());
         assertTrue(ctx.responder().hasResult());
@@ -252,8 +253,8 @@ public class ToolAnnotationsTestCase {
                 MCPFeatureMetadata.Kind.TOOL, "gen-out-tool",
                 new MethodMetadata("genOutTool", "Tool with output generator", null, null,
                         List.of(), "org.test.TestTool", "java.lang.String"),
-                null, true, "",
-                TestOutputSchemaGenerator.class.getName(), ""));
+                null, true, Optional.empty(),
+                Optional.of(TestOutputSchemaGenerator.class.getName()), Optional.empty()));
 
         ctx.handler().handle(jsonRpcRequest(3, "tools/list"), ctx.connection(), ctx.responder());
         assertTrue(ctx.responder().hasResult());
@@ -275,7 +276,7 @@ public class ToolAnnotationsTestCase {
                         List.of(new ArgumentMetadata("name", "A name", true, String.class)),
                         "org.test.TestTool", "java.lang.String"),
                 null, false,
-                "org.nonexistent.NoSuchGenerator", "", ""));
+                Optional.of("org.nonexistent.NoSuchGenerator"), Optional.empty(), Optional.empty()));
 
         ctx.handler().handle(jsonRpcRequest(3, "tools/list"), ctx.connection(), ctx.responder());
         assertTrue(ctx.responder().hasResult());
@@ -297,7 +298,7 @@ public class ToolAnnotationsTestCase {
                         List.of(new ArgumentMetadata("name", "A name", true, String.class)),
                         "org.test.TestTool", "java.lang.String"),
                 null, false,
-                "java.lang.String", "", ""));
+                Optional.of("java.lang.String"), Optional.empty(), Optional.empty()));
 
         ctx.handler().handle(jsonRpcRequest(3, "tools/list"), ctx.connection(), ctx.responder());
         assertTrue(ctx.responder().hasResult());
@@ -326,7 +327,7 @@ public class ToolAnnotationsTestCase {
                 new MethodMetadata("testTool", "A test tool", null, null,
                         List.of(new ArgumentMetadata("input", "Test input", true, String.class)),
                         "org.test.TestTool", "java.lang.String"),
-                annotations, structuredContent, "", "", ""));
+                annotations, structuredContent, Optional.empty(), Optional.empty(), Optional.empty()));
 
         ctx.handler().handle(jsonRpcRequest(3, "tools/list"), ctx.connection(), ctx.responder());
         assertTrue(ctx.responder().hasResult());

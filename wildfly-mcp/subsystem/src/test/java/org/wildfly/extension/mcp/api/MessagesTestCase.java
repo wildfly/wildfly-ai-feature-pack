@@ -64,4 +64,14 @@ public class MessagesTestCase {
         assertEquals(JsonValue.ValueType.STRING, error.get("id").getValueType());
         assertEquals("req-abc", error.getString("id"));
     }
+
+    @Test
+    public void testFloatIdWrittenAsString() {
+        // Float ids (e.g. JSON number 1.5) are not supported. Long.parseLong("1.5") throws, the value
+        // is not a quoted string, so it falls through and is written as a JSON string — changing type.
+        // This documents the known limitation; the MCP spec uses integer and string ids in practice.
+        JsonObject result = Messages.newResult("1.5", Json.createObjectBuilder());
+        assertEquals(JsonValue.ValueType.STRING, result.get("id").getValueType());
+        assertEquals("1.5", result.getString("id"));
+    }
 }

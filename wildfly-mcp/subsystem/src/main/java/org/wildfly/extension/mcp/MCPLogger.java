@@ -148,5 +148,17 @@ public interface MCPLogger extends BasicLogger {
     String resourceUriNotDefined();
 
     @Message(id = 35, value = "No resource template matches URI: %s")
-    String noMatchingResourceTempate(String resourceUri);
+    String noMatchingResourceTemplate(String resourceUri);
+
+    @LogMessage(level = ERROR)
+    @Message(id = 36, value = "Skipping tool '%s' from listing (schema generation failed): %s")
+    void errorSkippingToolFromListing(String toolName, String reason);
+
+    @LogMessage(level = WARN)
+    @Message(id = 37, value = "Schema generator class '%s' does not implement ToolSchemaGenerator")
+    void warnSchemaGeneratorInvalidType(String className);
+
+    @LogMessage(level = WARN)
+    @Message(id = 38, value = "Failed to resolve schema generator '%s'")
+    void warnFailedToResolveSchemaGenerator(@Cause Throwable cause, String className);
 }

@@ -5,6 +5,7 @@
 package org.wildfly.extension.mcp.injection.tool;
 
 import java.util.List;
+import java.util.Optional;
 import org.mcp_java.model.tool.ToolAnnotations;
 
 /**
@@ -19,22 +20,16 @@ import org.mcp_java.model.tool.ToolAnnotations;
  * @param method metadata about the Java method that implements this feature
  * @param toolAnnotations optional MCP tool annotations (title, hints) for tools; null for non-tool features
  * @param structuredContent whether the tool returns structured content that should include an outputSchema
- * @param inputSchemaGenerator optional class name of a {@link ToolSchemaGenerator} CDI bean for input schema; empty string if not provided
- * @param outputSchemaGenerator optional class name of a {@link ToolSchemaGenerator} CDI bean for output schema; empty string if not provided
- * @param outputSchemaFrom optional class name to generate output schema from; empty string if not provided
+ * @param inputSchemaGenerator optional class name of a {@link ToolSchemaGenerator} CDI bean for input schema
+ * @param outputSchemaGenerator optional class name of a {@link ToolSchemaGenerator} CDI bean for output schema
+ * @param outputSchemaFrom optional class name to generate output schema from
  */
 public record MCPFeatureMetadata(Kind kind, String name, MethodMetadata method, ToolAnnotations toolAnnotations,
-        boolean structuredContent, String inputSchemaGenerator, String outputSchemaGenerator, String outputSchemaFrom) {
-
-    public MCPFeatureMetadata {
-        inputSchemaGenerator = inputSchemaGenerator != null ? inputSchemaGenerator : "";
-        outputSchemaGenerator = outputSchemaGenerator != null ? outputSchemaGenerator : "";
-        outputSchemaFrom = outputSchemaFrom != null ? outputSchemaFrom : "";
-    }
+        boolean structuredContent, Optional<String> inputSchemaGenerator, Optional<String> outputSchemaGenerator, Optional<String> outputSchemaFrom) {
 
     /** Convenience constructor for non-tool kinds (prompts, resources, completions) that don't carry ToolAnnotations. */
     public MCPFeatureMetadata(Kind kind, String name, MethodMetadata method) {
-        this(kind, name, method, null, false, "", "", "");
+        this(kind, name, method, null, false, Optional.empty(), Optional.empty(), Optional.empty());
     }
 
     /** Returns the human-readable description of the feature, taken from the method metadata. */
