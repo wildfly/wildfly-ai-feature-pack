@@ -12,10 +12,14 @@ import static org.junit.Assert.assertTrue;
 import jakarta.json.Json;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonObjectBuilder;
 import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.wildfly.extension.mcp.server.MCPTestHelpers.initializeMessage;
+import static org.wildfly.extension.mcp.server.MCPTestHelpers.jsonRpcNotification;
+import static org.wildfly.extension.mcp.server.MCPTestHelpers.jsonRpcRequest;
+
 import org.wildfly.extension.mcp.api.ConnectionManager;
 import org.wildfly.extension.mcp.api.MCPConnection;
 import org.wildfly.extension.mcp.injection.WildFlyMCPRegistry;
@@ -150,7 +154,6 @@ public class MCPMessageHandlerTestCase {
     @Test
     public void testResponsesAreDiscarded() {
         moveToOperation();
-        responder.clear();
 
         // A message with both "result" and/or "error" is a response
         JsonObject responseMessage = Json.createObjectBuilder()
@@ -169,7 +172,6 @@ public class MCPMessageHandlerTestCase {
     @Test
     public void testPing() {
         moveToOperation();
-        responder.clear();
 
         handler.handle(jsonRpcRequest(2, "ping"), connection, responder);
 
@@ -182,7 +184,6 @@ public class MCPMessageHandlerTestCase {
     @Test
     public void testToolsList() {
         moveToOperation();
-        responder.clear();
 
         handler.handle(jsonRpcRequest(3, "tools/list"), connection, responder);
 
@@ -223,7 +224,6 @@ public class MCPMessageHandlerTestCase {
     @Test
     public void testPromptsList() {
         moveToOperation();
-        responder.clear();
 
         handler.handle(jsonRpcRequest(4, "prompts/list"), connection, responder);
 
@@ -246,7 +246,6 @@ public class MCPMessageHandlerTestCase {
     @Test
     public void testToolsCallMissingParams() {
         moveToOperation();
-        responder.clear();
 
         handler.handle(jsonRpcRequest(20, "tools/call"), connection, responder);
 
@@ -257,7 +256,6 @@ public class MCPMessageHandlerTestCase {
     @Test
     public void testPromptsGetMissingParams() {
         moveToOperation();
-        responder.clear();
 
         handler.handle(jsonRpcRequest(21, "prompts/get"), connection, responder);
 
@@ -268,7 +266,6 @@ public class MCPMessageHandlerTestCase {
     @Test
     public void testResourcesReadMissingParams() {
         moveToOperation();
-        responder.clear();
 
         handler.handle(jsonRpcRequest(22, "resources/read"), connection, responder);
 
@@ -290,7 +287,6 @@ public class MCPMessageHandlerTestCase {
     @Test
     public void testResourcesSubscribe() {
         moveToOperation();
-        responder.clear();
 
         JsonObject message = Json.createObjectBuilder()
                 .add("jsonrpc", "2.0")
@@ -307,7 +303,6 @@ public class MCPMessageHandlerTestCase {
     @Test
     public void testResourcesSubscribeMissingParams() {
         moveToOperation();
-        responder.clear();
 
         handler.handle(jsonRpcRequest(24, "resources/subscribe"), connection, responder);
 
@@ -318,7 +313,6 @@ public class MCPMessageHandlerTestCase {
     @Test
     public void testResourcesSubscribeMissingUri() {
         moveToOperation();
-        responder.clear();
 
         JsonObject message = Json.createObjectBuilder()
                 .add("jsonrpc", "2.0")
@@ -335,7 +329,6 @@ public class MCPMessageHandlerTestCase {
     @Test
     public void testResourcesUnsubscribe() {
         moveToOperation();
-        responder.clear();
 
         JsonObject message = Json.createObjectBuilder()
                 .add("jsonrpc", "2.0")
@@ -352,7 +345,6 @@ public class MCPMessageHandlerTestCase {
     @Test
     public void testResourcesUnsubscribeMissingParams() {
         moveToOperation();
-        responder.clear();
 
         handler.handle(jsonRpcRequest(27, "resources/unsubscribe"), connection, responder);
 
@@ -363,7 +355,6 @@ public class MCPMessageHandlerTestCase {
     @Test
     public void testResourcesUnsubscribeMissingUri() {
         moveToOperation();
-        responder.clear();
 
         JsonObject message = Json.createObjectBuilder()
                 .add("jsonrpc", "2.0")
@@ -380,7 +371,6 @@ public class MCPMessageHandlerTestCase {
     @Test
     public void testResourcesList() {
         moveToOperation();
-        responder.clear();
 
         handler.handle(jsonRpcRequest(5, "resources/list"), connection, responder);
 
@@ -400,7 +390,6 @@ public class MCPMessageHandlerTestCase {
     @Test
     public void testResourceTemplatesList() {
         moveToOperation();
-        responder.clear();
 
         handler.handle(jsonRpcRequest(6, "resources/templates/list"), connection, responder);
 
@@ -420,7 +409,6 @@ public class MCPMessageHandlerTestCase {
     @Test
     public void testCompletionCompletePromptNoHandler() {
         moveToOperation();
-        responder.clear();
 
         JsonObject message = Json.createObjectBuilder()
                 .add("jsonrpc", "2.0")
@@ -447,7 +435,6 @@ public class MCPMessageHandlerTestCase {
     @Test
     public void testCompletionCompleteResourceNoHandler() {
         moveToOperation();
-        responder.clear();
 
         JsonObject message = Json.createObjectBuilder()
                 .add("jsonrpc", "2.0")
@@ -472,7 +459,6 @@ public class MCPMessageHandlerTestCase {
     @Test
     public void testCompletionMissingRef() {
         moveToOperation();
-        responder.clear();
 
         JsonObject message = Json.createObjectBuilder()
                 .add("jsonrpc", "2.0")
@@ -491,7 +477,6 @@ public class MCPMessageHandlerTestCase {
     @Test
     public void testCompletionUnsupportedRefType() {
         moveToOperation();
-        responder.clear();
 
         JsonObject message = Json.createObjectBuilder()
                 .add("jsonrpc", "2.0")
@@ -585,7 +570,6 @@ public class MCPMessageHandlerTestCase {
     @Test
     public void testUnsupportedMethod() {
         moveToOperation();
-        responder.clear();
 
         handler.handle(jsonRpcRequest(14, "unsupported/method"), connection, responder);
 
@@ -610,7 +594,6 @@ public class MCPMessageHandlerTestCase {
     @Test
     public void testCloseConnection() {
         moveToOperation();
-        responder.clear();
 
         handler.handle(jsonRpcRequest(16, "q/close"), connection, responder);
 
@@ -620,37 +603,6 @@ public class MCPMessageHandlerTestCase {
     // ==================== Helper Methods ====================
 
     private void moveToOperation() {
-        handler.handle(initializeMessage(1), connection, responder);
-        handler.handle(jsonRpcNotification("notifications/initialized"), connection, responder);
-        assertEquals(MCPConnection.Status.IN_OPERATION, connection.status());
-    }
-
-    private JsonObject initializeMessage(int id) {
-        return Json.createObjectBuilder()
-                .add("jsonrpc", "2.0")
-                .add("id", id)
-                .add("method", "initialize")
-                .add("params", Json.createObjectBuilder()
-                        .add("protocolVersion", "2025-03-26")
-                        .add("clientInfo", Json.createObjectBuilder()
-                                .add("name", "test-client")
-                                .add("version", "1.0.0"))
-                        .add("capabilities", Json.createObjectBuilder()))
-                .build();
-    }
-
-    private JsonObject jsonRpcRequest(int id, String method) {
-        return Json.createObjectBuilder()
-                .add("jsonrpc", "2.0")
-                .add("id", id)
-                .add("method", method)
-                .build();
-    }
-
-    private JsonObject jsonRpcNotification(String method) {
-        return Json.createObjectBuilder()
-                .add("jsonrpc", "2.0")
-                .add("method", method)
-                .build();
+        MCPTestHelpers.moveToOperation(handler, connection, responder);
     }
 }

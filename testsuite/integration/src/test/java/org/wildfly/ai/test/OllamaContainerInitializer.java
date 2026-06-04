@@ -24,7 +24,10 @@ public class OllamaContainerInitializer implements TestExecutionListener {
         if (OllamaContainerManager.isAvailable()) {
             System.out.println("=================================================");
             System.out.println("Ollama initialized at: " + OllamaContainerManager.getEndpoint());
-            System.out.println("Model: " + OllamaContainerManager.getModelName());
+            System.out.println("Ollama server version: " + OllamaContainerManager.getServerVersion());
+            System.out.println("Chat model: " + OllamaContainerManager.getModelName());
+            System.out.println("Embedding model: " + OllamaContainerManager.getEmbeddingModelName());
+            System.out.println("Embeddings: " + OllamaContainerManager.getEmbeddingDiagnostic());
             System.out.println("=================================================");
         } else {
             System.out.println("=================================================");

@@ -10,7 +10,6 @@ import org.jboss.arquillian.junit5.ArquillianExtension;
 import org.jboss.shrinkwrap.api.spec.WebArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.wildfly.ai.test.container.AbstractOllamaContainerTestCase;
 import org.wildfly.ai.test.util.DeploymentFactory;
 
 import java.util.ArrayList;
@@ -19,6 +18,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import org.wildfly.ai.test.container.OllamaContainerManager;
 
 /**
  * Integration test for Ollama streaming chat model functionality in WildFly.
@@ -36,7 +36,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @see StreamingChatModel
  */
 @ExtendWith(ArquillianExtension.class)
-public class OllamaStreamingChatModelTestCase extends AbstractOllamaContainerTestCase {
+public class OllamaStreamingChatModelTestCase {
 
     @Deployment
     public static WebArchive createDeployment() {

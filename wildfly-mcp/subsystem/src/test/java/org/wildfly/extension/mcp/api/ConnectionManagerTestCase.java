@@ -4,11 +4,16 @@
  */
 package org.wildfly.extension.mcp.api;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import jakarta.json.Json;
+import jakarta.json.JsonObject;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
@@ -127,6 +132,122 @@ public class ConnectionManagerTestCase {
         manager.stop();
     }
 
+    @Test
+    public void testShutdownClosesAllConnections() {
+        TestableConnection conn1 = new TestableConnection("conn-1");
+        TestableConnection conn2 = new TestableConnection("conn-2");
+        manager.add(conn1);
+        manager.add(conn2);
+        manager.start(1800L, scheduler);
+
+        manager.shutdown();
+
+        assertTrue(conn1.isClosed());
+        assertTrue(conn2.isClosed());
+        assertNull(manager.get("conn-1"));
+        assertNull(manager.get("conn-2"));
+    }
+
+    @Test
+    public void testShutdownWithoutStartIsIdempotent() {
+        manager.shutdown();
+    }
+
+    // ==================== Broadcast ====================
+
+    @Test
+    public void testBroadcastWithNoConnections() {
+        JsonObject notification = Json.createObjectBuilder()
+                .add("jsonrpc", "2.0")
+                .add("method", "notifications/prompts/list_changed")
+                .build();
+        manager.broadcast(notification);
+    }
+
+    @Test
+    public void testBroadcastSendsToInOperationResponder() {
+        TestableResponderConnection conn = new TestableResponderConnection("conn-1", MCPConnection.Status.IN_OPERATION);
+        manager.add(conn);
+
+        JsonObject notification = Json.createObjectBuilder()
+                .add("jsonrpc", "2.0")
+                .add("method", "notifications/prompts/list_changed")
+                .build();
+        manager.broadcast(notification);
+
+        assertEquals(1, conn.receivedMessages().size());
+        assertEquals("notifications/prompts/list_changed", conn.receivedMessages().get(0).getString("method"));
+    }
+
+    @Test
+    public void testBroadcastSkipsNonInOperationConnections() {
+        TestableResponderConnection newConn = new TestableResponderConnection("new", MCPConnection.Status.NEW);
+        TestableResponderConnection initConn = new TestableResponderConnection("init", MCPConnection.Status.INITIALIZING);
+        TestableResponderConnection shutdownConn = new TestableResponderConnection("shutdown", MCPConnection.Status.SHUTDOWN);
+        manager.add(newConn);
+        manager.add(initConn);
+        manager.add(shutdownConn);
+
+        JsonObject notification = Json.createObjectBuilder()
+                .add("jsonrpc", "2.0")
+                .add("method", "notifications/resources/list_changed")
+                .build();
+        manager.broadcast(notification);
+
+        assertTrue(newConn.receivedMessages().isEmpty());
+        assertTrue(initConn.receivedMessages().isEmpty());
+        assertTrue(shutdownConn.receivedMessages().isEmpty());
+    }
+
+    @Test
+    public void testBroadcastSkipsNonResponderConnections() {
+        TestableConnection conn = new TestableConnection("conn-1");
+        manager.add(conn);
+
+        JsonObject notification = Json.createObjectBuilder()
+                .add("jsonrpc", "2.0")
+                .add("method", "notifications/prompts/list_changed")
+                .build();
+        manager.broadcast(notification);
+        // TestableConnection does not implement Responder — no exception, no delivery
+    }
+
+    @Test
+    public void testBroadcastToMultipleActiveConnections() {
+        TestableResponderConnection conn1 = new TestableResponderConnection("conn-1", MCPConnection.Status.IN_OPERATION);
+        TestableResponderConnection conn2 = new TestableResponderConnection("conn-2", MCPConnection.Status.IN_OPERATION);
+        manager.add(conn1);
+        manager.add(conn2);
+
+        JsonObject notification = Json.createObjectBuilder()
+                .add("jsonrpc", "2.0")
+                .add("method", "notifications/prompts/list_changed")
+                .build();
+        manager.broadcast(notification);
+
+        assertEquals(1, conn1.receivedMessages().size());
+        assertEquals(1, conn2.receivedMessages().size());
+    }
+
+    @Test
+    public void testBroadcastMixedConnections() {
+        TestableResponderConnection active = new TestableResponderConnection("active", MCPConnection.Status.IN_OPERATION);
+        TestableResponderConnection initializing = new TestableResponderConnection("initializing", MCPConnection.Status.INITIALIZING);
+        TestableConnection plainConn = new TestableConnection("plain");
+        manager.add(active);
+        manager.add(initializing);
+        manager.add(plainConn);
+
+        JsonObject notification = Json.createObjectBuilder()
+                .add("jsonrpc", "2.0")
+                .add("method", "notifications/prompts/list_changed")
+                .build();
+        manager.broadcast(notification);
+
+        assertEquals(1, active.receivedMessages().size());
+        assertTrue(initializing.receivedMessages().isEmpty());
+    }
+
     // ==================== Test helper ====================
 
     private static class TestableConnection implements MCPConnection {
@@ -195,5 +316,183 @@ public class ConnectionManagerTestCase {
         public long lastActivity() {
             return lastActivity;
         }
+    }
+
+    private static class TestableResponderConnection implements MCPConnection, Responder {
+
+        private final String id;
+        private final Status status;
+        private final List<JsonObject> messages = new ArrayList<>();
+        private final List<JsonObject> syncMessages = new ArrayList<>();
+        private boolean closed = false;
+        private int lastEventId = -1;
+        private final PendingRequestRegistry pendingRequestRegistry = new PendingRequestRegistry();
+
+        TestableResponderConnection(String id, Status status) {
+            this.id = id;
+            this.status = status;
+        }
+
+        List<JsonObject> receivedMessages() {
+            return messages;
+        }
+
+        List<JsonObject> receivedSyncMessages() {
+            return syncMessages;
+        }
+
+        boolean isClosed() {
+            return closed;
+        }
+
+        @Override
+        public int lastEventId() {
+            return lastEventId++;
+        }
+
+        @Override
+        public void send(JsonObject message) {
+            messages.add(message);
+        }
+
+        @Override
+        public void sendSync(JsonObject message) {
+            syncMessages.add(message);
+        }
+
+        @Override
+        public String id() {
+            return id;
+        }
+
+        @Override
+        public Status status() {
+            return status;
+        }
+
+        @Override
+        public boolean initialize(InitializeRequest request) {
+            return false;
+        }
+
+        @Override
+        public boolean setInitialized() {
+            return false;
+        }
+
+        @Override
+        public void task(Future future) {
+        }
+
+        @Override
+        public void cancel() {
+        }
+
+        @Override
+        public void close() {
+            closed = true;
+        }
+
+        @Override
+        public PendingRequestRegistry pendingRequests() {
+            return pendingRequestRegistry;
+        }
+
+        @Override
+        public InitializeRequest initializeRequest() {
+            return null;
+        }
+
+        @Override
+        public long lastActivity() {
+            return System.currentTimeMillis();
+        }
+    }
+
+    // ==================== broadcastThenShutdown ====================
+
+    @Test
+    public void testBroadcastThenShutdownSendsToActiveConnections() {
+        TestableResponderConnection conn1 = new TestableResponderConnection("conn-1", MCPConnection.Status.IN_OPERATION);
+        TestableResponderConnection conn2 = new TestableResponderConnection("conn-2", MCPConnection.Status.IN_OPERATION);
+        manager.add(conn1);
+        manager.add(conn2);
+
+        JsonObject notification = Json.createObjectBuilder()
+                .add("jsonrpc", "2.0")
+                .add("method", "notifications/tools/list_changed")
+                .build();
+        manager.broadcastThenShutdown(notification);
+
+        assertEquals(1, conn1.receivedSyncMessages().size());
+        assertEquals("notifications/tools/list_changed", conn1.receivedSyncMessages().get(0).getString("method"));
+        assertEquals(1, conn2.receivedSyncMessages().size());
+        assertEquals("notifications/tools/list_changed", conn2.receivedSyncMessages().get(0).getString("method"));
+    }
+
+    @Test
+    public void testBroadcastThenShutdownClosesAllConnections() {
+        TestableResponderConnection conn1 = new TestableResponderConnection("conn-1", MCPConnection.Status.IN_OPERATION);
+        TestableResponderConnection conn2 = new TestableResponderConnection("conn-2", MCPConnection.Status.INITIALIZING);
+        manager.add(conn1);
+        manager.add(conn2);
+        manager.start(1800L, scheduler);
+
+        JsonObject notification = Json.createObjectBuilder()
+                .add("jsonrpc", "2.0")
+                .add("method", "notifications/tools/list_changed")
+                .build();
+        manager.broadcastThenShutdown(notification);
+
+        assertTrue(conn1.isClosed());
+        assertTrue(conn2.isClosed());
+        assertNull(manager.get("conn-1"));
+        assertNull(manager.get("conn-2"));
+    }
+
+    @Test
+    public void testBroadcastThenShutdownSkipsNonActiveConnections() {
+        TestableResponderConnection active = new TestableResponderConnection("active", MCPConnection.Status.IN_OPERATION);
+        TestableResponderConnection initializing = new TestableResponderConnection("init", MCPConnection.Status.INITIALIZING);
+        manager.add(active);
+        manager.add(initializing);
+
+        JsonObject notification = Json.createObjectBuilder()
+                .add("jsonrpc", "2.0")
+                .add("method", "notifications/tools/list_changed")
+                .build();
+        manager.broadcastThenShutdown(notification);
+
+        assertEquals(1, active.receivedSyncMessages().size());
+        assertTrue(initializing.receivedSyncMessages().isEmpty());
+        // Both connections are closed regardless of status
+        assertTrue(active.isClosed());
+        assertTrue(initializing.isClosed());
+    }
+
+    @Test
+    public void testBroadcastThenShutdownStopsCleanupTask() {
+        manager.start(1800L, scheduler);
+
+        JsonObject notification = Json.createObjectBuilder()
+                .add("jsonrpc", "2.0")
+                .add("method", "notifications/tools/list_changed")
+                .build();
+        // Must not throw; stop() is called internally before broadcasting
+        manager.broadcastThenShutdown(notification);
+
+        // A second broadcastThenShutdown call must also not throw (cleanup task already stopped)
+        manager.broadcastThenShutdown(notification);
+    }
+
+    @Test
+    public void testBroadcastThenShutdownWithNoConnections() {
+        manager.start(1800L, scheduler);
+        JsonObject notification = Json.createObjectBuilder()
+                .add("jsonrpc", "2.0")
+                .add("method", "notifications/tools/list_changed")
+                .build();
+        // Must not throw when there are no connections
+        manager.broadcastThenShutdown(notification);
     }
 }

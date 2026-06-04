@@ -19,6 +19,7 @@ import org.mcp_java.server.progress.ProgressToken;
 import org.mcp_java.server.progress.ProgressTracker;
 import org.wildfly.extension.mcp.api.Messages;
 import org.wildfly.extension.mcp.api.Responder;
+import org.wildfly.extension.mcp.injection.MCPFieldNames;
 
 class ProgressImpl implements Progress {
 
@@ -52,9 +53,9 @@ class ProgressImpl implements Progress {
         }
         JsonObjectBuilder params = Json.createObjectBuilder();
         if (token.type() == ProgressToken.Type.STRING) {
-            params.add(MCPMessageHandler.PROGRESS_TOKEN, token.asString());
+            params.add(MCPFieldNames.PROGRESS_TOKEN, token.asString());
         } else {
-            params.add(MCPMessageHandler.PROGRESS_TOKEN, token.asInteger().longValue());
+            params.add(MCPFieldNames.PROGRESS_TOKEN, token.asInteger().longValue());
         }
         params.add("progress", progress);
         if (total != null) {

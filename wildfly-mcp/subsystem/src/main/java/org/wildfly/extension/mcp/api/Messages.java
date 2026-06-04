@@ -13,7 +13,7 @@ public class Messages {
     public static JsonObject newResult(String id, JsonObjectBuilder result) {
         JsonObjectBuilder response = Json.createObjectBuilder();
         response.add("jsonrpc", JsonRPC.VERSION);
-        response.add("id", Integer.parseInt(id));
+        addId(response, id);
         response.add("result", result);
         return response.build();
     }
@@ -22,12 +22,50 @@ public class Messages {
         String msg = message == null ? "" : message;
         JsonObjectBuilder response = Json.createObjectBuilder();
         response.add("jsonrpc", JsonRPC.VERSION);
-        response.add("id", Integer.parseInt(id));
+        addId(response, id);
         response.add("error",
                     Json.createObjectBuilder()
                             .add("code", code)
                             .add("message", msg));
         return response.build();
+    }
+
+    /**
+     * Adds the JSON-RPC {@code id} field to the response builder.
+     * <p>
+     * The id string is the {@link jakarta.json.JsonValue#toString()} representation: a bare number
+     * for JSON numbers, a double-quoted string for JSON strings, or {@code null} for absent ids.
+     * This method re-parses accordingly so the output preserves the original type.
+     * </p>
+     */
+    private static void addId(JsonObjectBuilder response, String id) {
+        if (id == null) {
+            response.addNull("id");
+            return;
+        }
+        try {
+            response.add("id", Long.parseLong(id));
+        } catch (NumberFormatException e) {
+            // id is a JSON-encoded string: strip surrounding double quotes
+            if (id.length() >= 2 && id.charAt(0) == '"' && id.charAt(id.length() - 1) == '"') {
+                response.add("id", id.substring(1, id.length() - 1));
+            } else {
+                response.add("id", id);
+            }
+        }
+    }
+
+    /**
+     * Creates a JSON-RPC notification message with no parameters.
+     *
+     * @param method the notification method name
+     * @return a JSON-RPC notification object
+     */
+    public static JsonObject newNotification(String method) {
+        return Json.createObjectBuilder()
+                .add("jsonrpc", JsonRPC.VERSION)
+                .add("method", method)
+                .build();
     }
 
     public static JsonObject newNotification(String method, JsonObjectBuilder params) {
@@ -39,11 +77,10 @@ public class Messages {
     }
 
     public static JsonObject newPing(String id) {
-        return Json.createObjectBuilder()
-                .add("jsonrpc", JsonRPC.VERSION)
-                .add("id", Integer.parseInt(id))
-                .add("method", "ping")
-                .build();
+        JsonObjectBuilder b = Json.createObjectBuilder()
+                .add("jsonrpc", JsonRPC.VERSION);
+        addId(b, id);
+        return b.add("method", "ping").build();
     }
 
     public static JsonObject newRequest(long id, String method, JsonObjectBuilder params) {

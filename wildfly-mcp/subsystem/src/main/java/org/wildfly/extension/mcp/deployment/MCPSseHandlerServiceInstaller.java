@@ -35,6 +35,7 @@ import org.wildfly.elytron.web.undertow.server.ElytronContextAssociationHandler;
 import org.wildfly.elytron.web.undertow.server.ElytronHttpExchange;
 import org.wildfly.extension.mcp.Capabilities;
 import org.wildfly.extension.mcp.api.ConnectionManager;
+import org.wildfly.extension.mcp.api.Messages;
 import org.wildfly.extension.mcp.injection.WildFlyMCPRegistry;
 import org.wildfly.extension.mcp.server.MCPServerSentConnectionCallBack;
 import org.wildfly.extension.mcp.server.MCPStreamableConnectionCallBack;
@@ -112,12 +113,18 @@ public class MCPSseHandlerServiceInstaller implements DeploymentServiceInstaller
                 }
                 ROOT_LOGGER.endpointRegistered(ssePath, host.get().getName());
                 ROOT_LOGGER.endpointRegistered(streamableEndpoint, host.get().getName());
+                connectionManager.broadcast(Messages.newNotification("notifications/prompts/list_changed"),
+                        Messages.newNotification("notifications/resources/list_changed"),
+                        Messages.newNotification("notifications/tools/list_changed"));
             }
         };
         Runnable stop = new Runnable() {
             @Override
             public void run() {
-                connectionManager.stop();
+                connectionManager.broadcastThenShutdown(
+                        Messages.newNotification("notifications/prompts/list_changed"),
+                        Messages.newNotification("notifications/resources/list_changed"),
+                        Messages.newNotification("notifications/tools/list_changed"));
                 host.get().unregisterHandler(ssePath);
                 host.get().unregisterHandler(messagesEndpoint);
                 ROOT_LOGGER.endpointUnregistered(ssePath, host.get().getName());

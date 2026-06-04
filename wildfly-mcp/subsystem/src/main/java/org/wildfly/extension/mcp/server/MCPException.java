@@ -1,6 +1,14 @@
+/*
+ * Copyright The WildFly Authors
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.wildfly.extension.mcp.server;
 
+import static org.wildfly.extension.mcp.MCPLogger.ROOT_LOGGER;
+
 import java.io.Serial;
+import org.wildfly.extension.mcp.api.JsonRPC;
+import org.wildfly.extension.mcp.api.Responder;
 
 class MCPException extends Exception {
 
@@ -9,10 +17,6 @@ class MCPException extends Exception {
 
     private final int jsonRpcError;
 
-    MCPException(String message, Throwable cause, int jsonRpcError) {
-        super(message, cause);
-        this.jsonRpcError = jsonRpcError;
-    }
 
     MCPException(String message, int jsonRpcError) {
         super(message);
@@ -23,4 +27,12 @@ class MCPException extends Exception {
         return jsonRpcError;
     }
 
+    static void sendError(MCPException e, String id, Responder responder) {
+        ROOT_LOGGER.errorProcessingRequest(e);
+        responder.sendError(id, e.getJsonRpcError(), e.getMessage());
+    }
+
+    public static MCPException missingRequiredArgument(String argument) {
+        return new MCPException(ROOT_LOGGER.missingRequiredArgument(argument), JsonRPC.INVALID_PARAMS);
+    }
 }

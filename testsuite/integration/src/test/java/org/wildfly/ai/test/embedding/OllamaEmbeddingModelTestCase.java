@@ -10,7 +10,6 @@ import org.jboss.arquillian.junit5.ArquillianExtension;
 import org.jboss.shrinkwrap.api.spec.WebArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.wildfly.ai.test.container.AbstractOllamaContainerTestCase;
 import org.wildfly.ai.test.util.DeploymentFactory;
 
 import java.util.List;
@@ -31,12 +30,11 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Ollama service to generate embeddings via the llama3.2:1b model. The embedding
  * dimensions depend on the specific Ollama model being used.</p>
  *
- * @see OllamaContainerManager
  * @see DeploymentFactory
  * @see EmbeddingModel
  */
 @ExtendWith(ArquillianExtension.class)
-public class OllamaEmbeddingModelTestCase extends AbstractOllamaContainerTestCase {
+public class OllamaEmbeddingModelTestCase {
 
     /**
      * Creates the test deployment archive.

@@ -78,6 +78,7 @@ public class MCPServerIntegrationTestCase {
     public static WebArchive createDeployment() {
         WebArchive archive = ShrinkWrap.create(WebArchive.class, "mcp-test.war")
                 .addClass(TestMCPTool.class)
+                .addClass(TestMCPTool.AddResult.class)
                 .addClass(TestMCPPrompt.class)
                 .addClass(TestMCPResource.class)
                 .addClass(TestMCPElicitationTool.class)
@@ -630,6 +631,69 @@ public class MCPServerIntegrationTestCase {
 
         String notification = serverInitiatedMessages.poll(RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
         assertThat(notification).as("No notifications should be sent without a token").isNull();
+    }
+
+    // ==================== structuredContent Tests ====================
+
+    @Test
+    public void testStructuredContentToolListIncludesOutputSchema() throws Exception {
+        String response = sendAndReceive("tools/list", null);
+
+        JsonObject json = Json.createReader(new StringReader(response)).readObject();
+        JsonArray tools = json.getJsonObject("result").getJsonArray("tools");
+        JsonObject addStructuredTool = null;
+        for (int i = 0; i < tools.size(); i++) {
+            if ("add-structured".equals(tools.getJsonObject(i).getString("name"))) {
+                addStructuredTool = tools.getJsonObject(i);
+                break;
+            }
+        }
+        assertThat(addStructuredTool).as("add-structured tool should be present").isNotNull();
+        assertThat(addStructuredTool.containsKey("outputSchema")).as("outputSchema should be present").isTrue();
+
+        JsonObject outputSchema = addStructuredTool.getJsonObject("outputSchema");
+        assertThat(outputSchema.getString("type")).as("outputSchema type should be object").isEqualTo("object");
+        assertThat(outputSchema.containsKey("properties")).as("outputSchema should have properties").isTrue();
+        assertThat(outputSchema.getJsonObject("properties").containsKey("sum")).as("Should have sum property").isTrue();
+        assertThat(outputSchema.getJsonObject("properties").containsKey("expression")).as("Should have expression property").isTrue();
+        assertThat(outputSchema.containsKey("$schema")).as("$schema should be stripped").isFalse();
+    }
+
+    @Test
+    public void testStructuredContentToolCallReturnsStructuredContent() throws Exception {
+        String response = sendAndReceive("tools/call", Json.createObjectBuilder()
+                .add("name", "add-structured")
+                .add("arguments", Json.createObjectBuilder().add("a", "3").add("b", "7"))
+                .build());
+
+        JsonObject jsonResponse = Json.createReader(new StringReader(response)).readObject();
+        JsonObject result = jsonResponse.getJsonObject("result");
+        assertThat(result).as("Should contain result").isNotNull();
+
+        // Verify text content is still present
+        JsonArray content = result.getJsonArray("content");
+        assertThat(content).as("Should contain content array").isNotNull();
+        assertThat(content.size()).as("Should have one content block").isEqualTo(1);
+        assertThat(content.getJsonObject(0).getString("type")).as("Content type should be text").isEqualTo("text");
+
+        // Verify structuredContent is present and correct
+        assertThat(result.containsKey("structuredContent")).as("Should contain structuredContent field").isTrue();
+        JsonObject structured = result.getJsonObject("structuredContent");
+        assertThat(structured.getInt("sum")).as("sum should be 10").isEqualTo(10);
+        assertThat(structured.getString("expression")).as("expression should be '3 + 7'").isEqualTo("3 + 7");
+    }
+
+    @Test
+    public void testNonStructuredContentToolOmitsStructuredContent() throws Exception {
+        String response = sendAndReceive("tools/call", Json.createObjectBuilder()
+                .add("name", "add")
+                .add("arguments", Json.createObjectBuilder().add("a", "3").add("b", "7"))
+                .build());
+
+        JsonObject jsonResponse = Json.createReader(new StringReader(response)).readObject();
+        JsonObject result = jsonResponse.getJsonObject("result");
+        assertThat(result).as("Should contain result").isNotNull();
+        assertThat(result.containsKey("structuredContent")).as("Non-structured tool should not have structuredContent").isFalse();
     }
 
     // ==================== MCP-Protocol-Version Header Validation ====================

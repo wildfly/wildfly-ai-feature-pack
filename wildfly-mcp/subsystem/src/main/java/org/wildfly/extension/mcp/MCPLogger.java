@@ -40,11 +40,11 @@ public interface MCPLogger extends BasicLogger {
     @Message(id = 4, value = "Unregistered MCP endpoint '%s' for host '%s'")
     void endpointUnregistered(String path, String hostName);
 
-    @LogMessage(level = ERROR)
+    @LogMessage(level = WARN)
     @Message(id = 5, value = "Invalid HTTP Method: %s")
     void invalidHttpMethod(String method);
 
-    @LogMessage(level = ERROR)
+    @LogMessage(level = WARN)
     @Message(id = 6, value = "Invalid value for HTTP header: %s")
     void invalidAcceptHeaders(String header);
 
@@ -52,7 +52,7 @@ public interface MCPLogger extends BasicLogger {
     @Message(id = 8, value = "Managed executor service not available, using default executor service")
     void managedExecutorServiceNotAvailable();
 
-    @LogMessage(level = ERROR)
+    @LogMessage(level = WARN)
     @Message(id = 9, value = "Invalid MCP-Protocol-Version header: expected '%s' but got '%s'")
     void invalidProtocolVersion(String expected, String actual);
 
@@ -95,4 +95,58 @@ public interface MCPLogger extends BasicLogger {
     @LogMessage(level = ERROR)
     @Message(id = 19, value = "Error invoking completion %s")
     void errorInvokingCompletion(@Cause Throwable cause, String name);
+
+    @LogMessage(level = INFO)
+    @Message(id = 20, value = "Closing stale MCP connection [%s] due to inactivity timeout")
+    void closingStaleConnection(String id);
+
+    @LogMessage(level = ERROR)
+    @Message(id = 21, value = "Failed to close MCP connection %s")
+    void errorClosingConnection(@Cause Throwable cause, String id);
+
+    @LogMessage(level = WARN)
+    @Message(id = 22, value = "Failed to broadcast notification to connection %s")
+    void errorBroadcastingNotification(@Cause Throwable cause, String connectionId);
+
+    @LogMessage(level = WARN)
+    @Message(id = 23, value = "Failed to send shutdown notification to connection %s")
+    void errorBroadcastingShutdownNotification(@Cause Throwable cause, String connectionId);
+
+    @LogMessage(level = WARN)
+    @Message(id = 24, value = "Failed to serialize structuredContent for tool %s")
+    void errorSerializingStructuredContent(@Cause Throwable cause, String toolName);
+
+    @Message(id = 25, value = "Missing required argument: %s")
+    String missingRequiredArgument(String argument);
+
+    @Message(id = 26, value = "Message params must be present")
+    String missingRequiredMessage();
+
+    @LogMessage(level = WARN)
+    @Message(id = 27, value = "Could not generate output schema for return type %s: %s")
+    void errorGeneratingOutputSchema(@Cause Throwable cause, String returnType, String errorMessage);
+
+    @Message(id = 28, value = "Invalid tool name: %s")
+    String invalidToolName(String tool);
+
+    @Message(id = 29, value = "Failed to serialize structured content")
+    String errorSerializingContent();
+
+    @Message(id = 30, value = "Tool invocation failed")
+    String errorInvokingTool();
+
+    @Message(id = 31, value = "pageSize must not be negative: %d")
+    IllegalArgumentException invalidPageSize(int pageSize);
+
+    @Message(id = 32, value = "Invalid prompt name: %s")
+    String invalidPromptName(String prompt);
+
+    @Message(id = 33, value = "Invalid resource name: %s")
+    String invalidResourceName(String resourceUri);
+
+    @Message(id = 34, value = "Resource URI not defined")
+    String resourceUriNotDefined();
+
+    @Message(id = 35, value = "No resource template matches URI: %s")
+    String noMatchingResourceTempate(String resourceUri);
 }
