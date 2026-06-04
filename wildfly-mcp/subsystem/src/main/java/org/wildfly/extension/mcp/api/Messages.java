@@ -37,6 +37,12 @@ public class Messages {
      * for JSON numbers, a double-quoted string for JSON strings, or {@code null} for absent ids.
      * This method re-parses accordingly so the output preserves the original type.
      * </p>
+     * <p>
+     * <b>Limitation:</b> Only integer ({@code long}) and string ids are fully supported. Float ids
+     * such as {@code 1.5} fail {@code Long.parseLong} and are not enclosed in double-quotes, so they
+     * fall through to the else branch and are written back as JSON strings, silently changing their
+     * type. The MCP spec uses integer and string ids in practice, so this is an accepted limitation.
+     * </p>
      */
     private static void addId(JsonObjectBuilder response, String id) {
         if (id == null) {

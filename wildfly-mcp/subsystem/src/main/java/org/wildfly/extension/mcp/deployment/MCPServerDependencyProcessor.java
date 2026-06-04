@@ -23,6 +23,7 @@ import static org.wildfly.extension.mcp.injection.MCPFieldNames.URI_TEMPLATE;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import org.jboss.as.server.deployment.Attachments;
 import org.jboss.as.server.deployment.DeploymentPhaseContext;
 import org.jboss.as.server.deployment.DeploymentUnit;
@@ -197,7 +198,10 @@ public class MCPServerDependencyProcessor implements DeploymentUnitProcessor {
                             arguments,
                             info.declaringClass().toString(),
                             annotation.target().asMethod().returnType().name().toString()),
-                    toolAnnotations, structuredContent, inputSchemaGenerator, outputSchemaGenerator, outputSchemaFrom
+                    toolAnnotations, structuredContent,
+                    Optional.ofNullable(inputSchemaGenerator).filter(s -> !s.isEmpty()),
+                    Optional.ofNullable(outputSchemaGenerator).filter(s -> !s.isEmpty()),
+                    Optional.ofNullable(outputSchemaFrom).filter(s -> !s.isEmpty())
             );
             registry.addTool(name, metadata);
         }

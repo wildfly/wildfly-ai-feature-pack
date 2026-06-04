@@ -60,6 +60,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -131,7 +132,7 @@ public class ToolMessageHandler {
                 tools.add(toolJsonCache.computeIfAbsent(toolMetadata.name(), k -> buildToolJson(toolMetadata)));
             } catch (RuntimeException e) {
                 failedToolNames.add(toolMetadata.name());
-                ROOT_LOGGER.errorf("Skipping tool %s from listing (schema generation failed): %s", toolMetadata.name(), e.getMessage());
+                ROOT_LOGGER.errorSkippingToolFromListing(toolMetadata.name(), e.getMessage());
             }
         }
         JsonObjectBuilder resultBuilder = Json.createObjectBuilder().add(TOOLS, tools);
@@ -152,8 +153,8 @@ public class ToolMessageHandler {
     }
 
     private void addInputSchema(JsonObjectBuilder tool, MCPFeatureMetadata toolMetadata) {
-        if (!toolMetadata.inputSchemaGenerator().isEmpty()) {
-            JsonObject generated = resolveGeneratedSchema(toolMetadata.inputSchemaGenerator());
+        if (toolMetadata.inputSchemaGenerator().isPresent()) {
+            JsonObject generated = resolveGeneratedSchema(toolMetadata.inputSchemaGenerator().get());
             if (generated != null) {
                 tool.add(INPUT_SCHEMA, generated);
                 return;
@@ -209,16 +210,16 @@ public class ToolMessageHandler {
     }
 
     private void addOutputSchema(JsonObjectBuilder tool, MCPFeatureMetadata toolMetadata) {
-        if (!toolMetadata.outputSchemaGenerator().isEmpty()) {
-            JsonObject generated = resolveGeneratedSchema(toolMetadata.outputSchemaGenerator());
+        if (toolMetadata.outputSchemaGenerator().isPresent()) {
+            JsonObject generated = resolveGeneratedSchema(toolMetadata.outputSchemaGenerator().get());
             if (generated != null) {
                 tool.add(OUTPUT_SCHEMA, generated);
                 return;
             }
         }
         if (toolMetadata.structuredContent()) {
-            String outputSchemaType = !toolMetadata.outputSchemaFrom().isEmpty()
-                    ? toolMetadata.outputSchemaFrom()
+            String outputSchemaType = toolMetadata.outputSchemaFrom().isPresent()
+                    ? toolMetadata.outputSchemaFrom().get()
                     : toolMetadata.method().returnType();
             JsonObject outputSchema = generateOutputSchema(outputSchemaType);
             if (outputSchema != null) {
@@ -237,7 +238,7 @@ public class ToolMessageHandler {
         try {
             Class<?> generatorClass = classLoader.loadClass(generatorClassName);
             if (!ToolSchemaGenerator.class.isAssignableFrom(generatorClass)) {
-                ROOT_LOGGER.warnf("Schema generator class %s does not implement ToolSchemaGenerator", generatorClassName);
+                ROOT_LOGGER.warnSchemaGeneratorInvalidType(generatorClassName);
                 return null;
             }
             String schemaJson = invokeSchemaGenerator(generatorClass);
@@ -245,7 +246,7 @@ public class ToolMessageHandler {
                 return reader.readObject();
             }
         } catch (Exception e) {
-            ROOT_LOGGER.warnf("Failed to resolve schema generator %s: %s", generatorClassName, e.getMessage());
+            ROOT_LOGGER.warnFailedToResolveSchemaGenerator(e, generatorClassName);
             return null;
         }
     }
