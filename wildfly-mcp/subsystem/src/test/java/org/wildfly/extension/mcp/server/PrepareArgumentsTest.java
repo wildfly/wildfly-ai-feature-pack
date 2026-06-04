@@ -42,7 +42,7 @@ public class PrepareArgumentsTest {
     @Test
     public void testEmptyArguments() throws Exception {
         MCPFeatureMetadata metadata = makeMetadata(List.of());
-        Object[] result = ToolMessageHandler.prepareArguments(metadata, Map.of(), MAPPER);
+        Object[] result = MCPServerUtils.prepareArguments(metadata.arguments(), Map.of(), MAPPER);
         assertEquals(0, result.length);
     }
 
@@ -50,7 +50,7 @@ public class PrepareArgumentsTest {
     public void testStringArgument() throws Exception {
         MCPFeatureMetadata metadata = makeMetadata(List.of(
                 new ArgumentMetadata("name", "", true, String.class)));
-        Object[] result = ToolMessageHandler.prepareArguments(metadata,
+        Object[] result = MCPServerUtils.prepareArguments(metadata.arguments(),
                 Map.of("name", Json.createValue("hello")), MAPPER);
         assertEquals("hello", result[0]);
     }
@@ -59,7 +59,7 @@ public class PrepareArgumentsTest {
     public void testIntArgument() throws Exception {
         MCPFeatureMetadata metadata = makeMetadata(List.of(
                 new ArgumentMetadata("count", "", true, int.class)));
-        Object[] result = ToolMessageHandler.prepareArguments(metadata,
+        Object[] result = MCPServerUtils.prepareArguments(metadata.arguments(),
                 Map.of("count", Json.createValue(42)), MAPPER);
         assertEquals(42, result[0]);
     }
@@ -68,7 +68,7 @@ public class PrepareArgumentsTest {
     public void testBooleanArgument() throws Exception {
         MCPFeatureMetadata metadata = makeMetadata(List.of(
                 new ArgumentMetadata("flag", "", true, boolean.class)));
-        Object[] result = ToolMessageHandler.prepareArguments(metadata,
+        Object[] result = MCPServerUtils.prepareArguments(metadata.arguments(),
                 Map.of("flag", JsonValue.TRUE), MAPPER);
         assertEquals(true, result[0]);
     }
@@ -77,7 +77,7 @@ public class PrepareArgumentsTest {
     public void testDoubleArgument() throws Exception {
         MCPFeatureMetadata metadata = makeMetadata(List.of(
                 new ArgumentMetadata("value", "", true, double.class)));
-        Object[] result = ToolMessageHandler.prepareArguments(metadata,
+        Object[] result = MCPServerUtils.prepareArguments(metadata.arguments(),
                 Map.of("value", Json.createValue(3.14)), MAPPER);
         assertEquals(3.14, (double) result[0], 0.001);
     }
@@ -86,7 +86,7 @@ public class PrepareArgumentsTest {
     public void testEnumArgument() throws Exception {
         MCPFeatureMetadata metadata = makeMetadata(List.of(
                 new ArgumentMetadata("color", "", true, Color.class)));
-        Object[] result = ToolMessageHandler.prepareArguments(metadata,
+        Object[] result = MCPServerUtils.prepareArguments(metadata.arguments(),
                 Map.of("color", Json.createValue("GREEN")), MAPPER);
         assertEquals(Color.GREEN, result[0]);
     }
@@ -96,7 +96,7 @@ public class PrepareArgumentsTest {
         Type listStringType = TypeHolder.class.getDeclaredField("stringList").getGenericType();
         MCPFeatureMetadata metadata = makeMetadata(List.of(
                 new ArgumentMetadata("items", "", true, listStringType)));
-        Object[] result = ToolMessageHandler.prepareArguments(metadata,
+        Object[] result = MCPServerUtils.prepareArguments(metadata.arguments(),
                 Map.of("items", Json.createArrayBuilder().add("a").add("b").build()), MAPPER);
         assertEquals(List.of("a", "b"), result[0]);
     }
@@ -105,7 +105,7 @@ public class PrepareArgumentsTest {
     public void testPojoArgument() throws Exception {
         MCPFeatureMetadata metadata = makeMetadata(List.of(
                 new ArgumentMetadata("point", "", true, Point.class)));
-        Object[] result = ToolMessageHandler.prepareArguments(metadata,
+        Object[] result = MCPServerUtils.prepareArguments(metadata.arguments(),
                 Map.of("point", Json.createObjectBuilder().add("x", 1).add("y", 2).build()), MAPPER);
         Point p = (Point) result[0];
         assertEquals(1, p.x);
@@ -117,14 +117,14 @@ public class PrepareArgumentsTest {
         MCPFeatureMetadata metadata = makeMetadata(List.of(
                 new ArgumentMetadata("required", "", true, String.class)));
         assertThrows(MCPException.class, () ->
-                ToolMessageHandler.prepareArguments(metadata, Map.of(), MAPPER));
+                MCPServerUtils.prepareArguments(metadata.arguments(), Map.of(), MAPPER));
     }
 
     @Test
     public void testOptionalNullArgument() throws Exception {
         MCPFeatureMetadata metadata = makeMetadata(List.of(
                 new ArgumentMetadata("optional", "", false, String.class)));
-        Object[] result = ToolMessageHandler.prepareArguments(metadata, Map.of(), MAPPER);
+        Object[] result = MCPServerUtils.prepareArguments(metadata.arguments(), Map.of(), MAPPER);
         assertNull(result[0]);
     }
 }

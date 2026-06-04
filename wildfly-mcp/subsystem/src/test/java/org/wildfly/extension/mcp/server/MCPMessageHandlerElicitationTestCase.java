@@ -6,6 +6,7 @@ package org.wildfly.extension.mcp.server;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.wildfly.extension.mcp.server.MCPTestHelpers.initializeMessage;
 
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
@@ -50,7 +51,6 @@ public class MCPMessageHandlerElicitationTestCase {
     @Test
     public void testClientResponseRoutedToPendingRegistry() throws Exception {
         moveToOperation();
-        responder.clear();
 
         // Pre-register a future in the connection's registry so the response has somewhere to go
         CompletableFuture<JsonObject> future = new CompletableFuture<>();
@@ -80,7 +80,6 @@ public class MCPMessageHandlerElicitationTestCase {
     @Test
     public void testClientResponseWithUnknownIdSilentlyDropped() {
         moveToOperation();
-        responder.clear();
 
         // A response with an id that has no registered future
         JsonObject clientResponse = Json.createObjectBuilder()
@@ -98,7 +97,6 @@ public class MCPMessageHandlerElicitationTestCase {
     @Test
     public void testClientErrorResponseRoutedToPendingRegistry() throws Exception {
         moveToOperation();
-        responder.clear();
 
         CompletableFuture<JsonObject> future = new CompletableFuture<>();
         long requestId = connection.pendingRequests().register(future);
@@ -147,24 +145,6 @@ public class MCPMessageHandlerElicitationTestCase {
     // ==================== Helpers ====================
 
     private void moveToOperation() {
-        handler.handle(initializeMessage(), connection, responder);
-        handler.handle(Json.createObjectBuilder()
-                .add("jsonrpc", "2.0")
-                .add("method", "notifications/initialized")
-                .build(), connection, responder);
-    }
-
-    private JsonObject initializeMessage() {
-        return Json.createObjectBuilder()
-                .add("jsonrpc", "2.0")
-                .add("id", 1)
-                .add("method", "initialize")
-                .add("params", Json.createObjectBuilder()
-                        .add("protocolVersion", "2025-03-26")
-                        .add("clientInfo", Json.createObjectBuilder()
-                                .add("name", "test-client")
-                                .add("version", "1.0.0"))
-                        .add("capabilities", Json.createObjectBuilder()))
-                .build();
+        MCPTestHelpers.moveToOperation(handler, connection, responder);
     }
 }

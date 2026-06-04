@@ -1,12 +1,10 @@
 package org.wildfly.ai.test.retriever;
 
 import dev.langchain4j.data.document.Metadata;
-import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.model.embedding.EmbeddingModel;
 import dev.langchain4j.rag.content.Content;
 import dev.langchain4j.rag.content.retriever.ContentRetriever;
-import dev.langchain4j.rag.query.Query;
 import dev.langchain4j.store.embedding.EmbeddingStore;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;

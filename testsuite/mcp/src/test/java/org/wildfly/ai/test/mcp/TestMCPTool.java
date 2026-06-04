@@ -18,4 +18,12 @@ public class TestMCPTool {
     String echo(@ToolArg(description = "The message to echo") String message) {
         return message;
     }
+
+    @Tool(name = "add-structured", description = "Adds two numbers and returns structured result", structuredContent = true)
+    AddResult addStructured(@ToolArg(description = "First number") int a, @ToolArg(description = "Second number") int b) {
+        return new AddResult(a + b, a + " + " + b);
+    }
+
+    public record AddResult(int sum, String expression) {
+    }
 }

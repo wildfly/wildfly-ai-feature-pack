@@ -16,7 +16,7 @@
                     -Dorg.wildfly.ai.ollama.chat.url=${ollama.base.url:http://127.0.0.1:11434}
                     -Dorg.wildfly.ai.ollama.embedding.url=${ollama.base.url:http://127.0.0.1:11434}
                     -Dorg.wildfly.ai.ollama.chat.model.name=${ollama.model.name:llama3.2:1b}
-                    -Dorg.wildfly.ai.ollama.embedding.model.name=${ollama.model.name:llama3.2:1b}
+                    -Dorg.wildfly.ai.ollama.embedding.model.name=${ollama.embedding.model.name:nomic-embed-text}
                 </property>
             </configuration>
         </container>
@@ -34,7 +34,7 @@
                     -Dorg.wildfly.ai.ollama.chat.url=${ollama.base.url:http://127.0.0.1:11434}
                     -Dorg.wildfly.ai.ollama.embedding.url=${ollama.base.url:http://127.0.0.1:11434}
                     -Dorg.wildfly.ai.ollama.chat.model.name=${ollama.model.name:llama3.2:1b}
-                    -Dorg.wildfly.ai.ollama.embedding.model.name=${ollama.model.name:llama3.2:1b}
+                    -Dorg.wildfly.ai.ollama.embedding.model.name=${ollama.embedding.model.name:nomic-embed-text}
                     -Dotel.exporter.otlp.endpoint=${lgtm.otlp.endpoint:http://localhost:4317}
                 </property>
             </configuration>

@@ -8,10 +8,10 @@ import org.jboss.arquillian.junit5.ArquillianExtension;
 import org.jboss.shrinkwrap.api.spec.WebArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.wildfly.ai.test.container.AbstractOllamaContainerTestCase;
 import org.wildfly.ai.test.util.DeploymentFactory;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import org.wildfly.ai.test.container.OllamaContainerManager;
 
 /**
  * Integration test for Ollama chat model functionality in WildFly.
@@ -31,7 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @see DeploymentFactory
  */
 @ExtendWith(ArquillianExtension.class)
-public class OllamaChatModelTestCase extends AbstractOllamaContainerTestCase {
+public class OllamaChatModelTestCase {
 
     /**
      * Creates the test deployment archive.

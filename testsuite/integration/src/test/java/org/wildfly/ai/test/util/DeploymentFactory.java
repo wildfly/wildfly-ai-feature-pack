@@ -3,7 +3,6 @@ package org.wildfly.ai.test.util;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.EmptyAsset;
 import org.jboss.shrinkwrap.api.spec.WebArchive;
-import org.wildfly.ai.test.container.AbstractOllamaContainerTestCase;
 import org.wildfly.ai.test.container.OllamaContainerManager;
 
 import java.io.File;
@@ -52,13 +51,12 @@ public final class DeploymentFactory {
      * {@code target/test-libs} during the {@code process-test-classes} phase.
      * These libraries are then included in Arquillian deployments for in-container testing.</p>
      *
-     * @return array of File references to test library JARs (AssertJ, Hamcrest)
+     * @return array of File references to all JAR files found in the test-libs directory
      */
     private static File[] getTestLibraries() {
-        return new File[]{
-                new File(TEST_LIBS_DIR, "assertj-core-3.26.3.jar"),
-                new File(TEST_LIBS_DIR, "hamcrest-3.0.jar")
-        };
+        File dir = new File(TEST_LIBS_DIR);
+        File[] jars = dir.listFiles((d, name) -> name.endsWith(".jar"));
+        return jars != null ? jars : new File[0];
     }
 
     /**
@@ -91,7 +89,6 @@ public final class DeploymentFactory {
     public static WebArchive createBaseDeployment(String archiveName, Class<?>... additionalClasses) {
         WebArchive archive = ShrinkWrap.create(WebArchive.class, archiveName)
                 .addClass(OllamaContainerManager.class)
-                .addClass(AbstractOllamaContainerTestCase.class)
                 .addAsLibraries(getTestLibraries())
                 .addAsWebInfResource(EmptyAsset.INSTANCE, "beans.xml");
 

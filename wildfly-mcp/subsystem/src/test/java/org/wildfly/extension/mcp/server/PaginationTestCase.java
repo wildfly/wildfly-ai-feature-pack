@@ -9,6 +9,9 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.wildfly.extension.mcp.server.MCPTestHelpers.initializeMessage;
+import static org.wildfly.extension.mcp.server.MCPTestHelpers.jsonRpcNotification;
+import static org.wildfly.extension.mcp.server.MCPTestHelpers.jsonRpcRequest;
 
 import jakarta.json.Json;
 import jakarta.json.JsonArray;
@@ -218,6 +221,41 @@ public class PaginationTestCase {
         assertNull(responder.lastResult().getString("nextCursor", null));
     }
 
+    // ==================== Cursor stale / malformed cursor ====================
+
+    @Test
+    public void testStaleCursorResetsToFirstPage() {
+        // Encode a cursor for an item that has been removed from the list
+        String staleCursor = Cursor.encode("deleted-item");
+        List<String> items = List.of("alpha", "beta", "gamma");
+
+        Cursor.Page<String> page = Cursor.paginate(items, staleCursor, 2, s -> s);
+
+        assertEquals(2, page.items().size());
+        assertEquals("alpha", page.items().get(0));
+        assertEquals("beta", page.items().get(1));
+    }
+
+    @Test
+    public void testStaleCursorWithPageSizeZeroReturnsAll() {
+        String staleCursor = Cursor.encode("ghost");
+        List<String> items = List.of("alpha", "beta");
+
+        Cursor.Page<String> page = Cursor.paginate(items, staleCursor, 0, s -> s);
+
+        assertEquals(2, page.items().size());
+    }
+
+    @Test
+    public void testMalformedCursorResetsToFirstPage() {
+        List<String> items = List.of("alpha", "beta", "gamma");
+
+        Cursor.Page<String> page = Cursor.paginate(items, "!!!not-valid-base64!!!", 2, s -> s);
+
+        assertEquals(2, page.items().size());
+        assertEquals("alpha", page.items().get(0));
+    }
+
     // ==================== Cursor encoding ====================
 
     @Test
@@ -237,39 +275,7 @@ public class PaginationTestCase {
     // ==================== Helpers ====================
 
     private void moveToOperation() {
-        handler.handle(initializeMessage(1), connection, responder);
-        handler.handle(jsonRpcNotification("notifications/initialized"), connection, responder);
-        assertEquals(MCPConnection.Status.IN_OPERATION, connection.status());
-        responder.clear();
-    }
-
-    private JsonObject initializeMessage(int id) {
-        return Json.createObjectBuilder()
-                .add("jsonrpc", "2.0")
-                .add("id", id)
-                .add("method", "initialize")
-                .add("params", Json.createObjectBuilder()
-                        .add("protocolVersion", "2025-03-26")
-                        .add("clientInfo", Json.createObjectBuilder()
-                                .add("name", "test-client")
-                                .add("version", "1.0.0"))
-                        .add("capabilities", Json.createObjectBuilder()))
-                .build();
-    }
-
-    private JsonObject jsonRpcRequest(int id, String method) {
-        return Json.createObjectBuilder()
-                .add("jsonrpc", "2.0")
-                .add("id", id)
-                .add("method", method)
-                .build();
-    }
-
-    private JsonObject jsonRpcNotification(String method) {
-        return Json.createObjectBuilder()
-                .add("jsonrpc", "2.0")
-                .add("method", method)
-                .build();
+        MCPTestHelpers.moveToOperation(handler, connection, responder);
     }
 
     private JsonObject listRequestWithCursor(int id, String method, String cursor) {

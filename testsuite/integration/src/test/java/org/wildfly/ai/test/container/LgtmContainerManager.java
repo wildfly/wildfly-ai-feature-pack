@@ -71,7 +71,7 @@ public class LgtmContainerManager {
             initializeContainer();
             registerShutdownHook();
             available = true;
-        } catch (Exception e) {
+        } catch (Throwable e) {
             System.err.println("LGTM initialization skipped: " + e.getMessage());
             System.err.println("OpenTelemetry integration tests will be disabled");
             available = false;

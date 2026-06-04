@@ -6,6 +6,19 @@ package org.wildfly.extension.mcp.deployment;
 
 import static org.wildfly.extension.mcp.MCPLogger.ROOT_LOGGER;
 import static org.wildfly.extension.mcp.deployment.MCPAttachments.MCP_REGISTRY_METADATA;
+import static org.wildfly.extension.mcp.injection.MCPFieldNames.ANNOTATIONS;
+import static org.wildfly.extension.mcp.injection.MCPFieldNames.DESCRIPTION;
+import static org.wildfly.extension.mcp.injection.MCPFieldNames.DESTRUCTIVE_HINT;
+import static org.wildfly.extension.mcp.injection.MCPFieldNames.IDEMPOTENT_HINT;
+import static org.wildfly.extension.mcp.injection.MCPFieldNames.MIME_TYPE;
+import static org.wildfly.extension.mcp.injection.MCPFieldNames.NAME;
+import static org.wildfly.extension.mcp.injection.MCPFieldNames.OPEN_WORLD_HINT;
+import static org.wildfly.extension.mcp.injection.MCPFieldNames.READ_ONLY_HINT;
+import static org.wildfly.extension.mcp.injection.MCPFieldNames.REQUIRED;
+import static org.wildfly.extension.mcp.injection.MCPFieldNames.STRUCTURED_CONTENT;
+import static org.wildfly.extension.mcp.injection.MCPFieldNames.TITLE;
+import static org.wildfly.extension.mcp.injection.MCPFieldNames.URI;
+import static org.wildfly.extension.mcp.injection.MCPFieldNames.URI_TEMPLATE;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -25,11 +38,11 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.MethodParameterInfo;
 import org.jboss.modules.ModuleLoader;
 import org.wildfly.extension.mcp.Capabilities;
-import org.wildfly.extension.mcp.MCPLogger;
 import org.wildfly.extension.mcp.injection.WildFlyMCPRegistry;
 import org.wildfly.extension.mcp.injection.tool.ArgumentMetadata;
 import org.wildfly.extension.mcp.injection.tool.MCPFeatureMetadata;
 import org.wildfly.extension.mcp.injection.tool.MethodMetadata;
+import org.mcp_java.model.tool.ToolAnnotations;
 import org.wildfly.extension.mcp.injection.elicitation.ElicitationSender;
 import org.mcp_java.server.progress.Progress;
 import org.mcp_java.server.tools.Tool;
@@ -82,8 +95,8 @@ public class MCPServerDependencyProcessor implements DeploymentUnitProcessor {
         }
         DotName promptArg = DotName.createSimple(PromptArg.class);
         for (AnnotationInstance annotation : annotations) {
-            String name = annotation.value("name") != null ? annotation.value("name").asString() : annotation.target().asMethod().name();
-            String description = annotation.value("description") != null ? annotation.value("description").asString() : "";
+            String name = annotation.value(NAME) != null ? annotation.value(NAME).asString() : annotation.target().asMethod().name();
+            String description = annotation.value(DESCRIPTION) != null ? annotation.value(DESCRIPTION).asString() : "";
             MethodInfo info = annotation.target().asMethod();
             List<ArgumentMetadata> arguments = buildArguments(info, promptArg);
             ROOT_LOGGER.debugf("Prompt detected on class %s with method %s with the following annotated parameters %s", info.declaringClass(), info.name(), arguments);
@@ -112,8 +125,8 @@ public class MCPServerDependencyProcessor implements DeploymentUnitProcessor {
         }
         DotName toolArg = DotName.createSimple(ToolArg.class);
         for (AnnotationInstance annotation : annotations) {
-            String name = annotation.value("name") != null ? annotation.value("name").asString() : annotation.target().asMethod().name();
-            String description = annotation.value("description") != null ? annotation.value("description").asString() : "";
+            String name = annotation.value(NAME) != null ? annotation.value(NAME).asString() : annotation.target().asMethod().name();
+            String description = annotation.value(DESCRIPTION) != null ? annotation.value(DESCRIPTION).asString() : "";
             MethodInfo info = annotation.target().asMethod();
             List<ArgumentMetadata> arguments = new ArrayList<>();
             // Iterate all parameters in declaration order so the MethodHandle signature matches exactly.
@@ -129,13 +142,49 @@ public class MCPServerDependencyProcessor implements DeploymentUnitProcessor {
                 } else {
                     AnnotationInstance toolArgAnnotation = param.annotation(toolArg);
                     if (toolArgAnnotation != null) {
-                        String paramName = toolArgAnnotation.value("name") != null ? toolArgAnnotation.value("name").asString() : param.name();
-                        boolean required = toolArgAnnotation.value("required") == null ? true : toolArgAnnotation.value("required").asBoolean();
-                        String paramDescription = toolArgAnnotation.value("description") != null ? toolArgAnnotation.value("description").asString() : "";
+                        String paramName = toolArgAnnotation.value(NAME) != null ? toolArgAnnotation.value(NAME).asString() : param.name();
+                        boolean required = toolArgAnnotation.value(REQUIRED) == null ? true : toolArgAnnotation.value(REQUIRED).asBoolean();
+                        String paramDescription = toolArgAnnotation.value(DESCRIPTION) != null ? toolArgAnnotation.value(DESCRIPTION).asString() : "";
                         Type type = JandexReflection.loadType(param.type());
                         arguments.add(new ArgumentMetadata(paramName, paramDescription, required, type));
                     }
                 }
+            }
+            String title = annotation.value(TITLE) != null ? annotation.value(TITLE).asString() : "";
+            boolean structuredContent = annotation.value(STRUCTURED_CONTENT) != null && annotation.value(STRUCTURED_CONTENT).asBoolean();
+            String inputSchemaGenerator = "";
+            if (annotation.value("inputSchema") != null) {
+                AnnotationInstance inputSchemaAnnotation = annotation.value("inputSchema").asNested();
+                if (inputSchemaAnnotation.value("generator") != null) {
+                    inputSchemaGenerator = inputSchemaAnnotation.value("generator").asString();
+                }
+            }
+            String outputSchemaGenerator = "";
+            String outputSchemaFrom = "";
+            if (annotation.value("outputSchema") != null) {
+                AnnotationInstance outputSchemaAnnotation = annotation.value("outputSchema").asNested();
+                if (outputSchemaAnnotation.value("generator") != null) {
+                    outputSchemaGenerator = outputSchemaAnnotation.value("generator").asString();
+                }
+                if (outputSchemaAnnotation.value("from") != null) {
+                    String fromClass = outputSchemaAnnotation.value("from").asClass().name().toString();
+                    if (!Tool.OutputSchema.class.getName().equals(fromClass)) {
+                        outputSchemaFrom = fromClass;
+                    }
+                }
+            }
+            ToolAnnotations toolAnnotations = null;
+            if (annotation.value(ANNOTATIONS) != null) {
+                AnnotationInstance annotationInst = annotation.value(ANNOTATIONS).asNested();
+                String hintTitle = annotationInst.value(TITLE) != null ? annotationInst.value(TITLE).asString() : title;
+                toolAnnotations = new ToolAnnotations(
+                        hintTitle.isEmpty() ? null : hintTitle,
+                        extractBoxedBooleanHint(annotationInst, READ_ONLY_HINT),
+                        extractBoxedBooleanHint(annotationInst, DESTRUCTIVE_HINT),
+                        extractBoxedBooleanHint(annotationInst, IDEMPOTENT_HINT),
+                        extractBoxedBooleanHint(annotationInst, OPEN_WORLD_HINT));
+            } else if (!title.isEmpty()) {
+                toolAnnotations = new ToolAnnotations(title, null, null, null, null);
             }
             ROOT_LOGGER.debugf("Tool detected on class %s with method %s with the following annotated parameters %s", info.declaringClass(), info.name(), arguments);
             MCPFeatureMetadata metadata = new MCPFeatureMetadata(MCPFeatureMetadata.Kind.TOOL,
@@ -147,7 +196,8 @@ public class MCPServerDependencyProcessor implements DeploymentUnitProcessor {
                             null,
                             arguments,
                             info.declaringClass().toString(),
-                            annotation.target().asMethod().returnType().name().toString())
+                            annotation.target().asMethod().returnType().name().toString()),
+                    toolAnnotations, structuredContent, inputSchemaGenerator, outputSchemaGenerator, outputSchemaFrom
             );
             registry.addTool(name, metadata);
         }
@@ -158,10 +208,10 @@ public class MCPServerDependencyProcessor implements DeploymentUnitProcessor {
             return;
         }
         for (AnnotationInstance annotation : annotations) {
-            String name = annotation.value("name") != null ? annotation.value("name").asString() : annotation.target().asMethod().name();
-            String description = annotation.value("description") != null ? annotation.value("description").asString() : "";
-            String uri = annotation.value("uri") != null ? annotation.value("uri").asString() : "";
-            String mimeType = annotation.value("mimeType") != null ? annotation.value("mimeType").asString() : "";
+            String name = annotation.value(NAME) != null ? annotation.value(NAME).asString() : annotation.target().asMethod().name();
+            String description = annotation.value(DESCRIPTION) != null ? annotation.value(DESCRIPTION).asString() : "";
+            String uri = annotation.value(URI) != null ? annotation.value(URI).asString() : "";
+            String mimeType = annotation.value(MIME_TYPE) != null ? annotation.value(MIME_TYPE).asString() : "";
             MethodInfo info = annotation.target().asMethod();
             ROOT_LOGGER.debugf("Resource detected on class %s with method %s", info.declaringClass(), info.name());
             MCPFeatureMetadata metadata = new MCPFeatureMetadata(MCPFeatureMetadata.Kind.RESOURCE,
@@ -185,10 +235,10 @@ public class MCPServerDependencyProcessor implements DeploymentUnitProcessor {
         }
         DotName resourceTemplateArg = DotName.createSimple(ResourceTemplateArg.class);
         for (AnnotationInstance annotation : annotations) {
-            String name = annotation.value("name") != null ? annotation.value("name").asString() : annotation.target().asMethod().name();
-            String description = annotation.value("description") != null ? annotation.value("description").asString() : "";
-            String uriTemplate = annotation.value("uriTemplate") != null ? annotation.value("uriTemplate").asString() : "";
-            String mimeType = annotation.value("mimeType") != null ? annotation.value("mimeType").asString() : "";
+            String name = annotation.value(NAME) != null ? annotation.value(NAME).asString() : annotation.target().asMethod().name();
+            String description = annotation.value(DESCRIPTION) != null ? annotation.value(DESCRIPTION).asString() : "";
+            String uriTemplate = annotation.value(URI_TEMPLATE) != null ? annotation.value(URI_TEMPLATE).asString() : "";
+            String mimeType = annotation.value(MIME_TYPE) != null ? annotation.value(MIME_TYPE).asString() : "";
             MethodInfo info = annotation.target().asMethod();
             List<ArgumentMetadata> arguments = buildArguments(info, resourceTemplateArg);
             ROOT_LOGGER.debugf("ResourceTemplate detected on class %s with method %s with the following annotated parameters %s", info.declaringClass(), info.name(), arguments);
@@ -236,7 +286,7 @@ public class MCPServerDependencyProcessor implements DeploymentUnitProcessor {
                 } else {
                     AnnotationInstance completeArgAnnotation = param.annotation(completeArgDotName);
                     if (completeArgAnnotation != null) {
-                        argName = completeArgAnnotation.value("name") != null ? completeArgAnnotation.value("name").asString() : param.name();
+                        argName = completeArgAnnotation.value(NAME) != null ? completeArgAnnotation.value(NAME).asString() : param.name();
                         Class<?> type = JandexReflection.loadRawType(param.type());
                         arguments.add(new ArgumentMetadata(argName, "", true, type));
                     } else if (argName == null) {
@@ -262,13 +312,17 @@ public class MCPServerDependencyProcessor implements DeploymentUnitProcessor {
         }
     }
 
+    private static Boolean extractBoxedBooleanHint(AnnotationInstance annotation, String name) {
+        return annotation.value(name) == null ? null : annotation.value(name).asBoolean();
+    }
+
     private List<ArgumentMetadata> buildArguments(MethodInfo info, DotName argAnnotation) {
         List<AnnotationInstance> params = info.annotations(argAnnotation);
         List<ArgumentMetadata> arguments = new ArrayList<>();
         for (AnnotationInstance param : params) {
-            String paramName = param.value("name") != null ? param.value("name").asString() : param.target().asMethodParameter().name();
-            boolean required = param.value("required") == null || param.value("required").asBoolean();
-            String paramDescription = param.value("description") != null ? param.value("description").asString() : "";
+            String paramName = param.value(NAME) != null ? param.value(NAME).asString() : param.target().asMethodParameter().name();
+            boolean required = param.value(REQUIRED) == null || param.value(REQUIRED).asBoolean();
+            String paramDescription = param.value(DESCRIPTION) != null ? param.value(DESCRIPTION).asString() : "";
             Type type = JandexReflection.loadType(param.target().asMethodParameter().type());
             arguments.add(new ArgumentMetadata(paramName, paramDescription, required, type));
         }

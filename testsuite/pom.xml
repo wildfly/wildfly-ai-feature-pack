@@ -20,6 +20,7 @@
         <version.wildfly.arquillian>5.1.0.Final</version.wildfly.arquillian>
         <version.maven.surefire>3.5.5</version.maven.surefire>
         <version.testcontainers>2.0.5</version.testcontainers>
+        <version.commons-lang3>3.20.0</version.commons-lang3>
     </properties>
 
     <dependencyManagement>
@@ -40,6 +41,14 @@
                 <version>${version.testcontainers}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+            <!-- commons-lang3 is a direct (unshaded) dependency of docker-java used by
+            Testcontainers 2.x. Without it, DockerClientProviderStrategy fails to
+            instantiate and LgtmContainerManager cannot start the LGTM container. -->
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-lang3</artifactId>
+                <version>${version.commons-lang3}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

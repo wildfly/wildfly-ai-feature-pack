@@ -23,7 +23,7 @@
         <feature spec="subsystem.ai.ollama-embedding-model">
             <param name="ollama-embedding-model" value="ollama-embeddings"/>
             <param name="base-url" value="${org.wildfly.ai.ollama.embedding.url,env.OLLAMA_EMBEDDING_URL:http://127.0.0.1:11434}"/>
-            <param name="model-name" value="${org.wildfly.ai.ollama.embedding.model.name,env.OLLAMA_EMBEDDING_MODEL_NAME:llama3.1:8b}"/>
+            <param name="model-name" value="${org.wildfly.ai.ollama.embedding.model.name,env.OLLAMA_EMBEDDING_MODEL_NAME:nomic-embed-text}"/>
             <param name="connect-timeout" value="${org.wildfly.ai.ollama.embedding.connect.timeout,env.OLLAMA_EMBEDDING_CONNECT_TIMEOUT:60000}"/>
             <param name="log-requests" value="${org.wildfly.ai.ollama.embedding.log.request,env.OLLAMA_EMBEDDING_LOG_REQUEST:true}"/>
             <param name="log-responses" value="${org.wildfly.ai.ollama.embedding.log.response,env.OLLAMA_EMBEDDING_LOG_RESPONSE:true}"/>

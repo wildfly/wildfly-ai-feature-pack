@@ -1,6 +1,8 @@
 package org.wildfly.ai.test.container;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -18,7 +20,8 @@ import org.testcontainers.utility.DockerImageName;
  * or starts a new Testcontainers-managed instance if needed.</p>
  *
  * <p>The manager uses {@code ollama/ollama:latest} image and automatically pulls
- * the {@code llama3.2:1b} model on first initialization.</p>
+ * the {@code llama3.2:1b} chat model and the {@code nomic-embed-text} embedding model
+ * on first initialization.</p>
  *
  * <p><strong>Lifecycle Management:</strong></p>
  * <ul>
@@ -37,12 +40,16 @@ import org.testcontainers.utility.DockerImageName;
  */
 public class OllamaContainerManager {
 
-    private static final String OLLAMA_IMAGE = "mirror.gcr.io/ollama/ollama:latest";
+    private static final String OLLAMA_IMAGE = "mirror.gcr.io/ollama/ollama:0.24.0";
     private static final String MODEL_NAME = "llama3.2:1b";
+    private static final String EMBEDDING_MODEL_NAME = "nomic-embed-text";
 
     private static OllamaContainer ollama;
     private static volatile boolean initialized = false;
     private static volatile boolean available = false;
+    private static volatile boolean embeddingSupported = false;
+    private static volatile String embeddingDiagnostic = null;
+    private static volatile String serverVersion = null;
 
     /**
      * Static initializer that ensures Ollama is ready before any tests run.
@@ -60,7 +67,7 @@ public class OllamaContainerManager {
             initializeContainer();
             registerShutdownHook();
             available = true;
-        } catch (Exception e) {
+        } catch (Throwable e) {
             System.err.println("Ollama initialization skipped: " + e.getMessage());
             System.err.println("Tests requiring Ollama will be disabled");
             available = false;
@@ -110,14 +117,24 @@ public class OllamaContainerManager {
                 ollama.start();
                 endpoint = ollama.getEndpoint();
 
-                // Pull the model - this is a one-time operation
+                // Pull models - this is a one-time operation
                 ollama.execInContainer("ollama", "pull", MODEL_NAME);
+                ollama.execInContainer("ollama", "pull", EMBEDDING_MODEL_NAME);
                 System.out.println("Started new Ollama container at " + endpoint);
             }
 
             // Set system properties for tests to access
             System.setProperty("ollama.base.url", endpoint);
             System.setProperty("ollama.model.name", MODEL_NAME);
+            System.setProperty("ollama.embedding.model.name", EMBEDDING_MODEL_NAME);
+
+            serverVersion = fetchServerVersion(endpoint);
+
+            embeddingDiagnostic = probeEmbeddingSupport(endpoint, EMBEDDING_MODEL_NAME);
+            embeddingSupported = embeddingDiagnostic.startsWith("OK");
+            if (!embeddingSupported) {
+                System.err.println("Ollama at " + endpoint + " does not support embeddings — embedding tests will be skipped");
+            }
 
             initialized = true;
         }
@@ -152,6 +169,87 @@ public class OllamaContainerManager {
         }
     }
 
+    private static String fetchServerVersion(String endpoint) {
+        HttpURLConnection conn = null;
+        try {
+            URL url = new URI(endpoint + "/api/version").toURL();
+            conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("GET");
+            conn.setConnectTimeout(2000);
+            conn.setReadTimeout(2000);
+            if (conn.getResponseCode() != 200) {
+                return "unknown";
+            }
+            try (java.io.InputStream in = conn.getInputStream()) {
+                String body = new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+                // Response: {"version":"0.x.y"} — extract the value simply
+                int start = body.indexOf("\"version\"");
+                if (start < 0) {
+                    return "unknown";
+                }
+                int colon = body.indexOf(':', start);
+                int quote1 = body.indexOf('"', colon + 1);
+                int quote2 = body.indexOf('"', quote1 + 1);
+                if (quote1 < 0 || quote2 < 0) {
+                    return "unknown";
+                }
+                return body.substring(quote1 + 1, quote2);
+            }
+        } catch (IOException | URISyntaxException e) {
+            return "unknown";
+        } finally {
+            if (conn != null) {
+                conn.disconnect();
+            }
+        }
+    }
+
+    // Returns "OK (N dimensions)" on success, or a diagnostic string describing the failure.
+    private static String probeEmbeddingSupport(String endpoint, String embeddingModel) {
+        HttpURLConnection conn = null;
+        try {
+            URL url = new URI(endpoint + "/api/embeddings").toURL();
+            conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("POST");
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setDoOutput(true);
+            conn.setConnectTimeout(5000);
+            conn.setReadTimeout(10000);
+            byte[] body = ("{\"model\":\"" + embeddingModel + "\",\"prompt\":\"test\"}").getBytes(java.nio.charset.StandardCharsets.UTF_8);
+            try (OutputStream out = conn.getOutputStream()) {
+                out.write(body);
+                int status = conn.getResponseCode();
+                if (status != 200) {
+                    String errorDetail = "";
+                    try (java.io.InputStream err = conn.getErrorStream()) {
+                        if (err != null) {
+                            errorDetail = " — " + new String(err.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8).trim();
+                        }
+                    } catch (IOException ignored) {}
+                    return "HTTP " + status + errorDetail;
+                }
+            }
+            try (InputStream in = conn.getInputStream()) {
+                String responseBody = new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+                // Response: {"embedding":[...]} — count comma-separated values to get dimensions
+                int arrayStart = responseBody.indexOf('[');
+                int arrayEnd = responseBody.lastIndexOf(']');
+                if (arrayStart < 0 || arrayEnd <= arrayStart) {
+                    return "OK (dimensions unknown)";
+                }
+                String values = responseBody.substring(arrayStart + 1, arrayEnd).trim();
+                int dimensions = values.isEmpty() ? 0 : values.split(",").length;
+                return "OK (" + dimensions + " dimensions)";
+            }
+        } catch (IOException | URISyntaxException e) {
+            return "error: " + e.getMessage();
+        } finally {
+            if (conn != null) {
+                conn.disconnect();
+            }
+        }
+    }
+
     /**
      * Returns the Ollama API endpoint URL.
      *
@@ -175,6 +273,24 @@ public class OllamaContainerManager {
     }
 
     /**
+     * Returns the name of the Ollama model used for embedding tests.
+     *
+     * @return the embedding model name ({@code nomic-embed-text})
+     */
+    public static String getEmbeddingModelName() {
+        return EMBEDDING_MODEL_NAME;
+    }
+
+    /**
+     * Returns the Ollama server version as reported by the {@code /api/version} endpoint.
+     *
+     * @return the version string (e.g., {@code "0.24.0"}), or {@code "unknown"} if it could not be determined
+     */
+    public static String getServerVersion() {
+        return serverVersion != null ? serverVersion : "unknown";
+    }
+
+    /**
      * Checks if the Ollama instance has been initialized.
      *
      * @return {@code true} if initialization completed successfully, {@code false} otherwise
@@ -193,5 +309,29 @@ public class OllamaContainerManager {
      */
     public static boolean isAvailable() {
         return available;
+    }
+
+    /**
+     * Checks if the Ollama instance supports the embeddings API.
+     *
+     * <p>Old Ollama versions (pre-0.1.30) required a {@code --embeddings} flag to enable
+     * the {@code /api/embeddings} endpoint. This method probes the endpoint during
+     * initialization so that embedding tests can skip gracefully on unsupported instances.</p>
+     *
+     * @return {@code true} if the embeddings endpoint responded successfully, {@code false} otherwise
+     */
+    public static boolean isEmbeddingSupported() {
+        return embeddingSupported;
+    }
+
+    /**
+     * Returns a diagnostic string describing the result of the embeddings endpoint probe.
+     *
+     * <p>Examples: {@code "OK (384 dimensions)"}, {@code "HTTP 404"}, {@code "error: Connection refused"}.</p>
+     *
+     * @return diagnostic string, or {@code "not probed"} if initialization has not run
+     */
+    public static String getEmbeddingDiagnostic() {
+        return embeddingDiagnostic != null ? embeddingDiagnostic : "not probed";
     }
 }

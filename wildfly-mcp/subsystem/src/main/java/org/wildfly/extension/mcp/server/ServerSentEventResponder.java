@@ -6,6 +6,7 @@ package org.wildfly.extension.mcp.server;
 
 import static org.wildfly.extension.mcp.MCPLogger.ROOT_LOGGER;
 import static org.wildfly.extension.mcp.api.ConnectionManager.MCP_SESSION_ID_HEADER;
+
 import io.undertow.server.handlers.sse.ServerSentEventConnection;
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
@@ -14,12 +15,13 @@ import jakarta.json.JsonWriterFactory;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.Collections;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import org.wildfly.extension.mcp.api.InitializeRequest;
 import org.wildfly.extension.mcp.api.MCPConnection;
 import org.wildfly.extension.mcp.api.Responder;
-import org.wildfly.extension.mcp.MCPLogger;
 
 public class ServerSentEventResponder implements Responder, MCPConnection {
 
@@ -85,11 +87,36 @@ public class ServerSentEventResponder implements Responder, MCPConnection {
         return lastActivity;
     }
 
+    @Override
+    public void sendSync(JsonObject message) throws InterruptedException {
+        try (StringWriter writer = new StringWriter(); JsonWriter jsonWriter = jsonWriterFactory.createWriter(writer)) {
+            jsonWriter.writeObject(message);
+            CountDownLatch latch = new CountDownLatch(1);
+            connection.getResponseHeaders().add(MCP_SESSION_ID_HEADER, id);
+            connection.send(writer.toString(), "message", "" + lastEventId(), new ServerSentEventConnection.EventCallback() {
+                @Override
+                public void done(ServerSentEventConnection connection, String data, String event, String id) {
+                    ROOT_LOGGER.debugf("Message sent: %s", data);
+                    latch.countDown();
+                }
+
+                @Override
+                public void failed(ServerSentEventConnection connection, String data, String event, String id, IOException e) {
+                    ROOT_LOGGER.failedToSendEvent(data);
+                    latch.countDown();
+                }
+            });
+            latch.await(5, TimeUnit.SECONDS);
+        } catch (IOException ex) {
+            throw new RuntimeException("Failed to send sync notification", ex);
+        }
+    }
+
     public void send(String name, String message) {
         this.lastActivity = System.currentTimeMillis();
         ROOT_LOGGER.debugf("Sending message of type %s with content %s", name, message);
         connection.getResponseHeaders().add(MCP_SESSION_ID_HEADER, id);
-        connection.send(message, name,""+ lastEventId(), new ServerSentEventConnection.EventCallback() {
+        connection.send(message, name, "" + lastEventId(), new ServerSentEventConnection.EventCallback() {
             @Override
             public void done(ServerSentEventConnection connection, String data, String event, String id) {
                 ROOT_LOGGER.debugf("Message sent: %s", data);
