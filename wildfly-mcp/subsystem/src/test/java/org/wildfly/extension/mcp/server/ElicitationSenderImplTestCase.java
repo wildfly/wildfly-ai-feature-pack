@@ -20,9 +20,7 @@ import org.junit.Test;
 import org.wildfly.extension.mcp.api.ClientCapability;
 import org.wildfly.extension.mcp.api.Implementation;
 import org.wildfly.extension.mcp.api.InitializeRequest;
-import org.wildfly.extension.mcp.injection.elicitation.BooleanSchema;
 import org.wildfly.extension.mcp.injection.elicitation.Elicitation;
-import org.wildfly.extension.mcp.injection.elicitation.StringSchema;
 
 public class ElicitationSenderImplTestCase {
 
@@ -72,9 +70,9 @@ public class ElicitationSenderImplTestCase {
         ElicitationSenderImpl sender = new ElicitationSenderImpl(
                 new PendingRequestRegistry(), new TestResponder(), req);
 
-        Elicitation elicitation = Elicitation.builder("Provide info")
-                .addSchemaProperty("name", new StringSchema(true))
-                .build();
+        Elicitation.FormBuilder form = Elicitation.formBuilder("Provide info");
+        form.addString("name");
+        Elicitation elicitation = form.build();
 
         try {
             sender.send(elicitation);
@@ -95,11 +93,11 @@ public class ElicitationSenderImplTestCase {
 
         ElicitationSenderImpl sender = new ElicitationSenderImpl(registry, responder, req);
 
-        Elicitation elicitation = Elicitation.builder("What is your username?")
-                .addSchemaProperty("username", new StringSchema(true))
-                .addSchemaProperty("notify", new BooleanSchema(false))
-                .timeout(5_000)
-                .build();
+        Elicitation.FormBuilder form = Elicitation.formBuilder("What is your username?");
+        form.addString("username");
+        form.addBoolean("notify").optional().defaultValue(true);
+        form.timeout(5_000);
+        Elicitation elicitation = form.build();
 
         // Call send() on a background thread since it blocks
         CompletableFuture<Elicitation.Response> responseFuture = CompletableFuture.supplyAsync(() -> {
@@ -139,8 +137,8 @@ public class ElicitationSenderImplTestCase {
         Elicitation.Response response = responseFuture.get(2, TimeUnit.SECONDS);
         assertNotNull(response);
         assertTrue(response.isAccepted());
-        assertEquals("alice", response.getString("username"));
-        assertTrue(response.getBoolean("notify"));
+        assertEquals("alice", response.getString("username").orElse(null));
+        assertTrue(response.getBoolean("notify").orElse(false));
     }
 
     @Test
@@ -151,10 +149,10 @@ public class ElicitationSenderImplTestCase {
                 List.of(new ClientCapability("elicitation", java.util.Map.of())));
         ElicitationSenderImpl sender = new ElicitationSenderImpl(registry, responder, req);
 
-        Elicitation elicitation = Elicitation.builder("Confirm?")
-                .addSchemaProperty("field", new StringSchema(true))
-                .timeout(5_000)
-                .build();
+        Elicitation.FormBuilder form = Elicitation.formBuilder("Confirm?");
+        form.addString("field");
+        form.timeout(5_000);
+        Elicitation elicitation = form.build();
 
         CompletableFuture<Elicitation.Response> responseFuture = CompletableFuture.supplyAsync(() -> {
             try {
@@ -191,10 +189,10 @@ public class ElicitationSenderImplTestCase {
                 List.of(new ClientCapability("elicitation", java.util.Map.of())));
         ElicitationSenderImpl sender = new ElicitationSenderImpl(registry, responder, req);
 
-        Elicitation elicitation = Elicitation.builder("Quick timeout test")
-                .addSchemaProperty("field", new StringSchema(false))
-                .timeout(100) // 100 ms timeout
-                .build();
+        Elicitation.FormBuilder form = Elicitation.formBuilder("Quick timeout test");
+        form.addString("field");
+        form.timeout(100); // 100 ms timeout
+        Elicitation elicitation = form.build();
 
         try {
             sender.send(elicitation);
@@ -419,10 +417,10 @@ public class ElicitationSenderImplTestCase {
 
         ElicitationSenderImpl sender = new ElicitationSenderImpl(registry, responder, req);
 
-        Elicitation elicitation = Elicitation.builder("Name?")
-                .addSchemaProperty("name", new StringSchema(true))
-                .timeout(5_000)
-                .build();
+        Elicitation.FormBuilder form = Elicitation.formBuilder("Name?");
+        form.addString("name");
+        form.timeout(5_000);
+        Elicitation elicitation = form.build();
 
         CompletableFuture<Elicitation.Response> responseFuture = CompletableFuture.supplyAsync(() -> {
             try {

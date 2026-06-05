@@ -4,12 +4,12 @@
  */
 package org.wildfly.extension.mcp.injection.elicitation;
 
-import org.wildfly.extension.mcp.injection.MCPLogger;
-
+import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.UUID.randomUUID;
@@ -28,10 +28,10 @@ import static org.wildfly.extension.mcp.injection.MCPLogger.ROOT_LOGGER;
  *
  * <p>Form mode example:</p>
  * <pre>{@code
- * Elicitation req = Elicitation.formBuilder("Please provide your GitHub username")
- *     .addSchemaProperty("username", new StringSchema(true))
- *     .addSchemaProperty("notify", new BooleanSchema(false))
- *     .build();
+ * Elicitation.FormBuilder form = Elicitation.formBuilder("Please provide your GitHub username");
+ * StringProperty username = form.addString("username");
+ * form.addBoolean("notify").optional().defaultValue(false);
+ * Elicitation elicitation = form.build();
  * }</pre>
  *
  * <p>URL mode example:</p>
@@ -50,13 +50,13 @@ public final class Elicitation {
     private final String message;
     private final long timeoutMillis;
     // Form-mode fields
-    private final Map<String, PrimitiveSchema> schemaProperties;
+    private final List<ElicitationProperty<?>> schemaProperties;
     // URL-mode fields
     private final String url;
     private final String elicitationId;
 
     private Elicitation(Mode mode, String message, long timeoutMillis,
-                        Map<String, PrimitiveSchema> schemaProperties,
+                        List<ElicitationProperty<?>> schemaProperties,
                         String url, String elicitationId) {
         this.mode = mode;
         this.message = message;
@@ -66,46 +66,68 @@ public final class Elicitation {
         this.url = url;
     }
 
+    /**
+     * Returns the elicitation mode.
+     */
     public Mode mode() {
         return mode;
     }
 
+    /**
+     * Returns the human-readable message displayed to the user.
+     */
     public String message() {
         return message;
     }
 
+    /**
+     * Returns the timeout in milliseconds to wait for the client's response (default 30 000).
+     */
     public long timeoutMillis() {
         return timeoutMillis;
     }
 
-    public Map<String, PrimitiveSchema> schemaProperties() {
+    /**
+     * Returns the form schema properties that define the fields to collect.
+     * Present only in {@link Mode#FORM} mode; {@code null} in {@link Mode#URL} mode.
+     */
+    public List<ElicitationProperty<?>> schemaProperties() {
         return schemaProperties;
     }
 
+    /**
+     * Returns the URL the client should open for out-of-band interaction.
+     * Present only in {@link Mode#URL} mode; {@code null} in {@link Mode#FORM} mode.
+     */
     public String url() {
         return url;
     }
 
+    /**
+     * Returns the correlation identifier for the out-of-band interaction, used to
+     * match the {@code notifications/elicitation/complete} notification back to this request.
+     * Present only in {@link Mode#URL} mode (auto-generated if not set explicitly);
+     * {@code null} in {@link Mode#FORM} mode.
+     */
     public String elicitationId() {
         return elicitationId;
     }
 
     /**
      * Creates a builder for a form-mode elicitation request.
+     *
+     * @param message the message displayed to the user
      */
     public static FormBuilder formBuilder(String message) {
         return new FormBuilder(message);
     }
 
     /**
-     * Alias for {@link #formBuilder(String)} — preserves the original API.
-     */
-    public static FormBuilder builder(String message) {
-        return formBuilder(message);
-    }
-
-    /**
      * Creates a builder for a URL-mode elicitation request.
+     * If the {@code elicitationId} is not set on the builder, a random UUID is generated.
+     *
+     * @param message the message displayed to the user
+     * @param url     the URL the client should open
      */
     public static UrlBuilder urlBuilder(String message, String url) {
         return new UrlBuilder(message, url);
@@ -114,18 +136,55 @@ public final class Elicitation {
     public static final class FormBuilder {
 
         private final String message;
-        private final Map<String, PrimitiveSchema> schemaProperties = new LinkedHashMap<>();
+        private final List<ElicitationProperty<?>> properties = new ArrayList<>();
         private long timeoutMillis = 30_000L;
 
-        public FormBuilder(String message) {
+        FormBuilder(String message) {
             this.message = requireNonNull(message, ROOT_LOGGER.parameterMustNotBeNull("message"));
         }
 
-        public FormBuilder addSchemaProperty(String key, PrimitiveSchema schema) {
-            requireNonNull(key, ROOT_LOGGER.parameterMustNotBeNull("key"));
-            requireNonNull(schema, ROOT_LOGGER.parameterMustNotBeNull("schema"));
-            schemaProperties.put(key, schema);
-            return this;
+        public StringProperty addString(String name) {
+            StringProperty p = new StringProperty(name);
+            properties.add(p);
+            return p;
+        }
+
+        public BooleanProperty addBoolean(String name) {
+            BooleanProperty p = new BooleanProperty(name);
+            properties.add(p);
+            return p;
+        }
+
+        public IntegerProperty addInteger(String name) {
+            IntegerProperty p = new IntegerProperty(name);
+            properties.add(p);
+            return p;
+        }
+
+        public NumberProperty addNumber(String name) {
+            NumberProperty p = new NumberProperty(name);
+            properties.add(p);
+            return p;
+        }
+
+        public EnumProperty addEnum(String name, String... values) {
+            return addEnum(name, List.of(values));
+        }
+
+        public EnumProperty addEnum(String name, List<String> values) {
+            EnumProperty p = new EnumProperty(name, values);
+            properties.add(p);
+            return p;
+        }
+
+        public MultiStringProperty addMultiString(String name, String... values) {
+            return addMultiString(name, List.of(values));
+        }
+
+        public MultiStringProperty addMultiString(String name, List<String> values) {
+            MultiStringProperty p = new MultiStringProperty(name, values);
+            properties.add(p);
+            return p;
         }
 
         public FormBuilder timeout(long millis) {
@@ -137,12 +196,11 @@ public final class Elicitation {
         }
 
         public Elicitation build() {
-            if (schemaProperties.isEmpty()) {
-                throw ROOT_LOGGER.mustHaveAtLeastOneSchemaProperty();
+            if (properties.isEmpty()) {
+                throw new IllegalStateException("At least one property must be added");
             }
             return new Elicitation(Mode.FORM, message, timeoutMillis,
-                    Collections.unmodifiableMap(new LinkedHashMap<>(schemaProperties)),
-                    null, null);
+                    List.copyOf(properties), null, null);
         }
     }
 
@@ -172,8 +230,9 @@ public final class Elicitation {
         }
 
         public Elicitation build() {
+            String id = elicitationId != null ? elicitationId: randomUUID().toString();
             return new Elicitation(Mode.URL, message, timeoutMillis,
-                    null, url, elicitationId);
+                    null, url, id);
         }
     }
 
@@ -205,30 +264,67 @@ public final class Elicitation {
             return action == Action.CANCEL;
         }
 
-        public String getString(String key) {
+        public Optional<String> getString(String key) {
             Object v = content.get(key);
-            return v instanceof String s ? s : null;
+            return v instanceof String s ? Optional.of(s) : Optional.empty();
         }
 
-        public Boolean getBoolean(String key) {
-            Object v = content.get(key);
-            return v instanceof Boolean b ? b : null;
+        public Optional<String> getString(StringProperty property) {
+            Object v = content.get(property.name());
+            if (v instanceof String s) return Optional.of(s);
+            return Optional.ofNullable(property.defaultValue());
         }
 
-        public Integer getInteger(String key) {
-            Object v = content.get(key);
-            return v instanceof Number n ? n.intValue() : null;
+        public Optional<String> getString(EnumProperty property) {
+            Object v = content.get(property.name());
+            if (v instanceof String s) return Optional.of(s);
+            return Optional.ofNullable(property.defaultValue());
         }
 
-        public Number getNumber(String key) {
+        public Optional<Boolean> getBoolean(String key) {
             Object v = content.get(key);
-            return v instanceof Number n ? n : null;
+            return v instanceof Boolean b ? Optional.of(b) : Optional.empty();
+        }
+
+        public Optional<Boolean> getBoolean(BooleanProperty property) {
+            Object v = content.get(property.name());
+            if (v instanceof Boolean b) return Optional.of(b);
+            return Optional.ofNullable(property.defaultValue());
+        }
+
+        public Optional<Integer> getInteger(String key) {
+            Object v = content.get(key);
+            return v instanceof Number n ? Optional.of(n.intValue()) : Optional.empty();
+        }
+
+        public Optional<Integer> getInteger(IntegerProperty property) {
+            Object v = content.get(property.name());
+            if (v instanceof Number n) return Optional.of(n.intValue());
+            return Optional.ofNullable(property.defaultValue());
+        }
+
+        public Optional<Double> getNumber(String key) {
+            Object v = content.get(key);
+            return v instanceof Number n ? Optional.of(n.doubleValue()) : Optional.empty();
+        }
+
+        public Optional<Double> getNumber(NumberProperty property) {
+            Object v = content.get(property.name());
+            if (v instanceof Number n) return Optional.of(n.doubleValue());
+            return Optional.ofNullable(property.defaultValue());
         }
 
         @SuppressWarnings("unchecked")
-        public List<String> getStrings(String key) {
+        public Optional<List<String>> getStrings(String key) {
             Object v = content.get(key);
-            return v instanceof List ? (List<String>) v : null;
+            return v instanceof List ? Optional.of((List<String>) v) : Optional.empty();
+        }
+
+        @SuppressWarnings("unchecked")
+        public Optional<List<String>> getStrings(MultiStringProperty property) {
+            Object v = content.get(property.name());
+            if (v instanceof List) return Optional.of((List<String>) v);
+            return Optional.ofNullable(property.defaultValue());
         }
     }
 }

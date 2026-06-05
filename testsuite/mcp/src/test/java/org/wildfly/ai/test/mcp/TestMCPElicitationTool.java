@@ -11,9 +11,10 @@ import java.util.concurrent.TimeUnit;
 
 import org.mcp_java.server.tools.Tool;
 import org.mcp_java.server.tools.ToolArg;
+import org.wildfly.extension.mcp.injection.elicitation.BooleanProperty;
 import org.wildfly.extension.mcp.injection.elicitation.Elicitation;
 import org.wildfly.extension.mcp.injection.elicitation.ElicitationSender;
-import org.wildfly.extension.mcp.injection.elicitation.StringSchema;
+import org.wildfly.extension.mcp.injection.elicitation.StringProperty;
 
 public class TestMCPElicitationTool {
 
@@ -37,13 +38,14 @@ public class TestMCPElicitationTool {
         if (!elicitationSender.isFormSupported()) {
             return "Elicitation Form Mode not supported by client";
         }
-        Elicitation elicitation = Elicitation.builder("What is your name?")
-                .addSchemaProperty("name", new StringSchema(true, "Your Name", "Enter your first name"))
-                .timeout(30_000)
-                .build();
-        Elicitation.Response response = elicitationSender.send(elicitation);
+        Elicitation.FormBuilder form = Elicitation.formBuilder("What is your name?")
+                .timeout(30_000);
+        form.addString("name")
+                .title("Your Name")
+                .description("Enter your first name");
+        Elicitation.Response response = elicitationSender.send(form.build());
         return switch (response.action()) {
-            case ACCEPT -> "Hello, " + response.getString("name") + "!";
+            case ACCEPT -> "Hello, " + response.getString("name").orElse("stranger") + "!";
             case CANCEL -> "Request was cancelled.";
             case DECLINE -> "You declined to provide your name.";
         };
@@ -57,12 +59,13 @@ public class TestMCPElicitationTool {
         if (!elicitationSender.isFormSupported()) {
             return String.valueOf(a + b);
         }
-        Elicitation elicitation = Elicitation.builder("Confirm: add " + a + " + " + b + "?")
-                .addSchemaProperty("confirm", new org.wildfly.extension.mcp.injection.elicitation.BooleanSchema(true))
-                .timeout(30_000)
-                .build();
-        Elicitation.Response response = elicitationSender.send(elicitation);
-        if (response.isAccepted() && Boolean.TRUE.equals(response.getBoolean("confirm"))) {
+        Elicitation.FormBuilder form = Elicitation.formBuilder("Confirm: add " + a + " + " + b + "?")
+                .timeout(30_000);
+        BooleanProperty confirm = form.addBoolean("confirm")
+                .optional()
+                .defaultValue(false);
+        Elicitation.Response response = elicitationSender.send(form.build());
+        if (response.isAccepted() && response.getBoolean(confirm).orElse(confirm.defaultValue())) {
             return "Result: " + (a + b);
         }
         return "Operation not confirmed.";

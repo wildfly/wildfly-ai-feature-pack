@@ -34,4 +34,5 @@ public record InitializeRequest(Implementation implementation, String protocolVe
                 .filter(c -> ELICITATION.equals(c.name()))
                 .findFirst();
     }
+
 }
