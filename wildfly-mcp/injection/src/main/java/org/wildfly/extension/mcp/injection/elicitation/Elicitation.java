@@ -76,14 +76,26 @@ public final class Elicitation {
         return timeoutMillis;
     }
 
+    /**
+     * Schema of the properties used by the Elicitation Form mode.
+     * Mandatory for elicitation Form mode, ignored for Elicitation URL mode.
+     */
     public Map<String, PrimitiveSchema> schemaProperties() {
         return schemaProperties;
     }
 
+    /**
+     * URL to present to the client when the Elicitation URL mode is used.
+     * Mandatory for Elicitation URL mode, ignored for Elicitation Form mode
+     */
     public String url() {
         return url;
     }
 
+    /**
+     * Elicitation ID used by the Elicitation URL mode.
+     * Mandatory for Elicitation URL mode, ignored for Elicitation Form mode
+     */
     public String elicitationId() {
         return elicitationId;
     }
