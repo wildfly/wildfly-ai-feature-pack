@@ -10,7 +10,7 @@ import jakarta.json.JsonObjectBuilder;
  * Marker interface for MCP elicitation schema property types.
  * Each implementation serializes itself to JSON Schema via {@link #asJson()}.
  */
-public interface PrimitiveSchema {
+public sealed interface PrimitiveSchema permits BooleanSchema, EnumSchema, IntegerSchema, NumberSchema, StringSchema {
 
     boolean required();
 

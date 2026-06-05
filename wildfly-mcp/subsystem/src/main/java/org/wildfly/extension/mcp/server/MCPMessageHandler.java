@@ -6,8 +6,10 @@ package org.wildfly.extension.mcp.server;
 
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
+import jakarta.json.JsonValue;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -59,7 +61,6 @@ public class MCPMessageHandler {
         capabilities.put("tools", Map.of());
         capabilities.put("resources", Map.of("subscribe", true));
         capabilities.put("completions", Map.of());
-        capabilities.put("elicitation", Map.of());
         this.serverInfo.put("capabilities", capabilities);
     }
 
@@ -220,8 +221,14 @@ public class MCPMessageHandler {
         JsonObject capabilities = params.getJsonObject("capabilities");
         if (capabilities != null) {
             for (String name : capabilities.keySet()) {
-                // TODO capability properties
-                clientCapabilities.add(new ClientCapability(name, Map.of()));
+                JsonValue capValue = capabilities.get(name);
+                Map<String, Object> properties = new LinkedHashMap<>();
+                if (capValue.getValueType() == JsonValue.ValueType.OBJECT) {
+                    for (String prop : capValue.asJsonObject().keySet()) {
+                        properties.put(prop, Map.of());
+                    }
+                }
+                clientCapabilities.add(new ClientCapability(name, properties));
             }
         }
         return new InitializeRequest(implementation, protocolVersion, clientCapabilities);

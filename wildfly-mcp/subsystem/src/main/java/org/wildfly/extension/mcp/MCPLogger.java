@@ -19,6 +19,7 @@ import org.jboss.logging.annotations.Cause;
 import org.jboss.logging.annotations.LogMessage;
 import org.jboss.logging.annotations.Message;
 import org.jboss.logging.annotations.MessageLogger;
+import org.wildfly.extension.mcp.injection.elicitation.Elicitation;
 
 @MessageLogger(projectCode = "WFMCP", length = 5)
 public interface MCPLogger extends BasicLogger {
@@ -161,4 +162,7 @@ public interface MCPLogger extends BasicLogger {
     @LogMessage(level = WARN)
     @Message(id = 38, value = "Failed to resolve schema generator '%s'")
     void warnFailedToResolveSchemaGenerator(@Cause Throwable cause, String className);
+
+    @Message(id = 39, value = "Client does not support %s mode elicitation")
+    IllegalStateException elicitationModeNotSupported(Elicitation.Mode mode);
 }

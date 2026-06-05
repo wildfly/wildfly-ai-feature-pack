@@ -6,38 +6,19 @@ package org.wildfly.ai.test.mcp;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.io.StringReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 
 import jakarta.json.Json;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonObjectBuilder;
 
 import org.jboss.arquillian.container.test.api.Deployment;
-import org.jboss.arquillian.container.test.api.RunAsClient;
-import org.jboss.arquillian.junit5.ArquillianExtension;
-import org.jboss.arquillian.test.api.ArquillianResource;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.EmptyAsset;
 import org.jboss.shrinkwrap.api.spec.WebArchive;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * Integration tests for the MCP server subsystem.
@@ -45,135 +26,24 @@ import org.junit.jupiter.api.extension.ExtendWith;
  * <p>Deploys a WAR with MCP-annotated beans (tools, prompts, resources) and tests
  * the MCP protocol via HTTP using the streamable endpoint.</p>
  *
- * <p>The MCP streamable HTTP transport works as follows:
- * <ul>
- *   <li>The first POST (initialize) opens an SSE connection that stays open</li>
- *   <li>All subsequent POST responses are sent back through that SSE connection</li>
- * </ul>
- * Therefore, this test keeps a background reader on the SSE stream and dispatches
- * responses to the correct test via JSON-RPC id correlation.</p>
+ * <p>Elicitation tests are in {@link ElicitationIntegrationTestCase}.</p>
  */
-@ExtendWith(ArquillianExtension.class)
-@RunAsClient
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class MCPServerIntegrationTestCase {
-
-    private static final long RESPONSE_TIMEOUT_SECONDS = 10;
-    private static final String NOTIFICATIONS_PROGRESS = "notifications/progress";
-    private static final String PROGRESS_TOKEN = "progressToken";
-
-    private volatile boolean initialized;
-    private String sessionId;
-    private Thread sseReaderThread;
-    private HttpURLConnection sseConnection;
-
-    private final AtomicLong nextId = new AtomicLong(1);
-    private final ConcurrentHashMap<Long, CompletableFuture<String>> pendingResponses = new ConcurrentHashMap<>();
-    private final BlockingQueue<String> serverInitiatedMessages = new LinkedBlockingQueue<>();
-
-    @ArquillianResource
-    private URL deploymentUrl;
+public class MCPServerIntegrationTestCase extends AbstractMCPIntegrationTestCase {
 
     @Deployment(testable = false)
     public static WebArchive createDeployment() {
-        WebArchive archive = ShrinkWrap.create(WebArchive.class, "mcp-test.war")
+        return ShrinkWrap.create(WebArchive.class, "mcp-test.war")
                 .addClass(TestMCPTool.class)
                 .addClass(TestMCPTool.AddResult.class)
                 .addClass(TestMCPPrompt.class)
                 .addClass(TestMCPResource.class)
-                .addClass(TestMCPElicitationTool.class)
                 .addClass(TestMCPProgressTool.class)
                 .addClass(TestMCPCompletion.class)
                 .addAsWebInfResource(EmptyAsset.INSTANCE, "beans.xml");
-        return archive;
     }
 
-    @AfterEach
-    public void cleanUpState() throws Exception {
-        pendingResponses.values().forEach(f -> f.cancel(true));
-        pendingResponses.clear();
-        int staleCount = serverInitiatedMessages.size();
-        if (staleCount > 0) {
-            System.err.println("[WARN] " + staleCount + " stale server-initiated message(s) drained after test");
-        }
-        serverInitiatedMessages.clear();
-    }
-
-    @AfterAll
-    public void tearDown() {
-        if (sseReaderThread != null) {
-            sseReaderThread.interrupt();
-        }
-        if (sseConnection != null) {
-            sseConnection.disconnect();
-        }
-    }
-
-    @BeforeEach
-    public void setUp() throws Exception {
-        if (initialized) {
-            return;
-        }
-        initialized = true;
-
-        long initId = nextId.getAndIncrement();
-        CompletableFuture<String> initFuture = new CompletableFuture<>();
-        pendingResponses.put(initId, initFuture);
-
-        String initMessage = """
-                {"jsonrpc":"2.0","id":%d,"method":"initialize","params":{"protocolVersion":"2025-03-26","clientInfo":{"name":"test-client","version":"1.0.0"},"capabilities":{"elicitation":{}}}}"""
-                .formatted(initId);
-
-        URL streamUrl = deploymentUrl.toURI().resolve("stream").toURL();
-        sseConnection = (HttpURLConnection) streamUrl.openConnection();
-        sseConnection.setRequestMethod("POST");
-        sseConnection.setRequestProperty("Content-Type", "application/json");
-        sseConnection.setRequestProperty("Accept", "application/json, text/event-stream");
-        sseConnection.setDoOutput(true);
-        sseConnection.setConnectTimeout(5000);
-        sseConnection.setReadTimeout(0);
-
-        try (OutputStream os = sseConnection.getOutputStream()) {
-            os.write(initMessage.getBytes(StandardCharsets.UTF_8));
-        }
-
-        int statusCode = sseConnection.getResponseCode();
-        assertThat(statusCode).as("Initialize should return 200").isEqualTo(200);
-
-        sessionId = sseConnection.getHeaderField("mcp-session-id");
-        assertThat(sessionId).as("Session ID should be returned").isNotNull();
-
-        sseReaderThread = new Thread(() -> {
-            try (BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(sseConnection.getInputStream(), StandardCharsets.UTF_8))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    if (line.startsWith("data:")) {
-                        String data = line.substring(5).trim();
-                        dispatchSseEvent(data);
-                    }
-                }
-            } catch (Exception e) {
-                // Connection closed or read error - expected during shutdown
-            }
-        }, "sse-reader");
-        sseReaderThread.setDaemon(true);
-        sseReaderThread.start();
-
-        String response = initFuture.get(RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-        assertThat(response).as("Should receive initialize response").isNotNull();
-        assertThat(response).as("Response should contain protocolVersion").contains("protocolVersion");
-        assertThat(response).as("Response should contain server capabilities").contains("capabilities");
-        assertThat(response).as("Response should advertise tools capability").contains("tools");
-        assertThat(response).as("Response should advertise prompts capability").contains("prompts");
-        assertThat(response).as("Response should advertise resources capability").contains("resources");
-
-        String initializedMessage = """
-                {"jsonrpc":"2.0","method":"notifications/initialized"}""";
-
-        int notifStatusCode = postToStreamable(initializedMessage);
-        assertThat(notifStatusCode).as("Initialized notification should succeed").isEqualTo(200);
-    }
+    private static final String NOTIFICATIONS_PROGRESS = "notifications/progress";
+    private static final String PROGRESS_TOKEN = "progressToken";
 
     @Test
     public void testPing() throws Exception {
@@ -422,128 +292,6 @@ public class MCPServerIntegrationTestCase {
         String response = sendAndReceive("unsupported/method", null);
         assertThat(response).as("Should contain error").contains("\"error\"");
         assertThat(response).as("Should contain method not found code").contains("-32601");
-    }
-
-    @Test
-    public void testElicitationToolListedWithoutSenderParam() throws Exception {
-        String response = sendAndReceive("tools/list", null);
-        assertThat(response).as("Should list the greet-with-name tool").contains("greet-with-name");
-        assertThat(response).as("ElicitationSender must not appear in inputSchema").doesNotContain("ElicitationSender");
-
-        JsonObject json = Json.createReader(new StringReader(response)).readObject();
-        JsonArray tools = json.getJsonObject("result").getJsonArray("tools");
-        JsonObject greetTool = null;
-        for (int i = 0; i < tools.size(); i++) {
-            if ("greet-with-name".equals(tools.getJsonObject(i).getString("name"))) {
-                greetTool = tools.getJsonObject(i);
-                break;
-            }
-        }
-        assertThat(greetTool).as("greet-with-name tool should be present").isNotNull();
-        JsonArray required = greetTool.getJsonObject("inputSchema").getJsonArray("required");
-        assertThat(required).as("greet-with-name should have empty required array").isEmpty();
-    }
-
-    @Test
-    public void testElicitationAcceptRoundTrip() throws Exception {
-        long toolCallId = nextId.getAndIncrement();
-        CompletableFuture<String> toolResultFuture = new CompletableFuture<>();
-        pendingResponses.put(toolCallId, toolResultFuture);
-
-        String toolCallMessage = """
-                {"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":"greet-with-name","arguments":{}}}"""
-                .formatted(toolCallId);
-
-        postToStreamable(toolCallMessage);
-
-        String elicitationJson = serverInitiatedMessages.poll(RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-        assertThat(elicitationJson).as("Should receive elicitation/create request").isNotNull();
-        assertThat(elicitationJson).as("Should be an elicitation/create request").contains("elicitation/create");
-        assertThat(elicitationJson).as("Should contain the prompt message").contains("What is your name?");
-        assertThat(elicitationJson).as("Should contain requestedSchema").contains("requestedSchema");
-
-        JsonObject elicitationMessage = Json.createReader(new StringReader(elicitationJson)).readObject();
-        long elicitationId = elicitationMessage.getJsonNumber("id").longValue();
-
-        String clientResponse = """
-                {"jsonrpc":"2.0","id":%d,"result":{"action":"accept","content":{"name":"WildFly"}}}"""
-                .formatted(elicitationId);
-        int statusCode = postToStreamable(clientResponse);
-        assertThat(statusCode).as("Client response POST should succeed").isEqualTo(200);
-
-        String toolResult = toolResultFuture.get(RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-        assertThat(toolResult).as("Should receive tool result after elicitation").isNotNull();
-
-        JsonObject resultJson = Json.createReader(new StringReader(toolResult)).readObject();
-        assertThat(resultJson.containsKey("result")).as("Should contain result").isTrue();
-
-        JsonArray content = resultJson.getJsonObject("result").getJsonArray("content");
-        assertThat(content).as("Should contain content array").isNotNull();
-        assertThat(content.getJsonObject(0).getString("text")).as("Should greet by name").contains("Hello, WildFly!");
-    }
-
-    @Test
-    public void testElicitationDeclineRoundTrip() throws Exception {
-        long toolCallId = nextId.getAndIncrement();
-        CompletableFuture<String> toolResultFuture = new CompletableFuture<>();
-        pendingResponses.put(toolCallId, toolResultFuture);
-
-        String toolCallMessage = """
-                {"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":"greet-with-name","arguments":{}}}"""
-                .formatted(toolCallId);
-
-        postToStreamable(toolCallMessage);
-
-        String elicitationJson = serverInitiatedMessages.poll(RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-        assertThat(elicitationJson).as("Should receive elicitation/create request").isNotNull();
-        assertThat(elicitationJson).as("Should be elicitation/create").contains("elicitation/create");
-
-        JsonObject elicitationMessage = Json.createReader(new StringReader(elicitationJson)).readObject();
-        long elicitationId = elicitationMessage.getJsonNumber("id").longValue();
-
-        String clientResponse = """
-                {"jsonrpc":"2.0","id":%d,"result":{"action":"decline"}}"""
-                .formatted(elicitationId);
-        postToStreamable(clientResponse);
-
-        String toolResult = toolResultFuture.get(RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-        assertThat(toolResult).as("Should receive tool result after decline").isNotNull();
-
-        JsonObject resultJson = Json.createReader(new StringReader(toolResult)).readObject();
-        JsonArray content = resultJson.getJsonObject("result").getJsonArray("content");
-        assertThat(content.getJsonObject(0).getString("text")).as("Should indicate declined").contains("declined");
-    }
-
-    @Test
-    public void testElicitationWithRegularArgsAndConfirmation() throws Exception {
-        long toolCallId = nextId.getAndIncrement();
-        CompletableFuture<String> toolResultFuture = new CompletableFuture<>();
-        pendingResponses.put(toolCallId, toolResultFuture);
-
-        String toolCallMessage = """
-                {"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":"add-with-confirmation","arguments":{"a":"5","b":"3"}}}"""
-                .formatted(toolCallId);
-
-        postToStreamable(toolCallMessage);
-
-        String elicitationJson = serverInitiatedMessages.poll(RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-        assertThat(elicitationJson).as("Should receive elicitation/create request").isNotNull();
-        assertThat(elicitationJson).as("Should ask for confirmation").contains("Confirm");
-
-        JsonObject elicitationMessage = Json.createReader(new StringReader(elicitationJson)).readObject();
-        long elicitationId = elicitationMessage.getJsonNumber("id").longValue();
-
-        String clientResponse = """
-                {"jsonrpc":"2.0","id":%d,"result":{"action":"accept","content":{"confirm":true}}}"""
-                .formatted(elicitationId);
-        postToStreamable(clientResponse);
-
-        String toolResult = toolResultFuture.get(RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-        assertThat(toolResult).as("Should receive tool result").isNotNull();
-
-        JsonObject resultJson = Json.createReader(new StringReader(toolResult)).readObject();
-        JsonArray content = resultJson.getJsonObject("result").getJsonArray("content");
-        assertThat(content.getJsonObject(0).getString("text")).as("Should contain sum result").contains("8");
     }
 
     // ==================== Progress Notifications ====================
@@ -894,76 +642,5 @@ public class MCPServerIntegrationTestCase {
 
         JsonObject jsonResponse = Json.createReader(new StringReader(response)).readObject();
         assertThat(jsonResponse.containsKey("error")).as("Should return an error for unsupported ref type").isTrue();
-    }
-
-    /**
-     * Dispatches an SSE event to the appropriate handler based on its JSON-RPC id.
-     * If the id matches a pending request, the corresponding future is completed.
-     * Otherwise, the event is queued as a server-initiated message.
-     */
-    private void dispatchSseEvent(String data) {
-        try {
-            JsonObject json = Json.createReader(new StringReader(data)).readObject();
-            boolean isResponse = json.containsKey("result") || json.containsKey("error");
-            if (isResponse && json.containsKey("id")) {
-                long id = json.getJsonNumber("id").longValue();
-                CompletableFuture<String> future = pendingResponses.remove(id);
-                if (future != null) {
-                    future.complete(data);
-                    return;
-                }
-            }
-        } catch (Exception e) {
-            System.err.println("Failed to parse SSE event for id correlation, treating as server-initiated: " + data);
-        }
-        serverInitiatedMessages.offer(data);
-    }
-
-    private String sendAndReceive(String method, JsonObject params) throws Exception {
-        long id = nextId.getAndIncrement();
-        CompletableFuture<String> future = new CompletableFuture<>();
-        pendingResponses.put(id, future);
-
-        JsonObjectBuilder builder = Json.createObjectBuilder()
-                .add("jsonrpc", "2.0")
-                .add("id", id)
-                .add("method", method);
-        if (params != null) {
-            builder.add("params", params);
-        }
-
-        postToStreamable(builder.build().toString());
-        return future.get(RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-    }
-
-    /**
-     * Sends a JSON-RPC message to the streamable endpoint using an existing session.
-     * The response will arrive on the SSE stream and be dispatched by id.
-     */
-    private int postToStreamable(String jsonBody) throws Exception {
-        return postToStreamableWithProtocolVersion(jsonBody, null);
-    }
-
-    private int postToStreamableWithProtocolVersion(String jsonBody, String protocolVersion) throws Exception {
-        URL streamUrl = new URL(deploymentUrl, "stream");
-        HttpURLConnection conn = (HttpURLConnection) streamUrl.openConnection();
-        conn.setRequestMethod("POST");
-        conn.setRequestProperty("Content-Type", "application/json");
-        conn.setRequestProperty("Accept", "application/json, text/event-stream");
-        conn.setRequestProperty("mcp-session-id", sessionId);
-        if (protocolVersion != null) {
-            conn.setRequestProperty("mcp-protocol-version", protocolVersion);
-        }
-        conn.setDoOutput(true);
-        conn.setConnectTimeout(5000);
-        conn.setReadTimeout(10000);
-
-        try (OutputStream os = conn.getOutputStream()) {
-            os.write(jsonBody.getBytes(StandardCharsets.UTF_8));
-        }
-
-        int statusCode = conn.getResponseCode();
-        conn.disconnect();
-        return statusCode;
     }
 }

@@ -25,4 +25,13 @@ public interface MCPLogger extends BasicLogger {
     @Message(id = 1, value = "Unexpected error")
     void unexpectedError(@Cause Throwable cause);
 
+    @Message(id = 2, value = "Parameter %s must not be null")
+    String parameterMustNotBeNull(String name);
+
+    @Message(id = 3, value = "Parameter %s must be positive")
+    IllegalArgumentException parameterMustBePositive(String name);
+
+    @Message(id = 4, value = "At least one schema property must be added to the Elicitation Form")
+    IllegalArgumentException mustHaveAtLeastOneSchemaProperty();
+
 }
