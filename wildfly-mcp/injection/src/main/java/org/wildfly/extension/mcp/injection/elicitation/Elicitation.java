@@ -4,14 +4,16 @@
  */
 package org.wildfly.extension.mcp.injection.elicitation;
 
+import org.wildfly.extension.mcp.injection.MCPLogger;
+
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.UUID.randomUUID;
+import static org.wildfly.extension.mcp.injection.MCPLogger.ROOT_LOGGER;
 
 /**
  * Describes an elicitation that a tool sends to the MCP client to collect
@@ -26,7 +28,7 @@ import static java.util.UUID.randomUUID;
  *
  * <p>Form mode example:</p>
  * <pre>{@code
- * Elicitation elicitation = Elicitation.formBuilder("Please provide your GitHub username")
+ * Elicitation req = Elicitation.formBuilder("Please provide your GitHub username")
  *     .addSchemaProperty("username", new StringSchema(true))
  *     .addSchemaProperty("notify", new BooleanSchema(false))
  *     .build();
@@ -34,7 +36,7 @@ import static java.util.UUID.randomUUID;
  *
  * <p>URL mode example:</p>
  * <pre>{@code
- * Elicitation elicitation = Elicitation.urlBuilder("Please authenticate",
+ * Elicitation req = Elicitation.urlBuilder("Please authenticate",
  *          "https://example.com/oauth")
  *     .elicitationId("auth-123")
  *     .build();
@@ -76,26 +78,14 @@ public final class Elicitation {
         return timeoutMillis;
     }
 
-    /**
-     * Schema of the properties used by the Elicitation Form mode.
-     * Mandatory for elicitation Form mode, ignored for Elicitation URL mode.
-     */
     public Map<String, PrimitiveSchema> schemaProperties() {
         return schemaProperties;
     }
 
-    /**
-     * URL to present to the client when the Elicitation URL mode is used.
-     * Mandatory for Elicitation URL mode, ignored for Elicitation Form mode
-     */
     public String url() {
         return url;
     }
 
-    /**
-     * Elicitation ID used by the Elicitation URL mode.
-     * Mandatory for Elicitation URL mode, ignored for Elicitation Form mode
-     */
     public String elicitationId() {
         return elicitationId;
     }
@@ -116,8 +106,6 @@ public final class Elicitation {
 
     /**
      * Creates a builder for a URL-mode elicitation request.
-     * If the {@code elicitationId} is not set on the builder, a random ID
-     * is generated.
      */
     public static UrlBuilder urlBuilder(String message, String url) {
         return new UrlBuilder(message, url);
@@ -130,19 +118,19 @@ public final class Elicitation {
         private long timeoutMillis = 30_000L;
 
         public FormBuilder(String message) {
-            this.message = requireNonNull(message, "message must not be null");
+            this.message = requireNonNull(message, ROOT_LOGGER.parameterMustNotBeNull("message"));
         }
 
         public FormBuilder addSchemaProperty(String key, PrimitiveSchema schema) {
-            requireNonNull(key, "key must not be null");
-            requireNonNull(schema, "schema must not be null");
+            requireNonNull(key, ROOT_LOGGER.parameterMustNotBeNull("key"));
+            requireNonNull(schema, ROOT_LOGGER.parameterMustNotBeNull("schema"));
             schemaProperties.put(key, schema);
             return this;
         }
 
         public FormBuilder timeout(long millis) {
             if (millis <= 0) {
-                throw new IllegalArgumentException("timeout must be positive");
+                throw ROOT_LOGGER.parameterMustBePositive("timeout");
             }
             this.timeoutMillis = millis;
             return this;
@@ -150,7 +138,7 @@ public final class Elicitation {
 
         public Elicitation build() {
             if (schemaProperties.isEmpty()) {
-                throw new IllegalStateException("At least one schema property must be added");
+                throw ROOT_LOGGER.mustHaveAtLeastOneSchemaProperty();
             }
             return new Elicitation(Mode.FORM, message, timeoutMillis,
                     Collections.unmodifiableMap(new LinkedHashMap<>(schemaProperties)),
@@ -166,25 +154,24 @@ public final class Elicitation {
         private long timeoutMillis = 30_000L;
 
         public UrlBuilder(String message, String url) {
-            this.message = requireNonNull(message, "message must not be null");
-            this.url = requireNonNull(url, "url must not be null");
+            this.message = requireNonNull(message, ROOT_LOGGER.parameterMustNotBeNull("message"));
+            this.url = requireNonNull(url, ROOT_LOGGER.parameterMustNotBeNull("url"));
         }
 
         public UrlBuilder elicitationId(String elicitationId) {
-            this.elicitationId = requireNonNull(elicitationId, "elicitationId must not be null");
+            this.elicitationId = requireNonNull(elicitationId, ROOT_LOGGER.parameterMustNotBeNull("elicitationId"));
             return this;
         }
 
         public UrlBuilder timeout(long millis) {
             if (millis <= 0) {
-                throw new IllegalArgumentException("timeout must be positive");
+                throw ROOT_LOGGER.parameterMustBePositive("timeout");
             }
             this.timeoutMillis = millis;
             return this;
         }
 
         public Elicitation build() {
-            String elicitationId = this.elicitationId != null ? this.elicitationId : randomUUID().toString();
             return new Elicitation(Mode.URL, message, timeoutMillis,
                     null, url, elicitationId);
         }

@@ -163,7 +163,6 @@ public interface MCPLogger extends BasicLogger {
     @Message(id = 38, value = "Failed to resolve schema generator '%s'")
     void warnFailedToResolveSchemaGenerator(@Cause Throwable cause, String className);
 
-    @LogMessage(level = ERROR)
     @Message(id = 39, value = "Client does not support %s mode elicitation")
     IllegalStateException elicitationModeNotSupported(Elicitation.Mode mode);
 }
