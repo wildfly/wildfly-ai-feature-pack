@@ -35,7 +35,7 @@ public final class MultiStringProperty implements ElicitationProperty<List<Strin
         if (enumValues.isEmpty()) {
             throw new IllegalArgumentException("enumValues must not be empty");
         }
-        this.enumValues = enumValues;
+        this.enumValues = List.copyOf(enumValues);
     }
 
     public MultiStringProperty required(boolean required) {
@@ -59,7 +59,8 @@ public final class MultiStringProperty implements ElicitationProperty<List<Strin
     }
 
     public MultiStringProperty enumTitles(List<String> enumTitles) {
-        if (enumTitles != null && enumTitles.size() != enumValues.size()) {
+        Objects.requireNonNull(enumTitles, "enumTitles must not be null");
+        if (enumTitles.size() != enumValues.size()) {
             throw new IllegalArgumentException("enumTitles must have the same length as enumValues");
         }
         this.enumTitles = enumTitles;

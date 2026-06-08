@@ -8,8 +8,12 @@ import jakarta.json.Json;
 import jakarta.json.JsonArrayBuilder;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
+import org.wildfly.extension.mcp.injection.MCPLogger;
+
 import java.util.List;
 import java.util.Objects;
+
+import static org.wildfly.extension.mcp.injection.MCPLogger.ROOT_LOGGER;
 
 /**
  * Schema for a single-select enum elicitation property.
@@ -29,11 +33,11 @@ public final class EnumProperty implements ElicitationProperty<String> {
 
     public EnumProperty(String name, List<String> enumValues) {
         this.name = name;
-        Objects.requireNonNull(enumValues, "enumValues must not be null");
+        Objects.requireNonNull(enumValues, ROOT_LOGGER.parameterMustNotBeNull("enumValues"));
         if (enumValues.isEmpty()) {
-            throw new IllegalArgumentException("enumValues must not be empty");
+            throw ROOT_LOGGER.parameterMustNotBeEmpty("enumValues");
         }
-        this.enumValues = enumValues;
+        this.enumValues = List.copyOf(enumValues);
     }
 
     public EnumProperty required(boolean required) {
@@ -57,10 +61,11 @@ public final class EnumProperty implements ElicitationProperty<String> {
     }
 
     public EnumProperty enumTitles(List<String> enumTitles) {
-        if (enumTitles != null && enumTitles.size() != enumValues.size()) {
-            throw new IllegalArgumentException("enumTitles must have the same length as enumValues");
+        Objects.requireNonNull(enumTitles, ROOT_LOGGER.parameterMustNotBeNull("enumTitles"));
+        if (enumTitles.size() != enumValues.size()) {
+            throw ROOT_LOGGER.parameterMustHaveSameSize("enumTitles", "enumValues");
         }
-        this.enumTitles = enumTitles;
+        this.enumTitles = List.copyOf(enumTitles);
         return this;
     }
 

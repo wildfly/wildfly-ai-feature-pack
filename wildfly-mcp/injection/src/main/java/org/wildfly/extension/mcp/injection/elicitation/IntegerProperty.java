@@ -7,6 +7,7 @@ package org.wildfly.extension.mcp.injection.elicitation;
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
+import org.wildfly.extension.mcp.injection.MCPLogger;
 
 /**
  * Schema for an integer elicitation property.
@@ -48,11 +49,17 @@ public final class IntegerProperty implements ElicitationProperty<Integer> {
 
     public IntegerProperty min(int min) {
         this.min = min;
+        if (max != null && min > max) {
+          throw MCPLogger.ROOT_LOGGER.maxCanNotBeLessThanMin(max, min);
+        }
         return this;
     }
 
     public IntegerProperty max(int max) {
         this.max = max;
+        if (min != null && min > max) {
+            throw MCPLogger.ROOT_LOGGER.maxCanNotBeLessThanMin(max, min);
+        }
         return this;
     }
 

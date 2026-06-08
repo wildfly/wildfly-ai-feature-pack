@@ -2,24 +2,18 @@
  * Copyright The WildFly Authors
  * SPDX-License-Identifier: Apache-2.0
  */
-package org.wildfly.extension.mcp.server;
+package org.wildfly.extension.mcp.injection.elicitation;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
 import java.util.List;
-import org.junit.Test;
-import org.wildfly.extension.mcp.injection.elicitation.BooleanProperty;
-import org.wildfly.extension.mcp.injection.elicitation.EnumProperty;
-import org.wildfly.extension.mcp.injection.elicitation.IntegerProperty;
-import org.wildfly.extension.mcp.injection.elicitation.MultiStringProperty;
-import org.wildfly.extension.mcp.injection.elicitation.NumberProperty;
-import org.wildfly.extension.mcp.injection.elicitation.StringProperty;
+import org.junit.jupiter.api.Test;
 
 public class ElicitationSchemaSerializationTestCase {
 
@@ -165,6 +159,32 @@ public class ElicitationSchemaSerializationTestCase {
         assertEquals(100, json.getInt("maximum"));
     }
 
+    @Test
+    public void testIntegerPropertyOnlyMin() {
+        IntegerProperty property = new IntegerProperty("foo").min(5);
+        JsonObject json = property.jsonSchema();
+        assertEquals(5, json.getInt("minimum"));
+        assertFalse(json.containsKey("maximum"));
+    }
+
+    @Test
+    public void testIntegerPropertyEqualMinMax() {
+        IntegerProperty property = new IntegerProperty("foo").min(5).max(5);
+        JsonObject json = property.jsonSchema();
+        assertEquals(5, json.getInt("minimum"));
+        assertEquals(5, json.getInt("maximum"));
+    }
+
+    @Test
+    public void testIntegerPropertyMinGreaterThanMaxThrows() {
+        assertThrows(IllegalArgumentException.class, () -> new IntegerProperty("foo").max(5).min(10));
+    }
+
+    @Test
+    public void testIntegerPropertyMaxLessThanMinThrows() {
+        assertThrows(IllegalArgumentException.class, () -> new IntegerProperty("foo").min(10).max(5));
+    }
+
     // ==================== EnumProperty (single-select) ====================
 
     @Test
@@ -205,14 +225,14 @@ public class ElicitationSchemaSerializationTestCase {
         assertEquals(3, json.getJsonArray("enum").size());
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testEnumPropertyEmptyValuesThrows() {
-        new EnumProperty("foo", List.of());
+        assertThrows(IllegalArgumentException.class, () -> new EnumProperty("foo", List.of()));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testEnumPropertyMismatchedTitlesThrows() {
-        new EnumProperty("foo", List.of("a", "b")).enumTitles(List.of("Only One"));
+        assertThrows(IllegalArgumentException.class, () -> new EnumProperty("foo", List.of("a", "b")).enumTitles(List.of("Only One")));
     }
 
     // ==================== MultiStringProperty (multi-select) ====================
@@ -268,13 +288,13 @@ public class ElicitationSchemaSerializationTestCase {
         assertEquals("Green", defaults.getString(1));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testMultiStringPropertyEmptyValuesThrows() {
-        new MultiStringProperty("foo", List.of());
+        assertThrows(IllegalArgumentException.class, () -> new MultiStringProperty("foo", List.of()));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testMultiStringPropertyMismatchedTitlesThrows() {
-        new MultiStringProperty("foo", List.of("a", "b")).enumTitles(List.of("Only One"));
+        assertThrows(IllegalArgumentException.class, () -> new MultiStringProperty("foo", List.of("a", "b")).enumTitles(List.of("Only One")));
     }
 }
