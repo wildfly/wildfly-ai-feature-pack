@@ -238,9 +238,19 @@ public final class Elicitation {
 
     /**
      * The client's response to an elicitation request.
+     *
+     * <p>The {@code action} indicates whether the user accepted, declined, or cancelled
+     * the elicitation. The {@code content} map holds the values entered by the user
+     * (keyed by property name). A {@code null} content is normalised to an empty map.</p>
+     *
+     * <p>Type-safe accessors ({@link #getString}, {@link #getBoolean}, {@link #getInteger},
+     * {@link #getNumber}, {@link #getStrings}) return {@link Optional#empty()} when the
+     * key is absent or the value has an unexpected type. Property-typed overloads fall back
+     * to the property's default value when the key is absent.</p>
      */
     public record Response(Action action, Map<String, Object> content) {
 
+        /** The action the user took in response to the elicitation. */
         public enum Action {
             ACCEPT,
             DECLINE,
@@ -248,83 +258,146 @@ public final class Elicitation {
         }
 
         public Response(Action action, Map<String, Object> content) {
-            this.action = action;
+            this.action = requireNonNull(action, ROOT_LOGGER.parameterMustNotBeNull("action"));
             this.content = content != null ? Collections.unmodifiableMap(content) : Collections.emptyMap();
         }
 
+        /** Returns {@code true} if the user accepted the elicitation. */
         public boolean isAccepted() {
             return action == Action.ACCEPT;
         }
 
+        /** Returns {@code true} if the user declined the elicitation. */
         public boolean isDeclined() {
             return action == Action.DECLINE;
         }
 
+        /** Returns {@code true} if the user cancelled the elicitation. */
         public boolean isCancelled() {
             return action == Action.CANCEL;
         }
 
+        /**
+         * Returns the string value for the given key, or empty if absent or not a string.
+         */
         public Optional<String> getString(String key) {
             Object v = content.get(key);
             return v instanceof String s ? Optional.of(s) : Optional.empty();
         }
 
+        /**
+         * Returns the string value for the given property, falling back to its
+         * {@linkplain StringProperty#defaultValue() default} when the key is absent.
+         */
         public Optional<String> getString(StringProperty property) {
             Object v = content.get(property.name());
             if (v instanceof String s) return Optional.of(s);
-            return Optional.ofNullable(property.defaultValue());
+            if (!content.containsKey(property.name())) return Optional.ofNullable(property.defaultValue());
+            return Optional.empty();
         }
 
+        /**
+         * Returns the string value for the given enum property, falling back to its
+         * {@linkplain EnumProperty#defaultValue() default} when the key is absent.
+         */
         public Optional<String> getString(EnumProperty property) {
             Object v = content.get(property.name());
             if (v instanceof String s) return Optional.of(s);
-            return Optional.ofNullable(property.defaultValue());
+            if (!content.containsKey(property.name())) return Optional.ofNullable(property.defaultValue());
+            return Optional.empty();
         }
 
+        /**
+         * Returns the boolean value for the given key, or empty if absent or not a boolean.
+         */
         public Optional<Boolean> getBoolean(String key) {
             Object v = content.get(key);
             return v instanceof Boolean b ? Optional.of(b) : Optional.empty();
         }
 
+        /**
+         * Returns the boolean value for the given property, falling back to its
+         * {@linkplain BooleanProperty#defaultValue() default} when the key is absent.
+         */
         public Optional<Boolean> getBoolean(BooleanProperty property) {
             Object v = content.get(property.name());
             if (v instanceof Boolean b) return Optional.of(b);
-            return Optional.ofNullable(property.defaultValue());
+            if (!content.containsKey(property.name())) return Optional.ofNullable(property.defaultValue());
+            return Optional.empty();
         }
 
+        /**
+         * Returns the integer value for the given key, or empty if absent or not an integer.
+         */
         public Optional<Integer> getInteger(String key) {
             Object v = content.get(key);
-            return v instanceof Number n ? Optional.of(n.intValue()) : Optional.empty();
+            return v instanceof Integer i ? Optional.of(i) : Optional.empty();
         }
 
+        /**
+         * Returns the integer value for the given property, falling back to its
+         * {@linkplain IntegerProperty#defaultValue() default} when the key is absent.
+         */
         public Optional<Integer> getInteger(IntegerProperty property) {
             Object v = content.get(property.name());
-            if (v instanceof Number n) return Optional.of(n.intValue());
-            return Optional.ofNullable(property.defaultValue());
+            if (v instanceof Integer i) return Optional.of(i);
+            if (!content.containsKey(property.name())) return Optional.ofNullable(property.defaultValue());
+            return Optional.empty();
         }
 
+        /**
+         * Returns the numeric value for the given key, or empty if absent or not a number.
+         */
         public Optional<Double> getNumber(String key) {
             Object v = content.get(key);
             return v instanceof Number n ? Optional.of(n.doubleValue()) : Optional.empty();
         }
 
+        /**
+         * Returns the numeric value for the given property, falling back to its
+         * {@linkplain NumberProperty#defaultValue() default} when the key is absent.
+         */
         public Optional<Double> getNumber(NumberProperty property) {
             Object v = content.get(property.name());
             if (v instanceof Number n) return Optional.of(n.doubleValue());
-            return Optional.ofNullable(property.defaultValue());
+            if (!content.containsKey(property.name())) return Optional.ofNullable(property.defaultValue());
+            return Optional.empty();
         }
 
-        @SuppressWarnings("unchecked")
+        /**
+         * Returns the list of strings for the given key, or empty if absent, not a list,
+         * or contains non-string elements.
+         */
         public Optional<List<String>> getStrings(String key) {
             Object v = content.get(key);
-            return v instanceof List ? Optional.of((List<String>) v) : Optional.empty();
+            return asStringList(v);
         }
 
-        @SuppressWarnings("unchecked")
+        /**
+         * Returns the list of strings for the given property, falling back to its
+         * {@linkplain MultiStringProperty#defaultValue() default} when the key is absent.
+         * Returns empty if the value is not a list or contains non-string elements.
+         */
         public Optional<List<String>> getStrings(MultiStringProperty property) {
             Object v = content.get(property.name());
-            if (v instanceof List) return Optional.of((List<String>) v);
-            return Optional.ofNullable(property.defaultValue());
+            if (v == null && !content.containsKey(property.name())) {
+                return Optional.ofNullable(property.defaultValue());
+            }
+            return asStringList(v);
+        }
+
+        private static Optional<List<String>> asStringList(Object v) {
+            if (v instanceof List<?> list) {
+                for (Object element : list) {
+                    if (!(element instanceof String)) {
+                        return Optional.empty();
+                    }
+                }
+                @SuppressWarnings("unchecked")
+                List<String> strings = (List<String>) list;
+                return Optional.of(strings);
+            }
+            return Optional.empty();
         }
     }
 }
