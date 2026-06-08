@@ -77,9 +77,15 @@ public final class BooleanProperty implements ElicitationProperty<Boolean> {
     @Override
     public JsonObject jsonSchema() {
         JsonObjectBuilder b = Json.createObjectBuilder().add("type", "boolean");
-        if (title != null) b.add("title", title);
-        if (description != null) b.add("description", description);
-        if (defaultValue != null) b.add("default", defaultValue);
+        if (title != null) {
+            b.add("title", title);
+        }
+        if (description != null) {
+            b.add("description", description);
+        }
+        if (defaultValue != null) {
+            b.add("default", defaultValue);
+        }
         return b.build();
     }
 }

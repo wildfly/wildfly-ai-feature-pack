@@ -291,8 +291,12 @@ public final class Elicitation {
          */
         public Optional<String> getString(StringProperty property) {
             Object v = content.get(property.name());
-            if (v instanceof String s) return Optional.of(s);
-            if (!content.containsKey(property.name())) return Optional.ofNullable(property.defaultValue());
+            if (v instanceof String s) {
+                return Optional.of(s);
+            }
+            if (!content.containsKey(property.name())) {
+                return Optional.ofNullable(property.defaultValue());
+            }
             return Optional.empty();
         }
 
@@ -302,8 +306,12 @@ public final class Elicitation {
          */
         public Optional<String> getString(EnumProperty property) {
             Object v = content.get(property.name());
-            if (v instanceof String s) return Optional.of(s);
-            if (!content.containsKey(property.name())) return Optional.ofNullable(property.defaultValue());
+            if (v instanceof String s) {
+                return Optional.of(s);
+            }
+            if (!content.containsKey(property.name())) {
+                return Optional.ofNullable(property.defaultValue());
+            }
             return Optional.empty();
         }
 
@@ -321,8 +329,12 @@ public final class Elicitation {
          */
         public Optional<Boolean> getBoolean(BooleanProperty property) {
             Object v = content.get(property.name());
-            if (v instanceof Boolean b) return Optional.of(b);
-            if (!content.containsKey(property.name())) return Optional.ofNullable(property.defaultValue());
+            if (v instanceof Boolean b) {
+                return Optional.of(b);
+            }
+            if (!content.containsKey(property.name())) {
+                return Optional.ofNullable(property.defaultValue());
+            }
             return Optional.empty();
         }
 
@@ -340,8 +352,12 @@ public final class Elicitation {
          */
         public Optional<Integer> getInteger(IntegerProperty property) {
             Object v = content.get(property.name());
-            if (v instanceof Integer i) return Optional.of(i);
-            if (!content.containsKey(property.name())) return Optional.ofNullable(property.defaultValue());
+            if (v instanceof Integer i) {
+                return Optional.of(i);
+            }
+            if (!content.containsKey(property.name())) {
+                return Optional.ofNullable(property.defaultValue());
+            }
             return Optional.empty();
         }
 
@@ -359,8 +375,12 @@ public final class Elicitation {
          */
         public Optional<Double> getNumber(NumberProperty property) {
             Object v = content.get(property.name());
-            if (v instanceof Number n) return Optional.of(n.doubleValue());
-            if (!content.containsKey(property.name())) return Optional.ofNullable(property.defaultValue());
+            if (v instanceof Number n) {
+                return Optional.of(n.doubleValue());
+            }
+            if (!content.containsKey(property.name())) {
+                return Optional.ofNullable(property.defaultValue());
+            }
             return Optional.empty();
         }
 

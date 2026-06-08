@@ -111,8 +111,12 @@ public final class EnumProperty implements ElicitationProperty<String> {
     public JsonObject jsonSchema() {
         JsonObjectBuilder b = Json.createObjectBuilder().add("type", "string");
 
-        if (title != null) b.add("title", title);
-        if (description != null) b.add("description", description);
+        if (title != null) {
+            b.add("title", title);
+        }
+        if (description != null) {
+            b.add("description", description);
+        }
 
         if (enumTitles != null) {
             JsonArrayBuilder oneOf = Json.createArrayBuilder();
@@ -130,7 +134,9 @@ public final class EnumProperty implements ElicitationProperty<String> {
             b.add("enum", values);
         }
 
-        if (defaultValue != null) b.add("default", defaultValue);
+        if (defaultValue != null) {
+            b.add("default", defaultValue);
+        }
         return b.build();
     }
 }
