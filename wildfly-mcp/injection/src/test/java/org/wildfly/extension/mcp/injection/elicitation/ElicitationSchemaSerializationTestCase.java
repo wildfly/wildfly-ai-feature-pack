@@ -7,6 +7,7 @@ package org.wildfly.extension.mcp.injection.elicitation;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -27,12 +28,52 @@ public class ElicitationSchemaSerializationTestCase {
     }
 
     @Test
+    public void testBooleanPropertyAccessors() {
+        BooleanProperty property = new BooleanProperty("flag")
+                .title("My Flag").description("A flag").defaultValue(true);
+        assertEquals("flag", property.name());
+        assertTrue(property.required());
+        assertEquals("My Flag", property.title());
+        assertEquals("A flag", property.description());
+        assertEquals(true, property.defaultValue());
+    }
+
+    @Test
+    public void testBooleanPropertyOptional() {
+        BooleanProperty property = new BooleanProperty("foo").optional();
+        assertFalse(property.required());
+    }
+
+    @Test
     public void testBooleanPropertyRequired() {
         BooleanProperty property = new BooleanProperty("foo").required(false).defaultValue(false);
         assertFalse(property.required());
         JsonObject json = property.jsonSchema();
         assertEquals("boolean", json.getString("type"));
         assertEquals(false, json.getBoolean("default"));
+    }
+
+    @Test
+    public void testBooleanPropertyAllFieldsInJsonSchema() {
+        BooleanProperty property = new BooleanProperty("foo")
+                .title("Accept").description("Accept terms").defaultValue(false);
+        JsonObject json = property.jsonSchema();
+        assertEquals("boolean", json.getString("type"));
+        assertEquals("Accept", json.getString("title"));
+        assertEquals("Accept terms", json.getString("description"));
+        assertEquals(false, json.getBoolean("default"));
+    }
+
+    @Test
+    public void testBooleanPropertyDefaultsAbsentInJsonSchema() {
+        BooleanProperty property = new BooleanProperty("foo");
+        assertNull(property.title());
+        assertNull(property.description());
+        assertNull(property.defaultValue());
+        JsonObject json = property.jsonSchema();
+        assertFalse(json.containsKey("title"));
+        assertFalse(json.containsKey("description"));
+        assertFalse(json.containsKey("default"));
     }
 
     // ==================== StringProperty ====================
@@ -49,6 +90,13 @@ public class ElicitationSchemaSerializationTestCase {
         StringProperty property = new StringProperty("foo").title("My Title").description("A description").minLength(2).maxLength(100).pattern("^[A-Za-z]+$").format(StringProperty.Format.EMAIL).defaultValue("default@example.com");
         assertEquals("foo", property.name());
         assertTrue(property.required());
+        assertEquals("My Title", property.title());
+        assertEquals("A description", property.description());
+        assertEquals(2, property.minLength());
+        assertEquals(100, property.maxLength());
+        assertEquals("^[A-Za-z]+$", property.pattern());
+        assertEquals(StringProperty.Format.EMAIL, property.format());
+        assertEquals("default@example.com", property.defaultValue());
         JsonObject json = property.jsonSchema();
         assertEquals("string", json.getString("type"));
         assertEquals("My Title", json.getString("title"));
@@ -58,6 +106,12 @@ public class ElicitationSchemaSerializationTestCase {
         assertEquals("^[A-Za-z]+$", json.getString("pattern"));
         assertEquals("email", json.getString("format"));
         assertEquals("default@example.com", json.getString("default"));
+    }
+
+    @Test
+    public void testStringPropertyOptional() {
+        StringProperty property = new StringProperty("foo").optional();
+        assertFalse(property.required());
     }
 
     @Test
@@ -92,6 +146,32 @@ public class ElicitationSchemaSerializationTestCase {
         assertEquals(1, json.size());
     }
 
+    @Test
+    public void testStringPropertyFormatUri() {
+        JsonObject json = new StringProperty("url").format(StringProperty.Format.URI).jsonSchema();
+        assertEquals("uri", json.getString("format"));
+    }
+
+    @Test
+    public void testStringPropertyFormatDate() {
+        JsonObject json = new StringProperty("dob").format(StringProperty.Format.DATE).jsonSchema();
+        assertEquals("date", json.getString("format"));
+    }
+
+    @Test
+    public void testStringPropertyFormatDateTime() {
+        JsonObject json = new StringProperty("ts").format(StringProperty.Format.DATE_TIME).jsonSchema();
+        assertEquals("date-time", json.getString("format"));
+    }
+
+    @Test
+    public void testStringPropertyFormatValues() {
+        assertEquals("email", StringProperty.Format.EMAIL.value());
+        assertEquals("uri", StringProperty.Format.URI.value());
+        assertEquals("date", StringProperty.Format.DATE.value());
+        assertEquals("date-time", StringProperty.Format.DATE_TIME.value());
+    }
+
     // ==================== NumberProperty ====================
 
     @Test
@@ -99,6 +179,25 @@ public class ElicitationSchemaSerializationTestCase {
         JsonObject json = new NumberProperty("foo").jsonSchema();
         assertEquals("number", json.getString("type"));
         assertEquals(1, json.size());
+    }
+
+    @Test
+    public void testNumberPropertyAccessors() {
+        NumberProperty property = new NumberProperty("score")
+                .title("Score").description("Player score").min(0.0).max(100.0).defaultValue(50.0);
+        assertEquals("score", property.name());
+        assertTrue(property.required());
+        assertEquals("Score", property.title());
+        assertEquals("Player score", property.description());
+        assertEquals(0.0, property.min());
+        assertEquals(100.0, property.max());
+        assertEquals(50.0, property.defaultValue());
+    }
+
+    @Test
+    public void testNumberPropertyOptional() {
+        NumberProperty property = new NumberProperty("foo").optional();
+        assertFalse(property.required());
     }
 
     @Test
@@ -133,6 +232,25 @@ public class ElicitationSchemaSerializationTestCase {
         assertFalse(json.containsKey("maximum"));
     }
 
+    @Test
+    public void testNumberPropertyOnlyMax() {
+        NumberProperty property = new NumberProperty("foo").max(99.9);
+        JsonObject json = property.jsonSchema();
+        assertEquals("number", json.getString("type"));
+        assertFalse(json.containsKey("minimum"));
+        assertEquals(99.9, json.getJsonNumber("maximum").doubleValue(), 0.001);
+    }
+
+    @Test
+    public void testNumberPropertyDefaultsAbsent() {
+        NumberProperty property = new NumberProperty("foo");
+        assertNull(property.title());
+        assertNull(property.description());
+        assertNull(property.min());
+        assertNull(property.max());
+        assertNull(property.defaultValue());
+    }
+
     // ==================== IntegerProperty ====================
 
     @Test
@@ -140,6 +258,54 @@ public class ElicitationSchemaSerializationTestCase {
         JsonObject json = new IntegerProperty("foo").jsonSchema();
         assertEquals("integer", json.getString("type"));
         assertEquals(1, json.size());
+    }
+
+    @Test
+    public void testIntegerPropertyAccessors() {
+        IntegerProperty property = new IntegerProperty("count")
+                .title("Count").description("Item count").min(0).max(100).defaultValue(10);
+        assertEquals("count", property.name());
+        assertTrue(property.required());
+        assertEquals("Count", property.title());
+        assertEquals("Item count", property.description());
+        assertEquals(0, property.min());
+        assertEquals(100, property.max());
+        assertEquals(10, property.defaultValue());
+    }
+
+    @Test
+    public void testIntegerPropertyOptional() {
+        IntegerProperty property = new IntegerProperty("foo").optional();
+        assertFalse(property.required());
+    }
+
+    @Test
+    public void testIntegerPropertyAllFieldsInJsonSchema() {
+        IntegerProperty property = new IntegerProperty("age")
+                .title("Age").description("Your age").min(0).max(150).defaultValue(25);
+        JsonObject json = property.jsonSchema();
+        assertEquals("integer", json.getString("type"));
+        assertEquals("Age", json.getString("title"));
+        assertEquals("Your age", json.getString("description"));
+        assertEquals(0, json.getInt("minimum"));
+        assertEquals(150, json.getInt("maximum"));
+        assertEquals(25, json.getInt("default"));
+    }
+
+    @Test
+    public void testIntegerPropertyDefaultsAbsent() {
+        IntegerProperty property = new IntegerProperty("foo");
+        assertNull(property.title());
+        assertNull(property.description());
+        assertNull(property.min());
+        assertNull(property.max());
+        assertNull(property.defaultValue());
+        JsonObject json = property.jsonSchema();
+        assertFalse(json.containsKey("title"));
+        assertFalse(json.containsKey("description"));
+        assertFalse(json.containsKey("minimum"));
+        assertFalse(json.containsKey("maximum"));
+        assertFalse(json.containsKey("default"));
     }
 
     @Test
@@ -188,6 +354,25 @@ public class ElicitationSchemaSerializationTestCase {
     // ==================== EnumProperty (single-select) ====================
 
     @Test
+    public void testEnumPropertyAccessors() {
+        EnumProperty property = new EnumProperty("lang", List.of("en", "fr"))
+                .title("Language").description("Pick one").enumTitles(List.of("English", "French")).defaultValue("en");
+        assertEquals("lang", property.name());
+        assertTrue(property.required());
+        assertEquals("Language", property.title());
+        assertEquals("Pick one", property.description());
+        assertEquals(List.of("en", "fr"), property.enumValues());
+        assertEquals(List.of("English", "French"), property.enumTitles());
+        assertEquals("en", property.defaultValue());
+    }
+
+    @Test
+    public void testEnumPropertyOptional() {
+        EnumProperty property = new EnumProperty("foo", List.of("A")).optional();
+        assertFalse(property.required());
+    }
+
+    @Test
     public void testEnumPropertyWithoutTitles() {
         EnumProperty property = new EnumProperty("foo", List.of("A", "B", "C"));
         JsonObject json = property.jsonSchema();
@@ -200,6 +385,7 @@ public class ElicitationSchemaSerializationTestCase {
         assertEquals("C", arr.getString(2));
         assertFalse(json.containsKey("oneOf"));
         assertTrue(property.required());
+        assertNull(property.enumTitles());
     }
 
     @Test
@@ -218,6 +404,15 @@ public class ElicitationSchemaSerializationTestCase {
     }
 
     @Test
+    public void testEnumPropertyWithTitleAndDescription() {
+        EnumProperty property = new EnumProperty("color", List.of("R", "G", "B"))
+                .title("Color").description("Pick a color");
+        JsonObject json = property.jsonSchema();
+        assertEquals("Color", json.getString("title"));
+        assertEquals("Pick a color", json.getString("description"));
+    }
+
+    @Test
     public void testEnumPropertyWithDefault() {
         EnumProperty property = new EnumProperty("foo", List.of("Red", "Green", "Blue")).defaultValue("Red");
         JsonObject json = property.jsonSchema();
@@ -226,8 +421,25 @@ public class ElicitationSchemaSerializationTestCase {
     }
 
     @Test
+    public void testEnumPropertyDefaultsAbsent() {
+        EnumProperty property = new EnumProperty("foo", List.of("A"));
+        assertNull(property.title());
+        assertNull(property.description());
+        assertNull(property.defaultValue());
+        JsonObject json = property.jsonSchema();
+        assertFalse(json.containsKey("title"));
+        assertFalse(json.containsKey("description"));
+        assertFalse(json.containsKey("default"));
+    }
+
+    @Test
     public void testEnumPropertyEmptyValuesThrows() {
         assertThrows(IllegalArgumentException.class, () -> new EnumProperty("foo", List.of()));
+    }
+
+    @Test
+    public void testEnumPropertyNullValuesThrows() {
+        assertThrows(NullPointerException.class, () -> new EnumProperty("foo", null));
     }
 
     @Test
@@ -235,7 +447,34 @@ public class ElicitationSchemaSerializationTestCase {
         assertThrows(IllegalArgumentException.class, () -> new EnumProperty("foo", List.of("a", "b")).enumTitles(List.of("Only One")));
     }
 
+    @Test
+    public void testEnumPropertyNullTitlesThrows() {
+        assertThrows(NullPointerException.class, () -> new EnumProperty("foo", List.of("a")).enumTitles(null));
+    }
+
     // ==================== MultiStringProperty (multi-select) ====================
+
+    @Test
+    public void testMultiStringPropertyAccessors() {
+        MultiStringProperty property = new MultiStringProperty("colors", List.of("R", "G", "B"))
+                .title("Colors").description("Pick colors").enumTitles(List.of("Red", "Green", "Blue"))
+                .minItems(1).maxItems(2).defaultValue(List.of("R"));
+        assertEquals("colors", property.name());
+        assertTrue(property.required());
+        assertEquals("Colors", property.title());
+        assertEquals("Pick colors", property.description());
+        assertEquals(List.of("R", "G", "B"), property.enumValues());
+        assertEquals(List.of("Red", "Green", "Blue"), property.enumTitles());
+        assertEquals(1, property.minItems());
+        assertEquals(2, property.maxItems());
+        assertEquals(List.of("R"), property.defaultValue());
+    }
+
+    @Test
+    public void testMultiStringPropertyOptional() {
+        MultiStringProperty property = new MultiStringProperty("foo", List.of("A")).optional();
+        assertFalse(property.required());
+    }
 
     @Test
     public void testMultiStringPropertyWithoutTitles() {
@@ -253,6 +492,7 @@ public class ElicitationSchemaSerializationTestCase {
         assertFalse(json.containsKey("minItems"));
         assertFalse(json.containsKey("maxItems"));
         assertTrue(property.required());
+        assertNull(property.enumTitles());
     }
 
     @Test
@@ -273,6 +513,15 @@ public class ElicitationSchemaSerializationTestCase {
     }
 
     @Test
+    public void testMultiStringPropertyWithTitleAndDescription() {
+        MultiStringProperty property = new MultiStringProperty("tags", List.of("a", "b"))
+                .title("Tags").description("Select tags");
+        JsonObject json = property.jsonSchema();
+        assertEquals("Tags", json.getString("title"));
+        assertEquals("Select tags", json.getString("description"));
+    }
+
+    @Test
     public void testMultiStringPropertyWithBoundsAndDefault() {
         MultiStringProperty property = new MultiStringProperty("colors", List.of("Red", "Green", "Blue"))
                 .description("Choose colors").minItems(1).maxItems(2).defaultValue(List.of("Red", "Green"));
@@ -289,12 +538,55 @@ public class ElicitationSchemaSerializationTestCase {
     }
 
     @Test
+    public void testMultiStringPropertyOnlyMinItems() {
+        MultiStringProperty property = new MultiStringProperty("foo", List.of("A", "B")).minItems(1);
+        JsonObject json = property.jsonSchema();
+        assertEquals(1, json.getInt("minItems"));
+        assertFalse(json.containsKey("maxItems"));
+    }
+
+    @Test
+    public void testMultiStringPropertyOnlyMaxItems() {
+        MultiStringProperty property = new MultiStringProperty("foo", List.of("A", "B")).maxItems(3);
+        JsonObject json = property.jsonSchema();
+        assertFalse(json.containsKey("minItems"));
+        assertEquals(3, json.getInt("maxItems"));
+    }
+
+    @Test
+    public void testMultiStringPropertyDefaultsAbsent() {
+        MultiStringProperty property = new MultiStringProperty("foo", List.of("A"));
+        assertNull(property.title());
+        assertNull(property.description());
+        assertNull(property.enumTitles());
+        assertNull(property.minItems());
+        assertNull(property.maxItems());
+        assertNull(property.defaultValue());
+        JsonObject json = property.jsonSchema();
+        assertFalse(json.containsKey("title"));
+        assertFalse(json.containsKey("description"));
+        assertFalse(json.containsKey("minItems"));
+        assertFalse(json.containsKey("maxItems"));
+        assertFalse(json.containsKey("default"));
+    }
+
+    @Test
     public void testMultiStringPropertyEmptyValuesThrows() {
         assertThrows(IllegalArgumentException.class, () -> new MultiStringProperty("foo", List.of()));
     }
 
     @Test
+    public void testMultiStringPropertyNullValuesThrows() {
+        assertThrows(NullPointerException.class, () -> new MultiStringProperty("foo", null));
+    }
+
+    @Test
     public void testMultiStringPropertyMismatchedTitlesThrows() {
         assertThrows(IllegalArgumentException.class, () -> new MultiStringProperty("foo", List.of("a", "b")).enumTitles(List.of("Only One")));
+    }
+
+    @Test
+    public void testMultiStringPropertyNullTitlesThrows() {
+        assertThrows(NullPointerException.class, () -> new MultiStringProperty("foo", List.of("a")).enumTitles(null));
     }
 }
