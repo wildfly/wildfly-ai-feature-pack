@@ -2,19 +2,17 @@
  * Copyright The WildFly Authors
  * SPDX-License-Identifier: Apache-2.0
  */
-package org.wildfly.extension.mcp.server;
+package org.wildfly.extension.mcp.injection.elicitation;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.wildfly.extension.mcp.injection.elicitation.Elicitation.Response.Action.ACCEPT;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import org.junit.Test;
-import org.wildfly.extension.mcp.injection.elicitation.Elicitation;
-import org.wildfly.extension.mcp.injection.elicitation.MultiStringProperty;
+import org.junit.jupiter.api.Test;
 
 public class ElicitationResponseTestCase {
 
