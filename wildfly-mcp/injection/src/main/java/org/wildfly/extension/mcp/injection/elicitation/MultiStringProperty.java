@@ -63,7 +63,7 @@ public final class MultiStringProperty implements ElicitationProperty<List<Strin
         if (enumTitles.size() != enumValues.size()) {
             throw new IllegalArgumentException("enumTitles must have the same length as enumValues");
         }
-        this.enumTitles = enumTitles;
+        this.enumTitles = List.copyOf(enumTitles);
         return this;
     }
 
