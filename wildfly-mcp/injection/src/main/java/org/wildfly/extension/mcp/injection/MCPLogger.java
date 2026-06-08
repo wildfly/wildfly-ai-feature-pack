@@ -34,4 +34,12 @@ public interface MCPLogger extends BasicLogger {
     @Message(id = 4, value = "At least one schema property must be added to the Elicitation Form")
     IllegalArgumentException mustHaveAtLeastOneSchemaProperty();
 
+    @Message(id = 5, value = "Parameter %s must not be empty")
+    IllegalArgumentException parameterMustNotBeEmpty(String name);
+
+    @Message(id = 6, value = "Parameter %s must have the same size as parameter %s")
+    IllegalArgumentException parameterMustHaveSameSize(String parameter1, String parameter2);
+
+    @Message(id = 7, value = "Parameter 'max' (%s) can not be less than 'min' (%s) ")
+    IllegalArgumentException maxCanNotBeLessThanMin(Integer max, Integer min);
 }

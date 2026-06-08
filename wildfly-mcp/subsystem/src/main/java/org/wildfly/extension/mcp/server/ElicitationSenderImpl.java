@@ -23,7 +23,7 @@ import org.wildfly.extension.mcp.api.Messages;
 import org.wildfly.extension.mcp.api.Responder;
 import org.wildfly.extension.mcp.injection.elicitation.Elicitation;
 import org.wildfly.extension.mcp.injection.elicitation.ElicitationSender;
-import org.wildfly.extension.mcp.injection.elicitation.PrimitiveSchema;
+import org.wildfly.extension.mcp.injection.elicitation.ElicitationProperty;
 
 import static org.wildfly.extension.mcp.MCPLogger.ROOT_LOGGER;
 import static org.wildfly.extension.mcp.injection.elicitation.Elicitation.Mode.FORM;
@@ -94,10 +94,11 @@ class ElicitationSenderImpl implements ElicitationSender {
 
         JsonObjectBuilder properties = Json.createObjectBuilder();
         JsonArrayBuilder required = Json.createArrayBuilder();
-        for (Map.Entry<String, PrimitiveSchema> entry : request.schemaProperties().entrySet()) {
-            properties.add(entry.getKey(), entry.getValue().asJson());
-            if (entry.getValue().required()) {
-                required.add(entry.getKey());
+        for (ElicitationProperty<?> property : request.schemaProperties()) {
+            String key = property.name();
+            properties.add(key, property.jsonSchema());
+            if (property.required()) {
+                required.add(key);
             }
         }
         JsonObjectBuilder schema = Json.createObjectBuilder()

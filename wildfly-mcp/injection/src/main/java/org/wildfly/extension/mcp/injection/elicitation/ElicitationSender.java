@@ -14,12 +14,11 @@ package org.wildfly.extension.mcp.injection.elicitation;
  * <p>Example tool method signature:</p>
  * <pre>{@code
  * @Tool(description = "Creates a user account")
- * public String createAccount(String email, ElicitationSender elicitation) throws Exception {
+ * public String createAccount(String email, ElicitationSender elicitationSender) throws Exception {
  *     if (elicitation.isFormSupported()) {
- *         ElicitationResponse response = elicitation.send(
- *             ElicitationRequest.formBuilder("Please confirm the account details")
- *                 .addSchemaProperty("confirm", new BooleanSchema(true))
- *                 .build());
+ *         Elicitation.FormBuilder form = Elicitation.formBuilder("Please confirm the account details");
+ *         BooleanProperty confirm = form.addBoolean("confirm");
+ *         Elicitation.Response response = elicitationSender.send(form.build());
  *         if (!response.isAccepted()) return "Cancelled";
  *     }
  *     // proceed...
