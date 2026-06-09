@@ -43,6 +43,10 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
+            <groupId>org.mcp-java</groupId>
+            <artifactId>mcp-model</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.jboss.logging</groupId>
             <artifactId>jboss-logging</artifactId>
             <scope>provided</scope>

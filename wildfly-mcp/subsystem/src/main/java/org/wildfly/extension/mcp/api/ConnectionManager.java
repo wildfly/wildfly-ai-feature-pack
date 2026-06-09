@@ -178,7 +178,7 @@ public class ConnectionManager {
      * </p>
      *
      * @param notifications one or more JSON-RPC notifications to broadcast before shutdown
-     * @see #broadcast(JsonObject) for broadcasting without closing connections
+     * @see #broadcast(JsonObject...) for broadcasting without closing connections
      */
     public void broadcastThenShutdown(JsonObject... notifications) {
         List<MCPConnection> snapshot;

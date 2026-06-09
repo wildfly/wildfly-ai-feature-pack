@@ -45,4 +45,7 @@ public final class MCPFieldNames {
     public static final String RESOURCES = "resources";
     public static final String RESOURCE_TEMPLATES = "resourceTemplates";
     public static final String PROGRESS_TOKEN = "progressToken";
+    public static final String SIZE = "size";
+    public static final String AUDIENCE = "audience";
+    public static final String PRIORITY = "priority";
 }

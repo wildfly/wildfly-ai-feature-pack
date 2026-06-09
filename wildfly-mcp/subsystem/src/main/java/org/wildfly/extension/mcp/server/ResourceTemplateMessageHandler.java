@@ -91,6 +91,10 @@ public class ResourceTemplateMessageHandler {
                     .add(DESCRIPTION, metadata.description())
                     .add(URI_TEMPLATE, metadata.method().uri())
                     .add(MIME_TYPE, metadata.method().mimeType());
+            if (metadata.title() != null) {
+                template.add("title", metadata.title());
+            }
+            ResourceAnnotationsUtil.addAnnotations(template, metadata.annotations());
             templates.add(template);
         }
         JsonObjectBuilder resultBuilder = Json.createObjectBuilder().add(RESOURCE_TEMPLATES, templates);
