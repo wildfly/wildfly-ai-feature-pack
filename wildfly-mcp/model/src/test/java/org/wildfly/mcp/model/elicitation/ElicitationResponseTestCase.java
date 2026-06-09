@@ -2,15 +2,15 @@
  * Copyright The WildFly Authors
  * SPDX-License-Identifier: Apache-2.0
  */
-package org.wildfly.extension.mcp.injection.elicitation;
+package org.wildfly.mcp.model.elicitation;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.wildfly.extension.mcp.injection.elicitation.Elicitation.Response.Action.ACCEPT;
-import static org.wildfly.extension.mcp.injection.elicitation.Elicitation.Response.Action.CANCEL;
-import static org.wildfly.extension.mcp.injection.elicitation.Elicitation.Response.Action.DECLINE;
+import static org.wildfly.mcp.model.elicitation.Elicitation.Response.Action.ACCEPT;
+import static org.wildfly.mcp.model.elicitation.Elicitation.Response.Action.CANCEL;
+import static org.wildfly.mcp.model.elicitation.Elicitation.Response.Action.DECLINE;
 
 import java.util.HashMap;
 import java.util.List;

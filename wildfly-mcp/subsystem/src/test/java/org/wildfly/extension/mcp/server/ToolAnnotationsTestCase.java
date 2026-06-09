@@ -17,7 +17,7 @@ import jakarta.json.JsonObject;
 import java.util.List;
 import java.util.Optional;
 import org.junit.Test;
-import org.mcp_java.model.tool.ToolAnnotations;
+import org.wildfly.mcp.model.tool.ToolAnnotations;
 import org.wildfly.extension.mcp.api.ConnectionManager;
 import org.wildfly.extension.mcp.api.MCPConnection;
 import org.wildfly.extension.mcp.injection.WildFlyMCPRegistry;

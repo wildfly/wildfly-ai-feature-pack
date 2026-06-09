@@ -12,7 +12,7 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 import org.junit.Test;
-import org.mcp_java.model.common.Annotations;
+import org.wildfly.mcp.model.Annotations;
 
 public class ResourceAnnotationsUtilTestCase {
 

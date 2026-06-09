@@ -47,9 +47,9 @@ import org.wildfly.extension.mcp.injection.WildFlyMCPRegistry;
 import org.wildfly.extension.mcp.injection.tool.ArgumentMetadata;
 import org.wildfly.extension.mcp.injection.tool.MCPFeatureMetadata;
 import org.wildfly.extension.mcp.injection.tool.MethodMetadata;
-import org.mcp_java.model.common.Annotations;
-import org.mcp_java.model.tool.ToolAnnotations;
-import org.wildfly.extension.mcp.injection.elicitation.ElicitationSender;
+import org.wildfly.mcp.model.Annotations;
+import org.wildfly.mcp.model.tool.ToolAnnotations;
+import org.wildfly.mcp.model.elicitation.ElicitationSender;
 import org.mcp_java.server.progress.Progress;
 import org.mcp_java.server.tools.Tool;
 import org.mcp_java.server.tools.ToolArg;
@@ -61,7 +61,7 @@ import org.mcp_java.server.resources.ResourceTemplateArg;
 import org.mcp_java.server.completion.CompletePrompt;
 import org.mcp_java.server.completion.CompleteResourceTemplate;
 import org.mcp_java.server.completion.CompleteArg;
-import org.mcp_java.model.common.CompleteContext;
+import org.wildfly.mcp.model.completion.CompleteContext;
 
 public class MCPServerDependencyProcessor implements DeploymentUnitProcessor {
 

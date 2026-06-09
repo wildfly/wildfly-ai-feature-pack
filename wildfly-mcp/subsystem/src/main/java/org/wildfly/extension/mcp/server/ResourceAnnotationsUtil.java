@@ -10,7 +10,7 @@ import static org.wildfly.extension.mcp.injection.MCPFieldNames.PRIORITY;
 
 import jakarta.json.Json;
 import jakarta.json.JsonObjectBuilder;
-import org.mcp_java.model.common.Annotations;
+import org.wildfly.mcp.model.Annotations;
 
 final class ResourceAnnotationsUtil {
 

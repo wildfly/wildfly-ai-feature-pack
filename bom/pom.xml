@@ -32,18 +32,6 @@
             </dependency>
             <dependency>
                 <groupId>org.mcp-java</groupId>
-                <artifactId>mcp-model</artifactId>
-                <version>${version.org.mcp-java}</version>
-                <scope>provided</scope>
-                <exclusions>
-                    <exclusion>
-                        <groupId>*</groupId>
-                        <artifactId>*</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>org.mcp-java</groupId>
                 <artifactId>mcp-server-api</artifactId>
                 <version>${version.org.mcp-java}</version>
                 <scope>provided</scope>

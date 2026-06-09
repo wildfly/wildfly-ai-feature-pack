@@ -2,68 +2,61 @@
  * Copyright The WildFly Authors
  * SPDX-License-Identifier: Apache-2.0
  */
-package org.wildfly.extension.mcp.injection.elicitation;
+package org.wildfly.mcp.model.elicitation;
 
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
-import org.wildfly.extension.mcp.injection.MCPLogger;
 
 /**
- * Schema for an integer elicitation property.
- * Serializes to {@code {"type":"integer","minimum":...,"maximum":...}}.
+ * Schema for a decimal number elicitation property.
+ * Serializes to {@code {"type":"number","minimum":...,"maximum":...}}.
  */
-public final class IntegerProperty implements ElicitationProperty<Integer> {
+public final class NumberProperty implements ElicitationProperty<Double> {
 
     private final String name;
     private boolean required = true;
     private String title;
     private String description;
-    private Integer min;
-    private Integer max;
-    private Integer defaultValue;
+    private Double min;
+    private Double max;
+    private Double defaultValue;
 
-    public IntegerProperty(String name) {
+    public NumberProperty(String name) {
         this.name = name;
     }
 
-    public IntegerProperty required(boolean required) {
+    public NumberProperty required(boolean required) {
         this.required = required;
         return this;
     }
 
-    public IntegerProperty optional() {
+    public NumberProperty optional() {
         this.required = false;
         return this;
     }
 
-    public IntegerProperty title(String title) {
+    public NumberProperty title(String title) {
         this.title = title;
         return this;
     }
 
-    public IntegerProperty description(String description) {
+    public NumberProperty description(String description) {
         this.description = description;
         return this;
     }
 
-    public IntegerProperty min(int min) {
+    public NumberProperty min(double min) {
         this.min = min;
-        if (max != null && min > max) {
-          throw MCPLogger.ROOT_LOGGER.maxCanNotBeLessThanMin(max, min);
-        }
         return this;
     }
 
-    public IntegerProperty max(int max) {
+    public NumberProperty max(double max) {
         this.max = max;
-        if (min != null && min > max) {
-            throw MCPLogger.ROOT_LOGGER.maxCanNotBeLessThanMin(max, min);
-        }
         return this;
     }
 
-    public IntegerProperty defaultValue(Integer defaultValue) {
+    public NumberProperty defaultValue(Double defaultValue) {
         this.defaultValue = defaultValue;
         return this;
     }
@@ -88,22 +81,22 @@ public final class IntegerProperty implements ElicitationProperty<Integer> {
         return description;
     }
 
-    public Integer min() {
+    public Double min() {
         return min;
     }
 
-    public Integer max() {
+    public Double max() {
         return max;
     }
 
     @Override
-    public Integer defaultValue() {
+    public Double defaultValue() {
         return defaultValue;
     }
 
     @Override
     public JsonObject jsonSchema() {
-        JsonObjectBuilder b = Json.createObjectBuilder().add("type", "integer");
+        JsonObjectBuilder b = Json.createObjectBuilder().add("type", "number");
         if (title != null) {
             b.add("title", title);
         }

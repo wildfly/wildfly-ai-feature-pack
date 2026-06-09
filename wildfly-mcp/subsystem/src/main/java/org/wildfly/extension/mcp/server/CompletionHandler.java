@@ -19,7 +19,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import org.mcp_java.model.common.CompleteContext;
+import org.wildfly.mcp.model.completion.CompleteContext;
 import org.wildfly.extension.mcp.api.MCPConnection;
 import org.wildfly.extension.mcp.api.Responder;
 import org.wildfly.extension.mcp.injection.WildFlyMCPRegistry;
@@ -154,7 +154,7 @@ public class CompletionHandler {
         Integer total = null;
         Boolean hasMore = false;
 
-        if (result instanceof org.mcp_java.model.completion.CompleteResult completeResult) {
+        if (result instanceof org.wildfly.mcp.model.completion.CompleteResult completeResult) {
             for (String value : completeResult.completion().values()) {
                 valuesArray.add(value);
             }

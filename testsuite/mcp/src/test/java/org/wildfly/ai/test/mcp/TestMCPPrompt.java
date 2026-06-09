@@ -7,8 +7,8 @@ package org.wildfly.ai.test.mcp;
 import java.util.List;
 import org.mcp_java.server.prompts.Prompt;
 import org.mcp_java.server.prompts.PromptArg;
-import org.mcp_java.model.content.TextContent;
-import org.mcp_java.model.prompt.PromptMessage;
+import org.wildfly.mcp.model.content.TextContent;
+import org.wildfly.mcp.model.prompt.PromptMessage;
 
 public class TestMCPPrompt {
 

@@ -1,6 +1,6 @@
 package org.wildfly.extension.mcp.api;
 
-import org.mcp_java.model.prompt.PromptMessage;
+import org.wildfly.mcp.model.prompt.PromptMessage;
 import java.util.List;
 
 public record PromptResponse(String description, List<PromptMessage> messages) {

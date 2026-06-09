@@ -2,8 +2,8 @@ package org.wildfly.extension.mcp.api;
 
 import java.util.Arrays;
 import java.util.List;
-import org.mcp_java.model.content.ContentBlock;
-import org.mcp_java.model.content.TextContent;
+import org.wildfly.mcp.model.content.ContentBlock;
+import org.wildfly.mcp.model.content.TextContent;
 
 public record ToolResponse(boolean isError, List<? extends ContentBlock> content) {
 
