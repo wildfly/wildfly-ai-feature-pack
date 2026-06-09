@@ -104,11 +104,21 @@ public final class IntegerProperty implements ElicitationProperty<Integer> {
     @Override
     public JsonObject jsonSchema() {
         JsonObjectBuilder b = Json.createObjectBuilder().add("type", "integer");
-        if (title != null) b.add("title", title);
-        if (description != null) b.add("description", description);
-        if (min != null) b.add("minimum", min);
-        if (max != null) b.add("maximum", max);
-        if (defaultValue != null) b.add("default", defaultValue);
+        if (title != null) {
+            b.add("title", title);
+        }
+        if (description != null) {
+            b.add("description", description);
+        }
+        if (min != null) {
+            b.add("minimum", min);
+        }
+        if (max != null) {
+            b.add("maximum", max);
+        }
+        if (defaultValue != null) {
+            b.add("default", defaultValue);
+        }
         return b.build();
     }
 }

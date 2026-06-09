@@ -140,13 +140,27 @@ public final class StringProperty implements ElicitationProperty<String> {
     @Override
     public JsonObject jsonSchema() {
         JsonObjectBuilder b = Json.createObjectBuilder().add("type", "string");
-        if (title != null) b.add("title", title);
-        if (description != null) b.add("description", description);
-        if (minLength != null) b.add("minLength", minLength);
-        if (maxLength != null) b.add("maxLength", maxLength);
-        if (pattern != null) b.add("pattern", pattern);
-        if (format != null) b.add("format", format.value());
-        if (defaultValue != null) b.add("default", defaultValue);
+        if (title != null) {
+            b.add("title", title);
+        }
+        if (description != null) {
+            b.add("description", description);
+        }
+        if (minLength != null) {
+            b.add("minLength", minLength);
+        }
+        if (maxLength != null) {
+            b.add("maxLength", maxLength);
+        }
+        if (pattern != null) {
+            b.add("pattern", pattern);
+        }
+        if (format != null) {
+            b.add("format", format.value());
+        }
+        if (defaultValue != null) {
+            b.add("default", defaultValue);
+        }
         return b.build();
     }
 }

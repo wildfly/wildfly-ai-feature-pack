@@ -127,8 +127,12 @@ public final class MultiStringProperty implements ElicitationProperty<List<Strin
     public JsonObject jsonSchema() {
         JsonObjectBuilder b = Json.createObjectBuilder().add("type", "array");
 
-        if (title != null) b.add("title", title);
-        if (description != null) b.add("description", description);
+        if (title != null) {
+            b.add("title", title);
+        }
+        if (description != null) {
+            b.add("description", description);
+        }
 
         if (enumTitles != null) {
             JsonArrayBuilder anyOf = Json.createArrayBuilder();
@@ -148,8 +152,12 @@ public final class MultiStringProperty implements ElicitationProperty<List<Strin
                     .add("enum", values));
         }
 
-        if (minItems != null) b.add("minItems", minItems);
-        if (maxItems != null) b.add("maxItems", maxItems);
+        if (minItems != null) {
+            b.add("minItems", minItems);
+        }
+        if (maxItems != null) {
+            b.add("maxItems", maxItems);
+        }
 
         if (defaultValue != null) {
             JsonArrayBuilder defaults = Json.createArrayBuilder();
