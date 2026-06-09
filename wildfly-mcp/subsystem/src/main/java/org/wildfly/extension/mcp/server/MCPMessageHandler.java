@@ -57,8 +57,8 @@ public class MCPMessageHandler {
         this.serverInfo.put("serverInfo", Map.of("name", serverName, "version", serverVersion));
         this.serverInfo.put("protocolVersion", PROTOCOL_VERSION);
         Map<String, Map<String, Object>> capabilities = new HashMap<>();
-        capabilities.put("prompts", Map.of());
-        capabilities.put("tools", Map.of());
+        capabilities.put("prompts", Map.of("listChanged", true));
+        capabilities.put("tools", Map.of("listChanged", true));
         capabilities.put("resources", Map.of("subscribe", true, "listChanged", true));
         capabilities.put("completions", Map.of());
         this.serverInfo.put("capabilities", capabilities);
