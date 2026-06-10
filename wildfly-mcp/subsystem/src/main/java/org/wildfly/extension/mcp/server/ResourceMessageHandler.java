@@ -154,7 +154,6 @@ public class ResourceMessageHandler {
         }
     }
 
-    //TODO expose this somehow to the user to be actually used.
     void notifyResourceUpdated(String uri) {
         Set<MCPConnection> subscribers = subscriptions.get(uri);
         if (subscribers == null || subscribers.isEmpty()) {
