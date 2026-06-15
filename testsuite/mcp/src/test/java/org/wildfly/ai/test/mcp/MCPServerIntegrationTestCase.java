@@ -465,7 +465,7 @@ public class MCPServerIntegrationTestCase extends AbstractMCPIntegrationTestCase
         String pingMessage = """
                 {"jsonrpc":"2.0","id":%d,"method":"ping"}""".formatted(id);
 
-        int statusCode = postToStreamableWithProtocolVersion(pingMessage, "2025-03-26");
+        int statusCode = postToStreamableWithProtocolVersion(pingMessage, "2025-11-25");
         assertThat(statusCode).as("Matching MCP-Protocol-Version should succeed").isEqualTo(200);
 
         String response = future.get(RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);

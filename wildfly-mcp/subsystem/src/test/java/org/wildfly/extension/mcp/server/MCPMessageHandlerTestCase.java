@@ -96,7 +96,7 @@ public class MCPMessageHandlerTestCase {
         assertEquals(MCPConnection.Status.INITIALIZING, connection.status());
         assertTrue(responder.hasResult());
         JsonObject result = responder.lastResult();
-        assertEquals("2025-03-26", result.getString("protocolVersion"));
+        assertEquals("2025-11-25", result.getString("protocolVersion"));
         assertNotNull(result.getJsonObject("serverInfo"));
         assertEquals("test-server", result.getJsonObject("serverInfo").getString("name"));
         assertNotNull(result.getJsonObject("capabilities"));
