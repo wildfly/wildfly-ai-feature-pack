@@ -24,12 +24,12 @@ public class MCPServerSentConnectionCallBack implements ServerSentEventConnectio
     @Override
     public void connected(ServerSentEventConnection sseConnection, String lastEventId) {
         String id = connectionManager.id();
-        ROOT_LOGGER.debug("Client connection initialized [%s]".formatted(id));
+        ROOT_LOGGER.debugf("Client connection initialized [%s]", id);
         String endpointPath = endpoint + '/' + id;
         sseConnection.getResponseHeaders().add(MCP_SESSION_ID_HEADER, id);
         ServerSentEventResponder responder = new ServerSentEventResponder(sseConnection, id);
         connectionManager.add(responder);
-        ROOT_LOGGER.debug("Sending endpoint [%s]".formatted(endpointPath));
+        ROOT_LOGGER.debugf("Sending endpoint [%s]", endpointPath);
         responder.send("endpoint", endpointPath);
     }
 

@@ -130,8 +130,8 @@ public interface MCPLogger extends BasicLogger {
     @Message(id = 28, value = "Invalid tool name: %s")
     String invalidToolName(String tool);
 
-    @Message(id = 29, value = "Failed to serialize structured content")
-    String errorSerializingContent();
+//    @Message(id = 29, value = "Failed to serialize structured content")
+//    String errorSerializingContent();
 
     @Message(id = 30, value = "Tool invocation failed")
     String errorInvokingTool();
