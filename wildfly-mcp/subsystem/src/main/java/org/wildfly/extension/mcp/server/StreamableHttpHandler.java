@@ -72,7 +72,7 @@ public class StreamableHttpHandler implements HttpHandler {
         exchange.startBlocking();
         JsonReader reader = Json.createReader(exchange.getInputStream());
         JsonObject content = reader.readObject();
-        ROOT_LOGGER.debug("Received message from client: %s".formatted(content));
+        ROOT_LOGGER.debugf("Received message from client: %s", content);
         String connectionId = exchange.getRequestHeaders().getFirst(MCP_SESSION_ID_HEADER);
         if (connectionId == null) {
             connectionId = connectionManager.id();

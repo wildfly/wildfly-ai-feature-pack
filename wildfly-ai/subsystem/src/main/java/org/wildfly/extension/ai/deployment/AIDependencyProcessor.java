@@ -393,11 +393,15 @@ public class AIDependencyProcessor implements DeploymentUnitProcessor {
      */
     private void processFieldInjection(AnnotationInstance annotation, java.util.Map<ServiceType, Set<String>> requiredServices) {
         FieldInfo field = annotation.target().asField();
-        if (field.type().kind() != Type.Kind.CLASS) {
+        String className;
+        if (field.type().kind() == Type.Kind.CLASS) {
+            className = field.type().asClassType().name().toString();
+        } else if (field.type().kind() == Type.Kind.PARAMETERIZED_TYPE) {
+            className = field.type().asParameterizedType().name().toString();
+        } else {
             return;
         }
 
-        String className = field.type().asClassType().name().toString();
         String serviceName = annotation.value().asString();
 
         try {

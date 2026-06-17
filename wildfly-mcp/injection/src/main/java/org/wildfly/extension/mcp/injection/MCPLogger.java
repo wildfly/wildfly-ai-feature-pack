@@ -31,8 +31,8 @@ public interface MCPLogger extends BasicLogger {
     @Message(id = 3, value = "Parameter %s must be positive")
     IllegalArgumentException parameterMustBePositive(String name);
 
-    @Message(id = 4, value = "At least one schema property must be added to the Elicitation Form")
-    IllegalArgumentException mustHaveAtLeastOneSchemaProperty();
+//    @Message(id = 4, value = "At least one schema property must be added to the Elicitation Form")
+//    IllegalArgumentException mustHaveAtLeastOneSchemaProperty();
 
     @Message(id = 5, value = "Parameter %s must not be empty")
     IllegalArgumentException parameterMustNotBeEmpty(String name);
