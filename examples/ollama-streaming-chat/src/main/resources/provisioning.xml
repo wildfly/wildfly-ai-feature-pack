@@ -1,0 +1,21 @@
+<?xml version="1.0" ?>
+<installation xmlns="urn:jboss:galleon:provisioning:4.0">
+    <feature-pack location="org.wildfly:wildfly-galleon-pack:${version.wildfly}">
+        <default-configs inherit="false"/>
+        <packages inherit="false"/>
+    </feature-pack>
+    <feature-pack location="org.wildfly.generative-ai:wildfly-ai-feature-pack:${version.wildfly-ai-feature-pack}">
+        <default-configs inherit="false"/>
+        <packages inherit="false"/>
+    </feature-pack>
+    <config model="standalone" name="standalone.xml">
+        <layers>
+            <include name="cloud-server"/>
+            <include name="ollama-streaming-chat-model"/>
+        </layers>
+    </config>
+    <options>
+        <option name="optional-packages" value="passive+"/>
+        <option name="jboss-fork-embedded" value="true"/>
+    </options>
+</installation>
