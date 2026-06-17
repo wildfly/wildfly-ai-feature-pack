@@ -27,12 +27,12 @@ public class MCPStreamableConnectionCallBack implements ServerSentEventConnectio
     @Override
     public void connected(ServerSentEventConnection sseConnection, String lastEventId) {
         String id = sseConnection.getAttachment(SESSION_ID);
-        ROOT_LOGGER.debug("Client connection initialized [%s]".formatted(id));
+        ROOT_LOGGER.debugf("Client connection initialized [%s]", id);
         sseConnection.getResponseHeaders().add(MCP_SESSION_ID_HEADER, id);
         ServerSentEventResponder connection = new ServerSentEventResponder(sseConnection, id);
         connectionManager.add(connection);
         JsonObject content = sseConnection.getAttachment(JSON_PAYLOAD);
-        ROOT_LOGGER.debug("Received message from client: %s".formatted(content));
+        ROOT_LOGGER.debugf("Received message from client: %s", content);
         JsonRPC.validate(content, connection);
         StreamableHttpHandler.handler.handle(content, connection, connection);
     }
