@@ -28,7 +28,4 @@ public interface WasmLogger extends BasicLogger {
     @Message(id = 2, value = "Unable to resolve annotation index for deployment unit: %s")
     DeploymentUnitProcessingException unableToResolveAnnotationIndex(DeploymentUnit deploymentUnit);
 
-//    @Message(id = 3, value = "Failed to resolve module for deployment %s")
-//    DeploymentUnitProcessingException failedToResolveModule(DeploymentUnit deploymentUnit);
-
 }

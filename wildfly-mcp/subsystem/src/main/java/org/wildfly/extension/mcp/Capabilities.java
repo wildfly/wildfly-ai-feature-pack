@@ -12,7 +12,4 @@ public interface Capabilities {
 
     NullaryServiceDescriptor<MCPEndpointConfiguration> MCP_SERVER_PROVIDER_DESCRIPTOR = NullaryServiceDescriptor.of("org.wildfly.ai.mcp.server.configuration", MCPEndpointConfiguration.class);
     RuntimeCapability<Void> MCP_SERVER_PROVIDER_CAPABILITY = RuntimeCapability.Builder.of(MCP_SERVER_PROVIDER_DESCRIPTOR).setAllowMultipleRegistrations(false).build();
-
-    String UNDERTOW_HOST_CAPABILITY_NAME = "org.wildfly.undertow.host";
-    String UNDERTOW_SERVER_CAPABILITY_NAME = "org.wildfly.undertow.server";
 }

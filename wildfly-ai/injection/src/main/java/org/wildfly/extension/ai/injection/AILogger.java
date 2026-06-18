@@ -20,7 +20,4 @@ public interface AILogger extends BasicLogger {
     @Message(id = 1, value = "The bean name %s is expecting a %s while the llm is configured as streaming %s")
     IllegalStateException incorrectLLMConfiguration(String name, String typeClass, boolean streaming);
 
-//    @Message(id = 2, value = "No HTTP Session is available to create a ChatMemory %s")
-//    IllegalStateException noHttpSession(String name);
-
 }

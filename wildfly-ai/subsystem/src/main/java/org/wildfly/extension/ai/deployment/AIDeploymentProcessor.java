@@ -141,7 +141,7 @@ public class AIDeploymentProcessor implements DeploymentUnitProcessor {
                     }
                 }
                 if (!requiredEmbeddingStores.isEmpty()) {
-                    for (int i = 0; i < requiredEmbeddingModels.size(); i++) {
+                    for (int i = 0; i < requiredEmbeddingStores.size(); i++) {
                         WildFlyBeanRegistry.registerEmbeddingStore(requiredEmbeddingStoreNames.get(i), requiredEmbeddingStores.get(i));
                     }
                 }
@@ -166,6 +166,7 @@ public class AIDeploymentProcessor implements DeploymentUnitProcessor {
                 }
             }
         } catch (CapabilityServiceSupport.NoSuchCapabilityException e) {
+            ROOT_LOGGER.cdiRequired();
         }
     }
 

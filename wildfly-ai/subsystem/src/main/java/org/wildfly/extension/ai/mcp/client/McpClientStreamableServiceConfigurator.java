@@ -66,6 +66,7 @@ public class McpClientStreamableServiceConfigurator implements ResourceServiceCo
         };
         return CapabilityServiceInstaller.builder(MCP_CLIENT_CAPABILITY, factory)
                 .requires(outboundSocketBinding)
+                .requires(executorService)
                 .blocking()
                 .startWhen(Installer.StartWhen.INSTALLED)
                 .build();

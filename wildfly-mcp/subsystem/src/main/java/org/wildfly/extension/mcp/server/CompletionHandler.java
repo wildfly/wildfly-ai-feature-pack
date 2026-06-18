@@ -6,7 +6,6 @@ package org.wildfly.extension.mcp.server;
 
 import static org.wildfly.extension.mcp.MCPLogger.ROOT_LOGGER;
 import static org.wildfly.extension.mcp.api.JsonRPC.INTERNAL_ERROR;
-import static org.wildfly.extension.mcp.api.JsonRPC.INVALID_PARAMS;
 import static org.wildfly.extension.mcp.api.JsonRPC.INVALID_REQUEST;
 
 import jakarta.enterprise.inject.Instance;
@@ -23,7 +22,6 @@ import java.util.Map;
 import org.mcp_java.model.common.CompleteContext;
 import org.wildfly.extension.mcp.api.MCPConnection;
 import org.wildfly.extension.mcp.api.Responder;
-import org.wildfly.extension.mcp.MCPLogger;
 import org.wildfly.extension.mcp.injection.WildFlyMCPRegistry;
 import org.wildfly.extension.mcp.injection.tool.ArgumentMetadata;
 import org.wildfly.extension.mcp.injection.tool.MCPFeatureMetadata;

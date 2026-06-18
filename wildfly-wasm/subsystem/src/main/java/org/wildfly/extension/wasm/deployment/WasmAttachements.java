@@ -9,6 +9,5 @@ import org.jboss.as.server.deployment.AttachmentList;
 import org.wildfly.extension.wasm.injection.WasmToolConfiguration;
 
 public class WasmAttachements {
-    static final AttachmentKey<AttachmentList<String>> WASM_TOOL_NAMES = AttachmentKey.createList(String.class);
     static final AttachmentKey<AttachmentList<WasmToolConfiguration>> WASM_TOOL_CONFIGURATIONS = AttachmentKey.createList(WasmToolConfiguration.class);
 }

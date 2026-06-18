@@ -47,32 +47,27 @@ public class WasmDependencyProcessor implements DeploymentUnitProcessor {
         if (annotations == null || annotations.isEmpty()) {
             return;
         }
-        DeploymentUnit deploymentUnit = deploymentPhaseContext.getDeploymentUnit();
         for (AnnotationInstance annotation : annotations) {
+            String annotationValue = annotation.value() != null ? annotation.value().asString() : null;
             String name;
-            if(annotation.value("name") != null) {
-                name = annotation.value("name").asString();
-            }else {
-                if(annotation.target().kind() == Kind.FIELD) {
-                   name = annotation.target().asField().name();
-                } else {
-                    name = annotation.target().asMethodParameter().name();
-                }
+            if (annotationValue != null && !annotationValue.isEmpty()) {
+                name = annotationValue;
+            } else if (annotation.target().kind() == Kind.FIELD) {
+                name = annotation.target().asField().name();
+            } else {
+                name = annotation.target().asMethodParameter().name();
             }
-            deploymentUnit.addToAttachmentList(WasmAttachements.WASM_TOOL_NAMES, name);
             deploymentPhaseContext.addDeploymentDependency(WASM_TOOL_PROVIDER_CAPABILITY.getCapabilityServiceName(name), WasmAttachements.WASM_TOOL_CONFIGURATIONS);
         }
     }
+
     private void processWasmToolServices(DeploymentPhaseContext deploymentPhaseContext, List<AnnotationInstance> annotations) {
         if (annotations == null || annotations.isEmpty()) {
             return;
         }
-        DeploymentUnit deploymentUnit = deploymentPhaseContext.getDeploymentUnit();
         for (AnnotationInstance annotation : annotations) {
-            String name;
             if (annotation.value("wasmToolConfigurationName") != null) {
-                name = annotation.value("wasmToolConfigurationName").asString();
-                deploymentUnit.addToAttachmentList(WasmAttachements.WASM_TOOL_NAMES, name);
+                String name = annotation.value("wasmToolConfigurationName").asString();
                 deploymentPhaseContext.addDeploymentDependency(WASM_TOOL_PROVIDER_CAPABILITY.getCapabilityServiceName(name), WasmAttachements.WASM_TOOL_CONFIGURATIONS);
             }
         }
