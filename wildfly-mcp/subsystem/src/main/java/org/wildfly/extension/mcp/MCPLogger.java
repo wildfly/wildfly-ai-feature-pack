@@ -165,4 +165,7 @@ public interface MCPLogger extends BasicLogger {
 
     @Message(id = 39, value = "Client does not support %s mode elicitation")
     IllegalStateException elicitationModeNotSupported(Elicitation.Mode mode);
+
+    @Message(id = 40, value = "Invalid endpoint path '%s' for parameter '%s': only alphanumeric characters (a-z, A-Z, 0-9), hyphens (-), and underscores (_) are allowed")
+    String invalidEndpointPath(String value, String parameterName);
 }

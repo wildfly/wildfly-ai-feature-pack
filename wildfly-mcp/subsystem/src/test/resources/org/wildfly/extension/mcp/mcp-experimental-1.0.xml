@@ -4,5 +4,5 @@
 -->
 
 <subsystem xmlns="urn:jboss:domain:mcp:experimental:1.0">
-    <mcp-server name="server" sse-path="sse" messages-path="messages" streamable-path="stream"/>
+    <mcp-server sse-path="sse" messages-path="messages" streamable-path="stream"/>
 </subsystem>

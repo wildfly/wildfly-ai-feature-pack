@@ -6,10 +6,10 @@
 -->
 
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
-           targetNamespace="urn:jboss:domain:mcp:experimental:1.0"
-           xmlns="urn:jboss:domain:mcp:experimental:1.0"
+           targetNamespace="urn:jboss:domain:mcp:experimental:2.0"
+           xmlns="urn:jboss:domain:mcp:experimental:2.0"
            elementFormDefault="qualified"
-           version="1.0">
+           version="2.0">
     <xs:element name="subsystem" type="subsystemType">
         <xs:annotation>
             <xs:documentation>
@@ -24,41 +24,38 @@
                 The MCP subsystem root type.
             </xs:documentation>
         </xs:annotation>
-        <xs:sequence>
-            <xs:element name="mcp-server" type="mcpServerType"  minOccurs="0">
-                <xs:annotation>
-                    <xs:documentation>
-                        The MCP server configuration.
-                    </xs:documentation>
-                </xs:annotation>
-            </xs:element>
-        </xs:sequence>
-    </xs:complexType>
-
-    <xs:complexType name="mcpServerType">
-        <xs:annotation>
-            <xs:documentation>
-                The MCP endpoints.
-            </xs:documentation>
-        </xs:annotation>
-        <xs:attribute name="sse-path" type="xs:string">
+        <xs:attribute name="sse-path" type="xs:string" use="required">
             <xs:annotation>
                 <xs:documentation>
                     The sse path on the server.
                 </xs:documentation>
             </xs:annotation>
         </xs:attribute>
-        <xs:attribute name="messages-path" type="xs:string">
+        <xs:attribute name="messages-path" type="xs:string" use="required">
             <xs:annotation>
                 <xs:documentation>
                     The messages path on the server.
                 </xs:documentation>
             </xs:annotation>
         </xs:attribute>
-        <xs:attribute name="streamable-path" type="xs:string">
+        <xs:attribute name="streamable-path" type="xs:string" use="required">
             <xs:annotation>
                 <xs:documentation>
                     The streamable path on the server.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="page-size" type="xs:int">
+            <xs:annotation>
+                <xs:documentation>
+                    Maximum number of items per paginated list response. A value of 0 disables pagination.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="timeout" type="xs:long">
+            <xs:annotation>
+                <xs:documentation>
+                    Idle connection timeout in seconds. Connections inactive for longer than this will be closed.
                 </xs:documentation>
             </xs:annotation>
         </xs:attribute>
