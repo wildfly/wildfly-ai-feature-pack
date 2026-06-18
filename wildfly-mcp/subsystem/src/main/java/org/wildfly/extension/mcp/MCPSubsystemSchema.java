@@ -4,6 +4,16 @@
  */
 package org.wildfly.extension.mcp;
 
+import static org.wildfly.extension.mcp.MCPSubsystemRegistrar.MESSAGES_PATH;
+import static org.wildfly.extension.mcp.MCPSubsystemRegistrar.PAGE_SIZE;
+import static org.wildfly.extension.mcp.MCPSubsystemRegistrar.SSE_PATH;
+import static org.wildfly.extension.mcp.MCPSubsystemRegistrar.STREAMABLE_PATH;
+import static org.wildfly.extension.mcp.MCPSubsystemRegistrar.TIMEOUT;
+
+import java.util.List;
+import java.util.Set;
+import org.jboss.as.controller.PathElement;
+import org.jboss.as.controller.ResourceRegistration;
 import org.jboss.as.controller.SubsystemSchema;
 import org.jboss.as.controller.persistence.xml.ResourceXMLParticleFactory;
 import org.jboss.as.controller.persistence.xml.SubsystemResourceRegistrationXMLElement;
@@ -13,13 +23,15 @@ import org.jboss.as.controller.xml.XMLCardinality;
 import org.jboss.as.version.Stability;
 import org.jboss.staxmapper.IntVersion;
 
-
 /**
  * Enumeration of MCP Server subsystem schema versions.
  */
 enum MCPSubsystemSchema implements SubsystemResourceXMLSchema<MCPSubsystemSchema> {
-    VERSION_1_0(1, 0),;
-    static final MCPSubsystemSchema CURRENT = VERSION_1_0;
+    VERSION_1_0(1, 0),
+    VERSION_2_0(2, 0),;
+    static final MCPSubsystemSchema CURRENT = VERSION_2_0;
+
+    private static final ResourceRegistration LEGACY_MCP_SERVER = ResourceRegistration.of(PathElement.pathElement("mcp-server"));
 
     private final VersionedNamespace<IntVersion, MCPSubsystemSchema> namespace;
     private final ResourceXMLParticleFactory factory = ResourceXMLParticleFactory.newInstance(this);
@@ -35,12 +47,22 @@ enum MCPSubsystemSchema implements SubsystemResourceXMLSchema<MCPSubsystemSchema
 
     @Override
     public SubsystemResourceRegistrationXMLElement getSubsystemXMLElement() {
-        return this.factory.subsystemElement(MCPSubsystemRegistrar.REGISTRATION)
-                .withContent(this.factory.choice().withCardinality(XMLCardinality.Single.OPTIONAL)
-                        .addElement(this.factory.namedElement(MCPEndpointConfigurationProviderRegistrar.REGISTRATION)
-                                .addAttributes(MCPEndpointConfigurationProviderRegistrar.ATTRIBUTES).build())
-                        .build()
-                )
-                .build();
+        SubsystemResourceRegistrationXMLElement.Builder builder = this.factory.subsystemElement(MCPSubsystemRegistrar.REGISTRATION);
+        if (this.since(VERSION_2_0)) {
+            builder.addAttribute(MESSAGES_PATH)
+                   .addAttribute(SSE_PATH)
+                   .addAttribute(STREAMABLE_PATH)
+                   .addAttribute(PAGE_SIZE)
+                   .addAttribute(TIMEOUT);
+        } else {
+            builder.withContent(this.factory.sequence()
+                    .withCardinality(XMLCardinality.Single.OPTIONAL)
+                    .addElement(this.factory.element(this.factory.resolve("mcp-server"))
+                            .addAttributes(List.of(MESSAGES_PATH, SSE_PATH, STREAMABLE_PATH, PAGE_SIZE, TIMEOUT))
+                            .ignoreAttributeLocalNames(Set.of("name"))
+                            .build())
+                    .build());
+        }
+        return builder.build();
     }
 }

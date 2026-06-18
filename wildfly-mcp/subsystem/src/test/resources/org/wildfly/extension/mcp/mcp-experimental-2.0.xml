@@ -1,0 +1,7 @@
+<!--
+~ Copyright The WildFly Authors
+~ SPDX-License-Identifier: Apache-2.0
+-->
+
+<subsystem xmlns="urn:jboss:domain:mcp:experimental:2.0"
+           sse-path="sse" messages-path="messages" streamable-path="stream"/>
