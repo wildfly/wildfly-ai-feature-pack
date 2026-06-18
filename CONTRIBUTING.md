@@ -13,7 +13,7 @@ If you like our project, but just don’t have time to contribute, that’s fine
 * Check out our [youtube](https://www.youtube.com/@WildFlyAS) contents.
 
 ## Forking the Project 
-To contribute, you will first need to fork the [wildfly-ai-feature-pack](https://github.com/wildfly-extras/wildfly-ai-feature-pack) repository. 
+To contribute, you will first need to fork the [wildfly-ai-feature-pack](https://github.com/wildfly/wildfly-ai-feature-pack) repository. 
 
 This can be done by looking in the top-right corner of the repository page and clicking "Fork".
 
@@ -32,7 +32,7 @@ Now you have the repository on your computer!
 
 ## Issues
 
-WildFly AI Feature Pack uses GitHub Issues to manage issues. All issues can be found [here](https://github.com/wildfly-extras/wildfly-ai-feature-pack/issues).
+WildFly AI Feature Pack uses GitHub Issues to manage issues. All issues can be found [here](https://github.com/wildfly/wildfly-ai-feature-pack/issues).
 
 ## Setting up your Developer Environment
 You will need:
@@ -49,7 +49,7 @@ Add a remote ref to upstream, for pulling future updates.
 For example:
 
 ```
-git remote add upstream https://github.com/wildfly-extras/wildfly-ai-feature-pack
+git remote add upstream https://github.com/wildfly/wildfly-ai-feature-pack
 ```
 To build `wildfly-ai-feature-pack` run:
 ```bash

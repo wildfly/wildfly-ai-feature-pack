@@ -8,7 +8,7 @@
         <prop name="org.wildfly.category" value="Generative AI"/>
         <prop name="org.wildfly.description" value="Support for Neo4J content retriever"/>
         <prop name="org.wildfly.stability" value="experimental"/>
-        <prop name="org.wildfly.rule.configuration" value="https://raw.githubusercontent.com/wildfly-extras/wildfly-ai-feature-pack/refs/heads/main/doc/glow-layer-doc/neo4j-content-retriever/env.yaml"/>
+        <prop name="org.wildfly.rule.configuration" value="https://raw.githubusercontent.com/wildfly/wildfly-ai-feature-pack/refs/heads/main/doc/glow-layer-doc/neo4j-content-retriever/env.yaml"/>
         <prop name="org.wildfly.rule.add-on-depends-on" value="only:ai"/>
         <prop name="org.wildfly.rule.add-on" value="ai-content-retriever,neo4j-content-retriever"/>
         <prop name="org.wildfly.rule.add-on-description" value="Use Neo4J as a content retriever"/>

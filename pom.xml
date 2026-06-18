@@ -13,7 +13,7 @@
 
     <name>Parent AI integration for WildFly</name>
     <description>Parent of the feature pack for AI integration in WildFly</description>
-    <url>https://github.com/wildfly-extras/wildfly-ai-feature-pack</url>
+    <url>https://github.com/wildfly/wildfly-ai-feature-pack</url>
 
     <licenses>
         <license>
@@ -24,10 +24,10 @@
     </licenses>
 
     <scm>
-        <connection>scm:git:git@github.com:wildfly-extras/wildfly-ai-feature-pack.git</connection>
-        <developerConnection>scm:git:git@github.com:wildfly-extras/wildfly-ai-feature-pack.git</developerConnection>
-        <url>https://github.com/wildfly-extras/wildfly-ai-feature-pack</url>
-        <tag>0.8.1</tag>
+        <connection>scm:git:git@github.com:wildfly/wildfly-ai-feature-pack.git</connection>
+        <developerConnection>scm:git:git@github.com:wildfly/wildfly-ai-feature-pack.git</developerConnection>
+        <url>https://github.com/wildfly/wildfly-ai-feature-pack</url>
+        <tag>HEAD</tag>
     </scm>
 
     <developers>
@@ -92,8 +92,8 @@
 
         <!-- Nexus deployment settings -->
         <nexus.staging.tag>ai-feature-pack-${project.version}</nexus.staging.tag>
-        <nexus.repository.staging>wildfly-extras-staging</nexus.repository.staging>
-        <nexus.repository.release>wildfly-extras</nexus.repository.release>
+        <nexus.repository.staging>wildfly-staging</nexus.repository.staging>
+        <nexus.repository.release>wildfly</nexus.repository.release>
     </properties>
 
     <dependencyManagement>
