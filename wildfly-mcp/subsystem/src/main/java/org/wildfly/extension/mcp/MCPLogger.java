@@ -130,39 +130,36 @@ public interface MCPLogger extends BasicLogger {
     @Message(id = 28, value = "Invalid tool name: %s")
     String invalidToolName(String tool);
 
-//    @Message(id = 29, value = "Failed to serialize structured content")
-//    String errorSerializingContent();
-
-    @Message(id = 30, value = "Tool invocation failed")
+    @Message(id = 29, value = "Tool invocation failed")
     String errorInvokingTool();
 
-    @Message(id = 31, value = "pageSize must not be negative: %d")
+    @Message(id = 30, value = "pageSize must not be negative: %d")
     IllegalArgumentException invalidPageSize(int pageSize);
 
-    @Message(id = 32, value = "Invalid prompt name: %s")
+    @Message(id = 31, value = "Invalid prompt name: %s")
     String invalidPromptName(String prompt);
 
-    @Message(id = 33, value = "Invalid resource name: %s")
+    @Message(id = 32, value = "Invalid resource name: %s")
     String invalidResourceName(String resourceUri);
 
-    @Message(id = 34, value = "Resource URI not defined")
+    @Message(id = 33, value = "Resource URI not defined")
     String resourceUriNotDefined();
 
-    @Message(id = 35, value = "No resource template matches URI: %s")
+    @Message(id = 34, value = "No resource template matches URI: %s")
     String noMatchingResourceTemplate(String resourceUri);
 
     @LogMessage(level = ERROR)
-    @Message(id = 36, value = "Skipping tool '%s' from listing (schema generation failed): %s")
+    @Message(id = 35, value = "Skipping tool '%s' from listing (schema generation failed): %s")
     void errorSkippingToolFromListing(String toolName, String reason);
 
     @LogMessage(level = WARN)
-    @Message(id = 37, value = "Schema generator class '%s' does not implement ToolSchemaGenerator")
+    @Message(id = 36, value = "Schema generator class '%s' does not implement ToolSchemaGenerator")
     void warnSchemaGeneratorInvalidType(String className);
 
     @LogMessage(level = WARN)
-    @Message(id = 38, value = "Failed to resolve schema generator '%s'")
+    @Message(id = 37, value = "Failed to resolve schema generator '%s'")
     void warnFailedToResolveSchemaGenerator(@Cause Throwable cause, String className);
 
-    @Message(id = 39, value = "Client does not support %s mode elicitation")
+    @Message(id = 38, value = "Client does not support %s mode elicitation")
     IllegalStateException elicitationModeNotSupported(Elicitation.Mode mode);
 }

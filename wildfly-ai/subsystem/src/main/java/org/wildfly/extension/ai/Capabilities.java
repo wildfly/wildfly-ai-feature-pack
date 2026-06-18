@@ -109,6 +109,5 @@ public interface Capabilities {
 
     String MANAGED_EXECUTOR_CAPABILITY_NAME = "org.wildfly.ee.concurrent.executor";
     String OPENTELEMETRY_CAPABILITY_NAME = "org.wildfly.extension.opentelemetry";
-    String OPENTELEMETRY_CONFIG_CAPABILITY_NAME = "org.wildfly.extension.opentelemetry.config";
     String OUTBOUND_SOCKET_BINDING_CAPABILITY_NAME = "org.wildfly.network.outbound-socket-binding";
 }

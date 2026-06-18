@@ -69,8 +69,4 @@ public class McpClientStreamableProviderRegistrar implements ChildResourceDefini
         return resourceRegistration;
     }
 
-    private enum SseScheme {
-        http, https;
-    }
-
 }

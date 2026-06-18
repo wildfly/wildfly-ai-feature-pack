@@ -36,11 +36,13 @@ import com.github.victools.jsonschema.generator.SchemaGeneratorConfigBuilder;
 import com.github.victools.jsonschema.generator.SchemaVersion;
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.spi.CDI;
+
 import static org.wildfly.extension.mcp.server.MCPServerUtils.SHARED_MAPPER;
 import static org.wildfly.extension.mcp.server.MCPServerUtils.getRequestId;
 import static org.wildfly.extension.mcp.server.MCPServerUtils.invokeViaReflection;
 import static org.wildfly.extension.mcp.server.MCPServerUtils.prepareArguments;
 import static org.wildfly.extension.mcp.server.MCPServerUtils.sendInvocationFailureResult;
+
 import jakarta.json.Json;
 import jakarta.json.JsonArrayBuilder;
 import jakarta.json.JsonObject;
@@ -60,7 +62,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;

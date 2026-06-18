@@ -66,7 +66,7 @@ public class TavilyWebSearchContentRetrieverConfig implements WildFlyContentRetr
     }
 
     public TavilyWebSearchContentRetrieverConfig includeRawContent(Boolean includeRawContent) {
-        this.includeRawContent = this.includeRawContent;
+        this.includeRawContent = includeRawContent;
         return this;
     }
 

@@ -125,7 +125,6 @@ public class MCPMessageHandler {
     static final String PROTOCOL_VERSION = "2025-03-26";
     static final String INITIALIZE = "initialize";
     static final String NOTIFICATIONS_INITIALIZED = "notifications/initialized";
-    static final String NOTIFICATIONS_MESSAGE = "notifications/message";
     static final String NOTIFICATIONS_CANCEL = "notifications/cancelled";
     static final String PROMPTS_LIST = "prompts/list";
     static final String PROMPTS_GET = "prompts/get";
