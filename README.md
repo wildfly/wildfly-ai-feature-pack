@@ -158,7 +158,7 @@ and provision it using the following command:
 galleon.sh provision provisioning.xml --dir=my-wildfly-server
 ```
 
-## Provisioning using the [WildFly Maven Plugin](https://github.com/wildfly/wildfly-maven-plugin/) or the [WildFly JAR Maven plugin](https://github.com/wildfly-extras/wildfly-jar-maven-plugin/)
+## Provisioning using the [WildFly Maven Plugin](https://github.com/wildfly/wildfly-maven-plugin/) or the [WildFly JAR Maven plugin](https://github.com/wildfly/wildfly-jar-maven-plugin/)
 
 You need to include the AI feature-pack and layers in the Maven Plugin configuration. This looks like:
 
