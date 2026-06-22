@@ -47,9 +47,9 @@ public class MCPMessageHandler {
     public MCPMessageHandler(ConnectionManager connectionManager, WildFlyMCPRegistry registry, ClassLoader classLoader, String serverName, String serverVersion, int pageSize) {
         this.registry = registry;
         ExecutorService executorService = lookupExecutorService();
-        this.toolHandler = new ToolMessageHandler(registry, classLoader, executorService, pageSize);
         this.promptHandler = new PromptMessageHandler(registry, classLoader, executorService, pageSize);
         this.resourceHandler = new ResourceMessageHandler(registry, classLoader, executorService, pageSize);
+        this.toolHandler = new ToolMessageHandler(registry, classLoader, executorService, pageSize, resourceHandler);
         this.resourceTemplateHandler = new ResourceTemplateMessageHandler(registry, classLoader, executorService, pageSize);
         this.completionHandler = new CompletionHandler(registry, classLoader);
         this.connectionManager = connectionManager;
