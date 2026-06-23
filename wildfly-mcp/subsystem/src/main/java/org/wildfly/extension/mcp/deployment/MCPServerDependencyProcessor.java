@@ -48,6 +48,7 @@ import org.wildfly.extension.mcp.injection.tool.ArgumentMetadata;
 import org.wildfly.extension.mcp.injection.tool.MCPFeatureMetadata;
 import org.wildfly.extension.mcp.injection.tool.MethodMetadata;
 import org.wildfly.mcp.model.Annotations;
+import org.wildfly.mcp.model.Role;
 import org.wildfly.mcp.model.tool.ToolAnnotations;
 import org.wildfly.mcp.model.elicitation.ElicitationSender;
 import org.mcp_java.server.progress.Progress;
@@ -344,12 +345,14 @@ public class MCPServerDependencyProcessor implements DeploymentUnitProcessor {
             return null;
         }
         AnnotationInstance nested = annotationsValue.asNested();
-        String audience = null;
+        Annotations.Builder builder = Annotations.builder();
         if (nested.value(AUDIENCE) != null) {
-            audience = nested.value(AUDIENCE).asEnum().toLowerCase();
+            builder.setAudience(Role.fromValue(nested.value(AUDIENCE).asEnum().toLowerCase()));
         }
-        Double priority = nested.value(PRIORITY) != null ? nested.value(PRIORITY).asDouble() : null;
-        return new Annotations(audience, priority);
+        if (nested.value(PRIORITY) != null) {
+            builder.setPriority(nested.value(PRIORITY).asDouble());
+        }
+        return builder.build();
     }
 
     private List<ArgumentMetadata> buildArguments(MethodInfo info, DotName argAnnotation) {

@@ -9,8 +9,10 @@ import static org.wildfly.extension.mcp.injection.MCPFieldNames.AUDIENCE;
 import static org.wildfly.extension.mcp.injection.MCPFieldNames.PRIORITY;
 
 import jakarta.json.Json;
+import jakarta.json.JsonArrayBuilder;
 import jakarta.json.JsonObjectBuilder;
 import org.wildfly.mcp.model.Annotations;
+import org.wildfly.mcp.model.Role;
 
 final class ResourceAnnotationsUtil {
 
@@ -23,12 +25,16 @@ final class ResourceAnnotationsUtil {
         }
         JsonObjectBuilder ann = Json.createObjectBuilder();
         boolean hasContent = false;
-        if (annotations.audience() != null) {
-            ann.add(AUDIENCE, Json.createArrayBuilder().add(annotations.audience()));
+        if (annotations.audience().isPresent()) {
+            JsonArrayBuilder audienceArray = Json.createArrayBuilder();
+            for (Role role : annotations.audience().get()) {
+                audienceArray.add(role.getValue());
+            }
+            ann.add(AUDIENCE, audienceArray);
             hasContent = true;
         }
-        if (annotations.priority() != null) {
-            ann.add(PRIORITY, annotations.priority());
+        if (annotations.priority().isPresent()) {
+            ann.add(PRIORITY, annotations.priority().getAsDouble());
             hasContent = true;
         }
         if (hasContent) {

@@ -27,6 +27,7 @@ import org.wildfly.extension.mcp.injection.tool.ArgumentMetadata;
 import org.wildfly.extension.mcp.injection.tool.MCPFeatureMetadata;
 import org.wildfly.extension.mcp.injection.tool.MethodMetadata;
 import org.wildfly.mcp.model.Annotations;
+import org.wildfly.mcp.model.Role;
 
 public class ResourceFeaturesTestCase {
 
@@ -45,7 +46,7 @@ public class ResourceFeaturesTestCase {
                 MCPFeatureMetadata.Kind.RESOURCE, "report",
                 new MethodMetadata("getReport", "Monthly report", "file:///data/report.csv", "text/csv",
                         List.of(), "org.test.ReportResource", "java.lang.String"),
-                "Monthly Report", 2048, new Annotations("user", 0.7)));
+                "Monthly Report", 2048, Annotations.builder().setAudience(Role.USER).setPriority(0.7).build()));
 
         // Resource WITHOUT title, size, or annotations
         registry.addResource("file:///logs/app.log", new MCPFeatureMetadata(
@@ -58,14 +59,14 @@ public class ResourceFeaturesTestCase {
                 MCPFeatureMetadata.Kind.RESOURCE, "public-data",
                 new MethodMetadata("getPublicData", "Public data", "file:///data/public.txt", "text/plain",
                         List.of(), "org.test.PublicDataResource", "java.lang.String"),
-                null, -1, new Annotations("user", null)));
+                null, -1, Annotations.builder().setAudience(Role.USER).build()));
 
         // Resource with priority-only annotations (no audience)
         registry.addResource("file:///data/priority.txt", new MCPFeatureMetadata(
                 MCPFeatureMetadata.Kind.RESOURCE, "priority-data",
                 new MethodMetadata("getPriorityData", "Priority data", "file:///data/priority.txt", "text/plain",
                         List.of(), "org.test.PriorityDataResource", "java.lang.String"),
-                null, -1, new Annotations(null, 0.3)));
+                null, -1, Annotations.builder().setPriority(0.3).build()));
 
         // Resource template WITH title and annotations
         registry.addResourceTemplate("db:///{database}/tables/{table}", new MCPFeatureMetadata(
@@ -75,7 +76,7 @@ public class ResourceFeaturesTestCase {
                                 new ArgumentMetadata("database", "Database name", true, String.class),
                                 new ArgumentMetadata("table", "Table name", true, String.class)),
                         "org.test.DbResource", "java.lang.String"),
-                "Database Table", -1, new Annotations("assistant", 0.9)));
+                "Database Table", -1, Annotations.builder().setAudience(Role.ASSISTANT).setPriority(0.9).build()));
 
         // Resource template WITHOUT title or annotations
         registry.addResourceTemplate("config:///{key}", new MCPFeatureMetadata(
