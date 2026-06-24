@@ -33,9 +33,7 @@ import jakarta.json.JsonArrayBuilder;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 import jakarta.json.JsonValue;
-import java.io.IOException;
-import java.io.StringReader;
-import java.io.StringWriter;
+
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -45,7 +43,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
-import org.wildfly.mcp.api.prompt.PromptMessage;
+import org.mcp_java.server.prompts.PromptMessage;
 import org.wildfly.extension.mcp.api.ContentMapper;
 import org.wildfly.extension.mcp.api.Cursor;
 import org.wildfly.extension.mcp.api.MCPConnection;
@@ -160,24 +158,10 @@ public class PromptMessageHandler {
                     Collection<? extends PromptMessage> promptMessages = ContentMapper.processResultAsPromptMessage(result);
                     JsonArrayBuilder messagesArray = Json.createArrayBuilder();
                     for (PromptMessage promptMessage : promptMessages) {
-                        for (var contentBlock : promptMessage.content()) {
-                            JsonObjectBuilder messageJson = Json.createObjectBuilder();
-                            messageJson.add(ROLE, promptMessage.role().getValue());
-                            try (StringWriter contentOut = new StringWriter()) {
-                                mapper.writeValue(contentOut, contentBlock);
-                                try (StringReader contentIn = new StringReader(contentOut.toString())) {
-                                    JsonObject contentJson = Json.createReader(contentIn).readObject();
-                                    JsonObjectBuilder filteredContent = Json.createObjectBuilder();
-                                    for (String key : contentJson.keySet()) {
-                                        if (!contentJson.isNull(key)) {
-                                            filteredContent.add(key, contentJson.get(key));
-                                        }
-                                    }
-                                    messageJson.add(CONTENT, filteredContent);
-                                }
-                            }
-                            messagesArray.add(messageJson);
-                        }
+                        JsonObjectBuilder messageJson = Json.createObjectBuilder();
+                        messageJson.add(ROLE, promptMessage.role().name().toLowerCase());
+                        messageJson.add(CONTENT, ContentMapper.contentBlockToJson(promptMessage.content()));
+                        messagesArray.add(messageJson);
                     }
                     JsonObjectBuilder builder = Json.createObjectBuilder();
                     builder.add(DESCRIPTION, methodMetadata.description());
@@ -185,7 +169,7 @@ public class PromptMessageHandler {
                     responder.sendResult(id, builder);
                 } catch (MCPException e) {
                     MCPException.sendError(e, id, responder);
-                } catch (IOException | IllegalAccessException | InvocationTargetException | NoSuchMethodException | SecurityException | ClassNotFoundException | InstantiationException | IllegalArgumentException ex) {
+                } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException | SecurityException | ClassNotFoundException | InstantiationException | IllegalArgumentException ex) {
                     ROOT_LOGGER.errorInvokingPrompt(ex, promptName);
                     sendInvocationFailureResult(id, ex, responder);
                 }

@@ -44,7 +44,9 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.wildfly.mcp.api.resource.ResourceContents;
+import org.mcp_java.server.resources.BlobResourceContents;
+import org.mcp_java.server.resources.ResourceContents;
+import org.mcp_java.server.resources.TextResourceContents;
 import org.wildfly.extension.mcp.api.ContentMapper;
 import org.wildfly.extension.mcp.api.Cursor;
 import org.wildfly.extension.mcp.api.MCPConnection;
@@ -90,7 +92,7 @@ public class ResourceTemplateMessageHandler {
             if (metadata.title() != null) {
                 template.add("title", metadata.title());
             }
-            ResourceAnnotationsUtil.addAnnotations(template, metadata.annotations());
+            ResourceAnnotationsUtil.addAnnotations(template, metadata.audience(), metadata.priority());
             templates.add(template);
         }
         JsonObjectBuilder resultBuilder = Json.createObjectBuilder().add(RESOURCE_TEMPLATES, templates);
@@ -151,14 +153,14 @@ public class ResourceTemplateMessageHandler {
                     for (ResourceContents content : contents) {
                         JsonObjectBuilder contentResource = Json.createObjectBuilder();
                         contentResource.add(URI, content.uri());
-                        String mimeType = content.mimeType() != null ? content.mimeType() : methodMetadata.mimeType();
+                        String mimeType = content.mimeType().orElse(methodMetadata.mimeType());
                         if (mimeType != null && !mimeType.isEmpty()) {
                             contentResource.add(MIME_TYPE, mimeType);
                         }
-                        if (content.isBlob()) {
-                            contentResource.add(BLOB, content.blob());
-                        } else {
-                            contentResource.add(TEXT, content.text());
+                        if (content instanceof BlobResourceContents brc) {
+                            contentResource.add(BLOB, java.util.Base64.getEncoder().encodeToString(brc.blob()));
+                        } else if (content instanceof TextResourceContents trc) {
+                            contentResource.add(TEXT, trc.text());
                         }
                         jsonContent.add(contentResource);
                     }

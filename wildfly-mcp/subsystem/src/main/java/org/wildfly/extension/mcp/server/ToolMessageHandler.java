@@ -66,8 +66,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
-import org.wildfly.mcp.api.content.ContentBlock;
-import org.wildfly.mcp.api.tool.ToolAnnotations;
+import org.mcpjava.server.content.ContentBlock;
+import org.wildfly.extension.mcp.injection.tool.ToolAnnotations;
 import org.mcpjava.server.progress.Progress;
 import org.mcpjava.server.progress.ProgressToken;
 import org.wildfly.extension.mcp.api.ContentMapper;
@@ -391,19 +391,7 @@ public class ToolMessageHandler {
                     Collection<? extends ContentBlock> content = ContentMapper.processResultAsText(result);
                     JsonArrayBuilder contentArray = Json.createArrayBuilder();
                     for (var contentBlock : content) {
-                        try (StringWriter out = new StringWriter()) {
-                            mapper.writeValue(out, contentBlock);
-                            try (StringReader in = new StringReader(out.toString())) {
-                                JsonObject contentJson = Json.createReader(in).readObject();
-                                JsonObjectBuilder filtered = Json.createObjectBuilder();
-                                for (String key : contentJson.keySet()) {
-                                    if (!contentJson.isNull(key)) {
-                                        filtered.add(key, contentJson.get(key));
-                                    }
-                                }
-                                contentArray.add(filtered);
-                            }
-                        }
+                        contentArray.add(ContentMapper.contentBlockToJson(contentBlock));
                     }
                     JsonObjectBuilder builder = Json.createObjectBuilder();
                     builder.add(CONTENT, contentArray);
@@ -420,7 +408,7 @@ public class ToolMessageHandler {
                     responder.sendResult(id, builder);
                 } catch (MCPException e) {
                     MCPException.sendError(e, id, responder);
-                } catch (IOException | IllegalAccessException | InvocationTargetException | NoSuchMethodException | SecurityException | ClassNotFoundException | InstantiationException | IllegalArgumentException ex) {
+                } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException | SecurityException | ClassNotFoundException | InstantiationException | IllegalArgumentException ex) {
                     // Infrastructure error: use a generic message to avoid leaking internal details
                     ROOT_LOGGER.errorInvokingTool(ex, toolName);
                     sendInvocationFailureResult(id, ex, responder);

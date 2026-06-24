@@ -38,6 +38,10 @@
             <artifactId>wildfly-mcp-api</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.mcp-java</groupId>
+            <artifactId>mcp-server-api</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.jboss.logging</groupId>
             <artifactId>jboss-logging</artifactId>
             <scope>provided</scope>
