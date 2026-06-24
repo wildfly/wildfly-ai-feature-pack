@@ -7,8 +7,9 @@ package org.wildfly.extension.mcp.injection.tool;
 /**
  * Generates a JSON Schema for a tool's input or output.
  * <p>
- * Implementations are referenced by class name in {@code @Tool.InputSchema(generator=...)}
- * and {@code @Tool.OutputSchema(generator=...)}, and must be CDI beans.
+ * Implementations are referenced by class in {@code @InputSchema(generator=...)}
+ * and {@code @OutputSchema(generator=...)}. They can be CDI beans or plain classes
+ * with a no-arg constructor.
  * </p>
  */
 @FunctionalInterface

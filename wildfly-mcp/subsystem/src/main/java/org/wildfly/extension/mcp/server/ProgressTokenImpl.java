@@ -6,7 +6,7 @@ package org.wildfly.extension.mcp.server;
 
 import java.util.Objects;
 
-import org.mcp_java.server.progress.ProgressToken;
+import org.mcpjava.server.progress.ProgressToken;
 
 class ProgressTokenImpl implements ProgressToken {
 

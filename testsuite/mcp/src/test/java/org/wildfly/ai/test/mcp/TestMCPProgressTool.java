@@ -4,10 +4,10 @@
  */
 package org.wildfly.ai.test.mcp;
 
-import org.mcp_java.server.tools.Tool;
-import org.mcp_java.server.tools.ToolArg;
-import org.mcp_java.server.progress.Progress;
-import org.mcp_java.server.progress.ProgressTracker;
+import org.mcpjava.server.tools.Tool;
+import org.mcpjava.server.tools.ToolArg;
+import org.mcpjava.server.progress.Progress;
+import org.mcpjava.server.progress.ProgressTracker;
 
 public class TestMCPProgressTool {
 
