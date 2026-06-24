@@ -17,8 +17,8 @@ import java.io.StringWriter;
 import java.util.Base64;
 import java.util.Collection;
 import org.junit.Test;
-import org.wildfly.mcp.model.content.AudioContent;
-import org.wildfly.mcp.model.content.ContentBlock;
+import org.wildfly.mcp.api.content.AudioContent;
+import org.wildfly.mcp.api.content.ContentBlock;
 
 /**
  * Verifies that AudioContent is correctly passed through ContentMapper

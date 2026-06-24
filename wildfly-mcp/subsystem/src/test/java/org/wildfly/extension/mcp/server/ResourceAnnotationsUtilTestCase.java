@@ -12,8 +12,8 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 import org.junit.Test;
-import org.wildfly.mcp.model.Annotations;
-import org.wildfly.mcp.model.Role;
+import org.wildfly.mcp.api.Annotations;
+import org.wildfly.mcp.api.Role;
 
 public class ResourceAnnotationsUtilTestCase {
 

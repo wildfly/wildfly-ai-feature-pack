@@ -5,7 +5,7 @@
 package org.wildfly.extension.mcp.server;
 
 import java.util.Map;
-import org.wildfly.mcp.model.completion.CompleteContext;
+import org.wildfly.mcp.api.completion.CompleteContext;
 
 record CompleteContextImpl(Map<String, String> arguments) implements CompleteContext {
 }

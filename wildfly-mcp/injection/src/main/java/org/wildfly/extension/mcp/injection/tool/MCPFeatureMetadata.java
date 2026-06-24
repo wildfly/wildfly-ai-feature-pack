@@ -6,8 +6,7 @@ package org.wildfly.extension.mcp.injection.tool;
 
 import java.util.List;
 import java.util.Optional;
-import org.wildfly.mcp.model.Annotations;
-import org.wildfly.mcp.model.tool.ToolAnnotations;
+import org.wildfly.mcp.api.Annotations;
 
 /**
  * Metadata describing an MCP feature (tool, prompt, resource, or completion handler).

@@ -25,8 +25,8 @@ import org.wildfly.extension.mcp.injection.WildFlyMCPRegistry;
 import org.wildfly.extension.mcp.injection.tool.ArgumentMetadata;
 import org.wildfly.extension.mcp.injection.tool.MCPFeatureMetadata;
 import org.wildfly.extension.mcp.injection.tool.MethodMetadata;
-import org.wildfly.mcp.model.Annotations;
-import org.wildfly.mcp.model.Role;
+import org.wildfly.mcp.api.Annotations;
+import org.wildfly.mcp.api.Role;
 
 public class ResourceFeaturesTestCase {
 

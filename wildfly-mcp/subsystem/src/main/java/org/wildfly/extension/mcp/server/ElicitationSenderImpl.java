@@ -21,13 +21,13 @@ import java.util.concurrent.TimeoutException;
 import org.wildfly.extension.mcp.api.InitializeRequest;
 import org.wildfly.extension.mcp.api.Messages;
 import org.wildfly.extension.mcp.api.Responder;
-import org.wildfly.mcp.model.elicitation.Elicitation;
-import org.wildfly.mcp.model.elicitation.ElicitationSender;
-import org.wildfly.mcp.model.elicitation.ElicitationProperty;
+import org.wildfly.mcp.api.elicitation.Elicitation;
+import org.wildfly.mcp.api.elicitation.ElicitationSender;
+import org.wildfly.mcp.api.elicitation.ElicitationProperty;
 
 import static org.wildfly.extension.mcp.MCPLogger.ROOT_LOGGER;
-import static org.wildfly.mcp.model.elicitation.Elicitation.Mode.FORM;
-import static org.wildfly.mcp.model.elicitation.Elicitation.Mode.URL;
+import static org.wildfly.mcp.api.elicitation.Elicitation.Mode.FORM;
+import static org.wildfly.mcp.api.elicitation.Elicitation.Mode.URL;
 
 /**
  * Subsystem-side implementation of {@link ElicitationSender}.

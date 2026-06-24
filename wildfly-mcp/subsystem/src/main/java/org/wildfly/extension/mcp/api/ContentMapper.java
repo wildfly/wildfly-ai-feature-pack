@@ -10,10 +10,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
-import org.wildfly.mcp.model.content.ContentBlock;
-import org.wildfly.mcp.model.content.TextContent;
-import org.wildfly.mcp.model.prompt.PromptMessage;
-import org.wildfly.mcp.model.resource.ResourceContents;
+import org.wildfly.mcp.api.content.ContentBlock;
+import org.wildfly.mcp.api.content.TextContent;
+import org.wildfly.mcp.api.prompt.PromptMessage;
+import org.wildfly.mcp.api.resource.ResourceContents;
 
 public class ContentMapper {
 

@@ -11,8 +11,8 @@ import static org.wildfly.extension.mcp.injection.MCPFieldNames.PRIORITY;
 import jakarta.json.Json;
 import jakarta.json.JsonArrayBuilder;
 import jakarta.json.JsonObjectBuilder;
-import org.wildfly.mcp.model.Annotations;
-import org.wildfly.mcp.model.Role;
+import org.wildfly.mcp.api.Annotations;
+import org.wildfly.mcp.api.Role;
 
 final class ResourceAnnotationsUtil {
 

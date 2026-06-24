@@ -112,7 +112,7 @@
 
         <dependency>
             <groupId>org.wildfly.generative-ai</groupId>
-            <artifactId>wildfly-mcp-model</artifactId>
+            <artifactId>wildfly-mcp-api</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>

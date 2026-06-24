@@ -22,7 +22,7 @@ import org.jboss.dmr.ModelNode;
 import org.wildfly.extension.mcp.injection.WildFlyMCPRegistry;
 import org.wildfly.extension.mcp.injection.tool.MCPFeatureMetadata;
 import org.wildfly.extension.mcp.injection.tool.MethodMetadata;
-import org.wildfly.mcp.model.tool.ToolAnnotations;
+import org.wildfly.extension.mcp.injection.tool.ToolAnnotations;
 
 public class MCPServerDeploymentProcessor implements DeploymentUnitProcessor {
 
