@@ -229,6 +229,7 @@ public class MCPServerDependencyProcessor implements DeploymentUnitProcessor {
             }
             int size = annotation.value(SIZE) != null ? annotation.value(SIZE).asInt() : -1;
             MethodInfo info = annotation.target().asMethod();
+            ResourceAnnotationValues resourceAnnotations = extractResourceAnnotations(annotation);
             ROOT_LOGGER.debugf("Resource detected on class %s with method %s", info.declaringClass(), info.name());
             MCPFeatureMetadata metadata = new MCPFeatureMetadata(MCPFeatureMetadata.Kind.RESOURCE,
                     name,
@@ -240,7 +241,7 @@ public class MCPServerDependencyProcessor implements DeploymentUnitProcessor {
                             List.of(),
                             info.declaringClass().toString(),
                             annotation.target().asMethod().returnType().name().toString()),
-                    title, size, extractAudience(annotation), extractPriority(annotation)
+                    title, size, resourceAnnotations.audience(), resourceAnnotations.priority()
             );
             registry.addResource(uri, metadata);
         }
@@ -262,6 +263,7 @@ public class MCPServerDependencyProcessor implements DeploymentUnitProcessor {
             }
             MethodInfo info = annotation.target().asMethod();
             List<ArgumentMetadata> arguments = buildArguments(info, resourceTemplateArg);
+            ResourceAnnotationValues resourceAnnotations = extractResourceAnnotations(annotation);
             ROOT_LOGGER.debugf("ResourceTemplate detected on class %s with method %s with the following annotated parameters %s", info.declaringClass(), info.name(), arguments);
             MCPFeatureMetadata metadata = new MCPFeatureMetadata(MCPFeatureMetadata.Kind.RESOURCE_TEMPLATE,
                     name,
@@ -273,7 +275,7 @@ public class MCPServerDependencyProcessor implements DeploymentUnitProcessor {
                             arguments,
                             info.declaringClass().toString(),
                             annotation.target().asMethod().returnType().name().toString()),
-                    title, -1, extractAudience(annotation), extractPriority(annotation)
+                    title, -1, resourceAnnotations.audience(), resourceAnnotations.priority()
             );
             registry.addResourceTemplate(uriTemplate, metadata);
         }
@@ -338,28 +340,23 @@ public class MCPServerDependencyProcessor implements DeploymentUnitProcessor {
         return annotation.value(name) == null ? null : annotation.value(name).asBoolean();
     }
 
-    private Optional<Set<Role>> extractAudience(AnnotationInstance annotation) {
-        AnnotationValue annotationsValue = annotation.value(ANNOTATIONS);
-        if (annotationsValue == null) {
-            return Optional.empty();
-        }
-        AnnotationInstance nested = annotationsValue.asNested();
-        if (nested.value(AUDIENCE) != null) {
-            return Optional.of(Set.of(Role.valueOf(nested.value(AUDIENCE).asEnum())));
-        }
-        return Optional.empty();
+    private record ResourceAnnotationValues(Optional<Set<Role>> audience, OptionalDouble priority) {
+        static final ResourceAnnotationValues EMPTY = new ResourceAnnotationValues(Optional.empty(), OptionalDouble.empty());
     }
 
-    private OptionalDouble extractPriority(AnnotationInstance annotation) {
+    private ResourceAnnotationValues extractResourceAnnotations(AnnotationInstance annotation) {
         AnnotationValue annotationsValue = annotation.value(ANNOTATIONS);
         if (annotationsValue == null) {
-            return OptionalDouble.empty();
+            return ResourceAnnotationValues.EMPTY;
         }
         AnnotationInstance nested = annotationsValue.asNested();
-        if (nested.value(PRIORITY) != null) {
-            return OptionalDouble.of(nested.value(PRIORITY).asDouble());
-        }
-        return OptionalDouble.empty();
+        Optional<Set<Role>> audience = nested.value(AUDIENCE) != null
+                ? Optional.of(Set.of(Role.valueOf(nested.value(AUDIENCE).asEnum())))
+                : Optional.empty();
+        OptionalDouble priority = nested.value(PRIORITY) != null
+                ? OptionalDouble.of(nested.value(PRIORITY).asDouble())
+                : OptionalDouble.empty();
+        return new ResourceAnnotationValues(audience, priority);
     }
 
     private List<ArgumentMetadata> buildArguments(MethodInfo info, DotName argAnnotation) {

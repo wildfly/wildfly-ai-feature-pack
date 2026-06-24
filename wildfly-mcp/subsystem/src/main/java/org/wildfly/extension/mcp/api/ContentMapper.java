@@ -4,9 +4,11 @@
  */
 package org.wildfly.extension.mcp.api;
 
+import static org.wildfly.extension.mcp.injection.MCPFieldNames.ANNOTATIONS;
+import static org.wildfly.extension.mcp.injection.MCPFieldNames.AUDIENCE;
+import static org.wildfly.extension.mcp.injection.MCPFieldNames.PRIORITY;
+
 import java.util.Base64;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -21,6 +23,7 @@ import org.mcp_java.server.content.AudioContent;
 import org.mcp_java.server.content.ContentBlock;
 import org.mcp_java.server.content.EmbeddedResource;
 import org.mcp_java.server.content.ImageContent;
+import org.mcp_java.server.content.ResourceLink;
 import org.mcp_java.server.content.TextContent;
 import org.mcp_java.server.prompts.PromptMessage;
 import org.mcp_java.server.prompts.PromptResponse;
@@ -126,6 +129,21 @@ public class ContentMapper {
             }
             json.add("resource", resourceJson);
             addAnnotations(json, er.annotations());
+        } else if (block instanceof ResourceLink rl) {
+            json.add("type", "resource_link");
+            json.add("name", rl.name());
+            json.add("uri", rl.uri());
+            String title = rl.title();
+            if (title != null && !title.equals(rl.name())) {
+                json.add("title", title);
+            }
+            rl.description().ifPresent(d -> json.add("description", d));
+            rl.mimeType().ifPresent(m -> json.add("mimeType", m));
+            var size = rl.size();
+            if (size.isPresent()) {
+                json.add("size", size.getAsLong());
+            }
+            addAnnotations(json, rl.annotations());
         }
         return json;
     }
@@ -133,24 +151,31 @@ public class ContentMapper {
     private static void addAnnotations(JsonObjectBuilder json, Optional<Annotations> annotations) {
         annotations.ifPresent(a -> {
             JsonObjectBuilder annJson = Json.createObjectBuilder();
-            a.audience().ifPresent(roles -> {
+            boolean hasContent = false;
+            if (a.audience().isPresent()) {
                 var arr = Json.createArrayBuilder();
-                roles.forEach(r -> arr.add(r.name().toLowerCase()));
-                annJson.add("audience", arr);
-            });
-            a.priority().ifPresent(p -> annJson.add("priority", p));
-            json.add("annotations", annJson);
+                a.audience().get().forEach(r -> arr.add(r.name().toLowerCase()));
+                annJson.add(AUDIENCE, arr);
+                hasContent = true;
+            }
+            if (a.priority().isPresent()) {
+                annJson.add(PRIORITY, a.priority().getAsDouble());
+                hasContent = true;
+            }
+            if (a.lastModified().isPresent()) {
+                annJson.add("lastModified", a.lastModified().get().toString());
+                hasContent = true;
+            }
+            if (hasContent) {
+                json.add(ANNOTATIONS, annJson);
+            }
         });
     }
 
     private static boolean isAssignableFrom(Collection<?> collection, Class<?> targetType) {
-        Type resultType = collection.getClass().getGenericSuperclass();
-        if (resultType instanceof ParameterizedType pt) {
-            Type realType = pt.getActualTypeArguments()[0];
-            if (realType instanceof Class<?> clazz) {
-                return targetType.isAssignableFrom(clazz);
-            }
+        if (collection.isEmpty()) {
+            return false;
         }
-        return false;
+        return targetType.isInstance(collection.iterator().next());
     }
 }
