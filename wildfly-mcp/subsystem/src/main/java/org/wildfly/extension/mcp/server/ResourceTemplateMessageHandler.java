@@ -27,6 +27,7 @@ import static org.wildfly.extension.mcp.server.MCPServerUtils.prepareArguments;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.spi.CDI;
+import static org.wildfly.extension.mcp.server.MCPServerUtils.runWithCDIContext;
 import jakarta.json.Json;
 import jakarta.json.JsonArrayBuilder;
 import jakarta.json.JsonObject;
@@ -124,7 +125,7 @@ public class ResourceTemplateMessageHandler {
         final ClassLoader prevCL = WildFlySecurityManager.getCurrentContextClassLoaderPrivileged();
         try {
             WildFlySecurityManager.setCurrentContextClassLoaderPrivileged(classLoader);
-            connection.task(executorService.submit(() -> {
+            connection.task(executorService.submit(() -> runWithCDIContext(connection, responder, () -> {
                 try {
                     MethodMetadata methodMetadata = metadata.method();
                     Class<?> clazz = classLoader.loadClass(methodMetadata.declaringClassName());
@@ -144,6 +145,7 @@ public class ResourceTemplateMessageHandler {
                         } catch (Throwable ex) {
                             ROOT_LOGGER.errorInvokingResourceTemplate(ex, resourceUri);
                             responder.sendError(id, INTERNAL_ERROR, ex.getMessage());
+                            return;
                         }
                     } else {
                         ROOT_LOGGER.debugf("Singleton instance not found for resource template %s, using reflection", resourceUri);
@@ -175,7 +177,7 @@ public class ResourceTemplateMessageHandler {
                     ROOT_LOGGER.errorInvokingResourceTemplate(ex, resourceUri);
                     responder.sendError(id, INTERNAL_ERROR, ex.getMessage());
                 }
-            }));
+            })));
         } finally {
             WildFlySecurityManager.setCurrentContextClassLoaderPrivileged(prevCL);
         }
