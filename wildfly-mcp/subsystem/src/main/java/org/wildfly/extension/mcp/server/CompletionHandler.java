@@ -154,13 +154,7 @@ public class CompletionHandler {
         Integer total = null;
         Boolean hasMore = false;
 
-        if (result instanceof org.wildfly.mcp.api.completion.CompleteResult completeResult) {
-            for (String value : completeResult.completion().values()) {
-                valuesArray.add(value);
-            }
-            total = completeResult.completion().total();
-            hasMore = completeResult.completion().hasMore();
-        } else if (result instanceof List<?> list) {
+        if (result instanceof List<?> list) {
             for (Object item : list) {
                 valuesArray.add(item.toString());
             }
