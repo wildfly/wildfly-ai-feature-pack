@@ -36,7 +36,7 @@ import com.github.victools.jsonschema.generator.SchemaGeneratorConfigBuilder;
 import com.github.victools.jsonschema.generator.SchemaVersion;
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.spi.CDI;
-
+import static org.wildfly.extension.mcp.server.MCPServerUtils.runWithCDIContext;
 import static org.wildfly.extension.mcp.server.MCPServerUtils.SHARED_MAPPER;
 import static org.wildfly.extension.mcp.server.MCPServerUtils.getRequestId;
 import static org.wildfly.extension.mcp.server.MCPServerUtils.invokeViaReflection;
@@ -77,6 +77,7 @@ import org.wildfly.extension.mcp.api.MCPConnection;
 import org.wildfly.extension.mcp.api.Responder;
 import org.wildfly.extension.mcp.injection.WildFlyMCPRegistry;
 import org.wildfly.mcp.api.elicitation.ElicitationSender;
+import org.wildfly.extension.mcp.injection.elicitation.ElicitationSenderHolder;
 import org.wildfly.extension.mcp.injection.tool.ArgumentMetadata;
 import org.wildfly.extension.mcp.injection.tool.MCPFeatureMetadata;
 import org.wildfly.extension.mcp.injection.tool.MCPTool;
@@ -362,13 +363,14 @@ public class ToolMessageHandler {
         final ClassLoader prevCL = WildFlySecurityManager.getCurrentContextClassLoaderPrivileged();
         try {
             WildFlySecurityManager.setCurrentContextClassLoaderPrivileged(classLoader);
-            connection.task(executorService.submit(() -> {
+            connection.task(executorService.submit(() -> runWithCDIContext(connection, responder, () -> {
                 try {
                     MethodMetadata methodMetadata = metadata.method();
                     Class<?> clazz = classLoader.loadClass(methodMetadata.declaringClassName());
                     Instance<?> beanInstance = CDI.current().select(clazz, MCPTool.MCPToolLiteral.INSTANCE);
                     Object result = null;
-                    Object[] builtArgs = buildArguments(metadata, args, mapper, connection, responder, finalProgressToken);
+                    ElicitationSender elicitationSender = ElicitationSenderHolder.get();
+                    Object[] builtArgs = buildArguments(metadata, args, mapper, elicitationSender, responder, finalProgressToken);
                     if (beanInstance.isResolvable()) {
                         ROOT_LOGGER.debugf("The Singleton instance of the tool %s has been found", toolName);
                         try {
@@ -428,11 +430,10 @@ public class ToolMessageHandler {
                 } catch (MCPException e) {
                     MCPException.sendError(e, id, responder);
                 } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException | SecurityException | ClassNotFoundException | InstantiationException | IllegalArgumentException ex) {
-                    // Infrastructure error: use a generic message to avoid leaking internal details
                     ROOT_LOGGER.errorInvokingTool(ex, toolName);
                     sendInvocationFailureResult(id, ex, responder);
                 }
-            }));
+            })));
         } finally {
             WildFlySecurityManager.setCurrentContextClassLoaderPrivileged(prevCL);
         }
@@ -446,7 +447,7 @@ public class ToolMessageHandler {
             MCPFeatureMetadata metadata,
             Map<String, JsonValue> jsonArgs,
             ObjectMapper objectMapper,
-            MCPConnection connection,
+            ElicitationSender elicitationSender,
             Responder responder,
             ProgressToken progressToken) throws MCPException {
         if (metadata.arguments().isEmpty()) {
@@ -456,10 +457,7 @@ public class ToolMessageHandler {
         int idx = 0;
         for (ArgumentMetadata arg : metadata.arguments()) {
             if (arg.type() instanceof Class<?> clazz && ElicitationSender.class.isAssignableFrom(clazz)) {
-                ret[idx] = new ElicitationSenderImpl(
-                        connection.pendingRequests(),
-                        responder,
-                        connection.initializeRequest());
+                ret[idx] = elicitationSender;
             } else if (arg.type() instanceof Class<?> clazz && Progress.class.isAssignableFrom(clazz)) {
                 ret[idx] = new ProgressImpl(progressToken, responder);
             } else {

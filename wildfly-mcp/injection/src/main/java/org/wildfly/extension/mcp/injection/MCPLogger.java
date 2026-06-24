@@ -6,6 +6,7 @@
 package org.wildfly.extension.mcp.injection;
 
 import static org.jboss.logging.Logger.Level.ERROR;
+import static org.jboss.logging.Logger.Level.WARN;
 
 import java.lang.invoke.MethodHandles;
 
@@ -24,4 +25,11 @@ public interface MCPLogger extends BasicLogger {
     @LogMessage(level = ERROR)
     @Message(id = 1, value = "Unexpected error")
     void unexpectedError(@Cause Throwable cause);
+
+    @LogMessage(level = WARN)
+    @Message(id = 2, value = "Vetoing user-defined ElicitationSender bean %s — ElicitationSender is provided by the MCP subsystem and must not be overridden by deployments")
+    void vetoedUserElicitationSender(String className);
+
+    @Message(id = 3, value = "ElicitationSender is not available outside of an MCP invocation context")
+    IllegalStateException elicitationSenderNotAvailable();
 }

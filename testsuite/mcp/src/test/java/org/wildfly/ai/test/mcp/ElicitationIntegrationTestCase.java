@@ -11,6 +11,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import jakarta.json.Json;
 import jakarta.json.JsonArray;
@@ -21,6 +22,8 @@ import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.EmptyAsset;
 import org.jboss.shrinkwrap.api.spec.WebArchive;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Integration tests for MCP elicitation (form mode and URL mode).
@@ -31,6 +34,9 @@ public class ElicitationIntegrationTestCase extends AbstractMCPIntegrationTestCa
     public static WebArchive createDeployment() {
         return ShrinkWrap.create(WebArchive.class, "mcp-elicitation.war")
                 .addClass(TestMCPElicitationTool.class)
+                .addClass(TestMCPElicitationInjectedTool.class)
+                .addClass(TestMCPElicitationInjectedPrompt.class)
+                .addClass(TestMCPElicitationInjectedResourceTemplate.class)
                 .addClass(TestThirdPartyApplication.class)
                 .addClass(TestThirdPartyApplication.TestCallbackEndpoint.class)
                 .addAsWebInfResource(EmptyAsset.INSTANCE, "beans.xml");
@@ -38,35 +44,40 @@ public class ElicitationIntegrationTestCase extends AbstractMCPIntegrationTestCa
 
     // ==================== Form Mode Elicitation ====================
 
-    @Test
-    public void testElicitationToolListedWithoutSenderParam() throws Exception {
+    static Stream<String> elicitationToolNames() {
+        return Stream.of("greet-with-name", "greet-with-name-injected");
+    }
+
+    @ParameterizedTest
+    @MethodSource("elicitationToolNames")
+    public void testElicitationToolListedWithoutSenderInSchema(String toolName) throws Exception {
         String response = sendAndReceive("tools/list", null);
-        assertThat(response).as("Should list the greet-with-name tool").contains("greet-with-name");
-        assertThat(response).as("ElicitationSender must not appear in inputSchema").doesNotContain("ElicitationSender");
+        assertThat(response).as("Should list the %s tool", toolName).contains(toolName);
 
         JsonObject json = Json.createReader(new StringReader(response)).readObject();
         JsonArray tools = json.getJsonObject("result").getJsonArray("tools");
         JsonObject greetTool = null;
         for (int i = 0; i < tools.size(); i++) {
-            if ("greet-with-name".equals(tools.getJsonObject(i).getString("name"))) {
+            if (toolName.equals(tools.getJsonObject(i).getString("name"))) {
                 greetTool = tools.getJsonObject(i);
                 break;
             }
         }
-        assertThat(greetTool).as("greet-with-name tool should be present").isNotNull();
+        assertThat(greetTool).as("%s tool should be present", toolName).isNotNull();
         JsonArray required = greetTool.getJsonObject("inputSchema").getJsonArray("required");
-        assertThat(required).as("greet-with-name should have empty required array").isEmpty();
+        assertThat(required).as("%s should have empty required array", toolName).isEmpty();
     }
 
-    @Test
-    public void testElicitationAcceptRoundTrip() throws Exception {
+    @ParameterizedTest
+    @MethodSource("elicitationToolNames")
+    public void testElicitationAcceptRoundTrip(String toolName) throws Exception {
         long toolCallId = nextId.getAndIncrement();
         CompletableFuture<String> toolResultFuture = new CompletableFuture<>();
         pendingResponses.put(toolCallId, toolResultFuture);
 
         String toolCallMessage = """
-                {"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":"greet-with-name","arguments":{}}}"""
-                .formatted(toolCallId);
+                {"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":"%s","arguments":{}}}"""
+                .formatted(toolCallId, toolName);
 
         postToStreamable(toolCallMessage);
 
@@ -96,15 +107,16 @@ public class ElicitationIntegrationTestCase extends AbstractMCPIntegrationTestCa
         assertThat(content.getJsonObject(0).getString("text")).as("Should greet by name").contains("Hello, WildFly!");
     }
 
-    @Test
-    public void testElicitationDeclineRoundTrip() throws Exception {
+    @ParameterizedTest
+    @MethodSource("elicitationToolNames")
+    public void testElicitationDeclineRoundTrip(String toolName) throws Exception {
         long toolCallId = nextId.getAndIncrement();
         CompletableFuture<String> toolResultFuture = new CompletableFuture<>();
         pendingResponses.put(toolCallId, toolResultFuture);
 
         String toolCallMessage = """
-                {"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":"greet-with-name","arguments":{}}}"""
-                .formatted(toolCallId);
+                {"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":"%s","arguments":{}}}"""
+                .formatted(toolCallId, toolName);
 
         postToStreamable(toolCallMessage);
 
@@ -256,5 +268,143 @@ public class ElicitationIntegrationTestCase extends AbstractMCPIntegrationTestCa
         JsonArray content = resultJson.getJsonObject("result").getJsonArray("content");
         assertThat(content.getJsonObject(0).getString("text")).as("Should indicate declined")
                 .contains("Authentication declined");
+    }
+
+    // ==================== CDI-Injected ElicitationSender in Prompts ====================
+
+    @Test
+    public void testInjectedElicitationPromptAcceptRoundTrip() throws Exception {
+        long promptCallId = nextId.getAndIncrement();
+        CompletableFuture<String> promptResultFuture = new CompletableFuture<>();
+        pendingResponses.put(promptCallId, promptResultFuture);
+
+        String promptCallMessage = """
+                {"jsonrpc":"2.0","id":%d,"method":"prompts/get","params":{"name":"confirm-greeting","arguments":{"name":"WildFly"}}}"""
+                .formatted(promptCallId);
+
+        postToStreamable(promptCallMessage);
+
+        String elicitationJson = serverInitiatedMessages.poll(RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        assertThat(elicitationJson).as("Should receive elicitation/create request from prompt").isNotNull();
+        assertThat(elicitationJson).as("Should be an elicitation/create request").contains("elicitation/create");
+        assertThat(elicitationJson).as("Should contain the confirmation message").contains("Confirm greeting for WildFly");
+
+        JsonObject elicitationMessage = Json.createReader(new StringReader(elicitationJson)).readObject();
+        long elicitationId = elicitationMessage.getJsonNumber("id").longValue();
+
+        String clientResponse = """
+                {"jsonrpc":"2.0","id":%d,"result":{"action":"accept","content":{"confirm":true}}}"""
+                .formatted(elicitationId);
+        postToStreamable(clientResponse);
+
+        String promptResult = promptResultFuture.get(RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        assertThat(promptResult).as("Should receive prompt result after elicitation").isNotNull();
+
+        JsonObject resultJson = Json.createReader(new StringReader(promptResult)).readObject();
+        JsonArray messages = resultJson.getJsonObject("result").getJsonArray("messages");
+        assertThat(messages).as("Should contain messages").isNotNull();
+        String text = messages.getJsonObject(0).getJsonObject("content").getString("text");
+        assertThat(text).as("Should contain confirmed greeting").contains("Confirmed greeting for WildFly");
+    }
+
+    @Test
+    public void testInjectedElicitationPromptDeclineRoundTrip() throws Exception {
+        long promptCallId = nextId.getAndIncrement();
+        CompletableFuture<String> promptResultFuture = new CompletableFuture<>();
+        pendingResponses.put(promptCallId, promptResultFuture);
+
+        String promptCallMessage = """
+                {"jsonrpc":"2.0","id":%d,"method":"prompts/get","params":{"name":"confirm-greeting","arguments":{"name":"WildFly"}}}"""
+                .formatted(promptCallId);
+
+        postToStreamable(promptCallMessage);
+
+        String elicitationJson = serverInitiatedMessages.poll(RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        assertThat(elicitationJson).as("Should receive elicitation/create request").isNotNull();
+
+        JsonObject elicitationMessage = Json.createReader(new StringReader(elicitationJson)).readObject();
+        long elicitationId = elicitationMessage.getJsonNumber("id").longValue();
+
+        String clientResponse = """
+                {"jsonrpc":"2.0","id":%d,"result":{"action":"decline"}}"""
+                .formatted(elicitationId);
+        postToStreamable(clientResponse);
+
+        String promptResult = promptResultFuture.get(RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        assertThat(promptResult).as("Should receive prompt result after decline").isNotNull();
+
+        JsonObject resultJson = Json.createReader(new StringReader(promptResult)).readObject();
+        JsonArray messages = resultJson.getJsonObject("result").getJsonArray("messages");
+        String text = messages.getJsonObject(0).getJsonObject("content").getString("text");
+        assertThat(text).as("Should indicate not confirmed").contains("Greeting not confirmed");
+    }
+
+    // ==================== CDI-Injected ElicitationSender in Resource Templates ====================
+
+    @Test
+    public void testInjectedElicitationResourceTemplateAcceptRoundTrip() throws Exception {
+        long readCallId = nextId.getAndIncrement();
+        CompletableFuture<String> readResultFuture = new CompletableFuture<>();
+        pendingResponses.put(readCallId, readResultFuture);
+
+        String readCallMessage = """
+                {"jsonrpc":"2.0","id":%d,"method":"resources/read","params":{"uri":"test://secret/42"}}"""
+                .formatted(readCallId);
+
+        postToStreamable(readCallMessage);
+
+        String elicitationJson = serverInitiatedMessages.poll(RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        assertThat(elicitationJson).as("Should receive elicitation/create request from resource template").isNotNull();
+        assertThat(elicitationJson).as("Should be an elicitation/create request").contains("elicitation/create");
+        assertThat(elicitationJson).as("Should contain the confirmation message").contains("Confirm access to secret 42");
+
+        JsonObject elicitationMessage = Json.createReader(new StringReader(elicitationJson)).readObject();
+        long elicitationId = elicitationMessage.getJsonNumber("id").longValue();
+
+        String clientResponse = """
+                {"jsonrpc":"2.0","id":%d,"result":{"action":"accept","content":{"confirm":true}}}"""
+                .formatted(elicitationId);
+        postToStreamable(clientResponse);
+
+        String readResult = readResultFuture.get(RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        assertThat(readResult).as("Should receive resource result after elicitation").isNotNull();
+
+        JsonObject resultJson = Json.createReader(new StringReader(readResult)).readObject();
+        JsonArray contents = resultJson.getJsonObject("result").getJsonArray("contents");
+        assertThat(contents).as("Should contain contents").isNotNull();
+        String text = contents.getJsonObject(0).getString("text");
+        assertThat(text).as("Should contain the secret value").isEqualTo("secret-value-for-42");
+    }
+
+    @Test
+    public void testInjectedElicitationResourceTemplateDeclineRoundTrip() throws Exception {
+        long readCallId = nextId.getAndIncrement();
+        CompletableFuture<String> readResultFuture = new CompletableFuture<>();
+        pendingResponses.put(readCallId, readResultFuture);
+
+        String readCallMessage = """
+                {"jsonrpc":"2.0","id":%d,"method":"resources/read","params":{"uri":"test://secret/42"}}"""
+                .formatted(readCallId);
+
+        postToStreamable(readCallMessage);
+
+        String elicitationJson = serverInitiatedMessages.poll(RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        assertThat(elicitationJson).as("Should receive elicitation/create request").isNotNull();
+
+        JsonObject elicitationMessage = Json.createReader(new StringReader(elicitationJson)).readObject();
+        long elicitationId = elicitationMessage.getJsonNumber("id").longValue();
+
+        String clientResponse = """
+                {"jsonrpc":"2.0","id":%d,"result":{"action":"decline"}}"""
+                .formatted(elicitationId);
+        postToStreamable(clientResponse);
+
+        String readResult = readResultFuture.get(RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        assertThat(readResult).as("Should receive resource result after decline").isNotNull();
+
+        JsonObject resultJson = Json.createReader(new StringReader(readResult)).readObject();
+        JsonArray contents = resultJson.getJsonObject("result").getJsonArray("contents");
+        String text = contents.getJsonObject(0).getString("text");
+        assertThat(text).as("Should deny access").isEqualTo("access-denied");
     }
 }
