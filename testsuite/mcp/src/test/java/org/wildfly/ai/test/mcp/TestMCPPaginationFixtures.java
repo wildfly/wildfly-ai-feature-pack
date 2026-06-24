@@ -5,11 +5,11 @@
 package org.wildfly.ai.test.mcp;
 
 import java.util.List;
-import org.mcp_java.server.prompts.Prompt;
-import org.mcp_java.server.prompts.PromptArg;
-import org.mcp_java.server.resources.Resource;
-import org.mcp_java.server.tools.Tool;
-import org.mcp_java.server.tools.ToolArg;
+import org.mcpjava.server.prompts.Prompt;
+import org.mcpjava.server.prompts.PromptArg;
+import org.mcpjava.server.resources.Resource;
+import org.mcpjava.server.tools.Tool;
+import org.mcpjava.server.tools.ToolArg;
 import org.wildfly.mcp.model.content.TextContent;
 import org.wildfly.mcp.model.prompt.PromptMessage;
 import org.wildfly.mcp.model.resource.ResourceContents;

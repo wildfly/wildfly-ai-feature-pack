@@ -13,10 +13,10 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
-import org.mcp_java.server.progress.Progress;
-import org.mcp_java.server.progress.ProgressNotification;
-import org.mcp_java.server.progress.ProgressToken;
-import org.mcp_java.server.progress.ProgressTracker;
+import org.mcpjava.server.progress.Progress;
+import org.mcpjava.server.progress.ProgressNotification;
+import org.mcpjava.server.progress.ProgressToken;
+import org.mcpjava.server.progress.ProgressTracker;
 import org.wildfly.extension.mcp.api.Messages;
 import org.wildfly.extension.mcp.api.Responder;
 import org.wildfly.extension.mcp.injection.MCPFieldNames;
