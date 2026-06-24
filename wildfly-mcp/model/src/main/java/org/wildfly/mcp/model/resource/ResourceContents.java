@@ -4,7 +4,20 @@
  */
 package org.wildfly.mcp.model.resource;
 
+import static java.util.Objects.requireNonNull;
+import static org.wildfly.mcp.model.MCPModelLogger.ROOT_LOGGER;
+
 public record ResourceContents(String uri, String mimeType, String text, String blob) {
+
+    public ResourceContents {
+        requireNonNull(uri, ROOT_LOGGER.parameterMustNotBeNull("uri"));
+        if (text == null && blob == null) {
+            throw ROOT_LOGGER.eitherTextOrBlobMustBeProvided();
+        }
+        if (text != null && blob != null) {
+            throw ROOT_LOGGER.textAndBlobAreMutuallyExclusive();
+        }
+    }
 
     public static ResourceContents text(String uri, String text) {
         return new ResourceContents(uri, null, text, null);

@@ -34,4 +34,10 @@ public interface MCPModelLogger extends BasicLogger {
 
     @Message(id = 6, value = "Parameter 'max' (%s) can not be less than 'min' (%s) ")
     IllegalArgumentException maxCanNotBeLessThanMin(Integer max, Integer min);
+
+    @Message(id = 7, value = "Either text or blob must be provided")
+    IllegalArgumentException eitherTextOrBlobMustBeProvided();
+
+    @Message(id = 8, value = "text and blob are mutually exclusive")
+    IllegalArgumentException textAndBlobAreMutuallyExclusive();
 }
