@@ -15,10 +15,10 @@ import org.jboss.as.server.deployment.DeploymentUnit;
 import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
 import org.jboss.as.server.deployment.DeploymentUnitProcessor;
 import org.jboss.dmr.ModelNode;
-import org.mcp_java.model.tool.ToolAnnotations;
 import org.wildfly.extension.mcp.injection.WildFlyMCPRegistry;
 import org.wildfly.extension.mcp.injection.tool.MCPFeatureMetadata;
 import org.wildfly.extension.mcp.injection.tool.MethodMetadata;
+import org.wildfly.mcp.model.tool.ToolAnnotations;
 
 public class MCPServerDeploymentProcessor implements DeploymentUnitProcessor {
 

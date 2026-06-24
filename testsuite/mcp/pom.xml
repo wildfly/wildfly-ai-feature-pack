@@ -76,8 +76,8 @@
 
         <!-- MCP server API for test beans -->
         <dependency>
-            <groupId>org.mcp-java</groupId>
-            <artifactId>mcp-model</artifactId>
+            <groupId>org.wildfly.generative-ai</groupId>
+            <artifactId>wildfly-mcp-model</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>

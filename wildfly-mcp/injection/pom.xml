@@ -34,17 +34,8 @@
             <artifactId>wildfly-weld-common</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.mcp-java</groupId>
-            <artifactId>mcp-model</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>jakarta.json</groupId>
-            <artifactId>jakarta.json-api</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mcp-java</groupId>
-            <artifactId>mcp-model</artifactId>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>wildfly-mcp-model</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jboss.logging</groupId>
@@ -64,16 +55,6 @@
             <!-- This is a compile-time dependency of this project, but is not needed at compile or runtime by other
             projects that depend on this project.-->
             <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.parsson</groupId>
-            <artifactId>parsson</artifactId>
-            <scope>test</scope>
         </dependency>
     </dependencies>
 </project>

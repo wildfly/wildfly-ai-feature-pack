@@ -11,9 +11,9 @@ import java.util.Collection;
 import java.util.List;
 
 import org.junit.Test;
-import org.mcp_java.model.common.Role;
-import org.mcp_java.model.content.TextContent;
-import org.mcp_java.model.prompt.PromptMessage;
+import org.wildfly.mcp.model.Role;
+import org.wildfly.mcp.model.content.TextContent;
+import org.wildfly.mcp.model.prompt.PromptMessage;
 
 public class ContentMapperTestCase {
 

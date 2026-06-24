@@ -44,7 +44,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.mcp_java.model.resource.ResourceContents;
+import org.wildfly.mcp.model.resource.ResourceContents;
 import org.wildfly.extension.mcp.api.ContentMapper;
 import org.wildfly.extension.mcp.api.Cursor;
 import org.wildfly.extension.mcp.api.MCPConnection;

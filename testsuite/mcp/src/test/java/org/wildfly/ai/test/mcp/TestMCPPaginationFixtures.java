@@ -10,9 +10,9 @@ import org.mcp_java.server.prompts.PromptArg;
 import org.mcp_java.server.resources.Resource;
 import org.mcp_java.server.tools.Tool;
 import org.mcp_java.server.tools.ToolArg;
-import org.mcp_java.model.content.TextContent;
-import org.mcp_java.model.prompt.PromptMessage;
-import org.mcp_java.model.resource.ResourceContents;
+import org.wildfly.mcp.model.content.TextContent;
+import org.wildfly.mcp.model.prompt.PromptMessage;
+import org.wildfly.mcp.model.resource.ResourceContents;
 
 /**
  * MCP-annotated beans providing enough tools, prompts, and resources to

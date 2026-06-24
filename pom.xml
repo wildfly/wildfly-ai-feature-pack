@@ -155,9 +155,9 @@
                 </exclusions>
             </dependency>
             <dependency>
-                <groupId>org.mcp-java</groupId>
-                <artifactId>mcp-model</artifactId>
-                <version>${version.org.mcp-java}</version>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>wildfly-mcp-model</artifactId>
+                <version>${project.version}</version>
                 <exclusions>
                     <exclusion>
                         <groupId>*</groupId>

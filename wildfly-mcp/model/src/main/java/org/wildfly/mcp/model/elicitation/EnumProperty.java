@@ -2,18 +2,17 @@
  * Copyright The WildFly Authors
  * SPDX-License-Identifier: Apache-2.0
  */
-package org.wildfly.extension.mcp.injection.elicitation;
+package org.wildfly.mcp.model.elicitation;
 
 import jakarta.json.Json;
 import jakarta.json.JsonArrayBuilder;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
-import org.wildfly.extension.mcp.injection.MCPLogger;
 
 import java.util.List;
 import java.util.Objects;
 
-import static org.wildfly.extension.mcp.injection.MCPLogger.ROOT_LOGGER;
+import static org.wildfly.mcp.model.MCPModelLogger.ROOT_LOGGER;
 
 /**
  * Schema for a single-select enum elicitation property.

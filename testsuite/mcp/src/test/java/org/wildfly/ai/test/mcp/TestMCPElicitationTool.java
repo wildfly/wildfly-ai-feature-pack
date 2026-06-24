@@ -11,10 +11,10 @@ import java.util.concurrent.TimeUnit;
 
 import org.mcp_java.server.tools.Tool;
 import org.mcp_java.server.tools.ToolArg;
-import org.wildfly.extension.mcp.injection.elicitation.BooleanProperty;
-import org.wildfly.extension.mcp.injection.elicitation.Elicitation;
-import org.wildfly.extension.mcp.injection.elicitation.ElicitationSender;
-import org.wildfly.extension.mcp.injection.elicitation.StringProperty;
+import org.wildfly.mcp.model.elicitation.BooleanProperty;
+import org.wildfly.mcp.model.elicitation.Elicitation;
+import org.wildfly.mcp.model.elicitation.ElicitationSender;
+import org.wildfly.mcp.model.elicitation.StringProperty;
 
 public class TestMCPElicitationTool {
 

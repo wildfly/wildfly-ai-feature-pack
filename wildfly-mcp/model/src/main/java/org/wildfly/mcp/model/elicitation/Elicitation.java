@@ -2,18 +2,17 @@
  * Copyright The WildFly Authors
  * SPDX-License-Identifier: Apache-2.0
  */
-package org.wildfly.extension.mcp.injection.elicitation;
+package org.wildfly.mcp.model.elicitation;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.UUID.randomUUID;
-import static org.wildfly.extension.mcp.injection.MCPLogger.ROOT_LOGGER;
+import static org.wildfly.mcp.model.MCPModelLogger.ROOT_LOGGER;
 
 /**
  * Describes an elicitation that a tool sends to the MCP client to collect
