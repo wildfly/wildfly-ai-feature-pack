@@ -148,17 +148,21 @@ public class CompletionHandler {
         return result;
     }
 
+    private static final int MAX_COMPLETION_VALUES = 100;
+
     @SuppressWarnings("unchecked")
     private void sendCompletionResponse(String id, Object result, Responder responder) {
         JsonArrayBuilder valuesArray = Json.createArrayBuilder();
-        Integer total = null;
-        Boolean hasMore = false;
+        int total = 0;
+        boolean hasMore = false;
 
         if (result instanceof List<?> list) {
-            for (Object item : list) {
-                valuesArray.add(item.toString());
-            }
             total = list.size();
+            hasMore = total > MAX_COMPLETION_VALUES;
+            int limit = Math.min(total, MAX_COMPLETION_VALUES);
+            for (int i = 0; i < limit; i++) {
+                valuesArray.add(list.get(i).toString());
+            }
         } else if (result instanceof String string) {
             valuesArray.add(string);
             total = 1;
@@ -168,13 +172,9 @@ public class CompletionHandler {
         }
 
         JsonObjectBuilder completion = Json.createObjectBuilder()
-                .add("values", valuesArray);
-        if (total != null) {
-            completion.add("total", total);
-        }
-        if (hasMore != null) {
-            completion.add("hasMore", hasMore);
-        }
+                .add("values", valuesArray)
+                .add("total", total)
+                .add("hasMore", hasMore);
         responder.sendResult(id, Json.createObjectBuilder().add("completion", completion));
     }
 
