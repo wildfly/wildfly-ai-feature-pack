@@ -18,23 +18,24 @@ import java.util.OptionalInt;
 import java.util.OptionalLong;
 import java.util.Set;
 
-import org.mcp_java.server.Role;
-import org.mcp_java.server.completion.CompletionResult;
-import org.mcp_java.server.content.Annotations;
-import org.mcp_java.server.content.AudioContent;
-import org.mcp_java.server.content.ContentBlock;
-import org.mcp_java.server.content.EmbeddedResource;
-import org.mcp_java.server.content.ImageContent;
-import org.mcp_java.server.content.ResourceLink;
-import org.mcp_java.server.content.TextContent;
-import org.mcp_java.server.prompts.PromptMessage;
-import org.mcp_java.server.prompts.PromptResponse;
-import org.mcp_java.server.resources.BlobResourceContents;
-import org.mcp_java.server.resources.ResourceContents;
-import org.mcp_java.server.resources.ResourceResponse;
-import org.mcp_java.server.resources.TextResourceContents;
-import org.mcp_java.server.spi.McpServerSPI;
-import org.mcp_java.server.tools.ToolResponse;
+import org.mcpjava.server.Icon;
+import org.mcpjava.server.Role;
+import org.mcpjava.server.completion.CompletionResult;
+import org.mcpjava.server.content.Annotations;
+import org.mcpjava.server.content.AudioContent;
+import org.mcpjava.server.content.ContentBlock;
+import org.mcpjava.server.content.EmbeddedResource;
+import org.mcpjava.server.content.ImageContent;
+import org.mcpjava.server.content.ResourceLink;
+import org.mcpjava.server.content.TextContent;
+import org.mcpjava.server.prompts.PromptMessage;
+import org.mcpjava.server.prompts.PromptResponse;
+import org.mcpjava.server.resources.BlobResourceContents;
+import org.mcpjava.server.resources.ResourceContents;
+import org.mcpjava.server.resources.ResourceResponse;
+import org.mcpjava.server.resources.TextResourceContents;
+import org.mcpjava.server.spi.McpServerSPI;
+import org.mcpjava.server.tools.ToolResponse;
 
 /**
  * WildFly implementation of the MCP Server SPI, providing factory methods
@@ -117,6 +118,13 @@ public final class WildFlyMcpServerSPI implements McpServerSPI {
         return new ToolResponseBuilderImpl();
     }
 
+    // ==================== Icons ====================
+
+    @Override
+    public Icon.Builder iconBuilder(String src) {
+        return new IconBuilderImpl(src);
+    }
+
     // ================================================================
     //  Record implementations
     // ================================================================
@@ -172,6 +180,10 @@ public final class WildFlyMcpServerSPI implements McpServerSPI {
 
     private record ToolResponseImpl(List<ContentBlock> content, Optional<Object> structuredContent,
             boolean isError, Map<String, Object> metadata) implements ToolResponse {
+    }
+
+    private record IconImpl(String src, Optional<String> mimeType,
+            List<String> sizes, Optional<Icon.Theme> theme) implements Icon {
     }
 
     // ================================================================
@@ -433,6 +445,14 @@ public final class WildFlyMcpServerSPI implements McpServerSPI {
             this.lastModified = lastModified;
             return this;
         }
+
+        @Override
+        public Annotations build() {
+            return new AnnotationsImpl(
+                    Optional.ofNullable(audience).map(Set::copyOf),
+                    priority,
+                    Optional.ofNullable(lastModified));
+        }
     }
 
     private static final class PromptResponseBuilderImpl implements PromptResponse.Builder {
@@ -680,6 +700,48 @@ public final class WildFlyMcpServerSPI implements McpServerSPI {
                     Optional.ofNullable(structuredContent),
                     isError,
                     Collections.unmodifiableMap(new HashMap<>(metadata)));
+        }
+    }
+
+    private static final class IconBuilderImpl implements Icon.Builder {
+        private final String src;
+        private String mimeType;
+        private final List<String> sizes = new ArrayList<>();
+        private Icon.Theme theme;
+
+        IconBuilderImpl(String src) {
+            this.src = src;
+        }
+
+        @Override
+        public Icon.Builder setMimeType(String mimeType) {
+            this.mimeType = mimeType;
+            return this;
+        }
+
+        @Override
+        public Icon.Builder addSize(int width, int height) {
+            sizes.add(width + "x" + height);
+            return this;
+        }
+
+        @Override
+        public Icon.Builder setAnySize() {
+            sizes.add("any");
+            return this;
+        }
+
+        @Override
+        public Icon.Builder setTheme(Icon.Theme theme) {
+            this.theme = theme;
+            return this;
+        }
+
+        @Override
+        public Icon build() {
+            return new IconImpl(src, Optional.ofNullable(mimeType),
+                    Collections.unmodifiableList(new ArrayList<>(sizes)),
+                    Optional.ofNullable(theme));
         }
     }
 }

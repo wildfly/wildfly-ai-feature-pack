@@ -17,19 +17,19 @@ import java.util.Optional;
 import jakarta.json.Json;
 import jakarta.json.JsonObjectBuilder;
 
-import org.mcp_java.server.Role;
-import org.mcp_java.server.content.Annotations;
-import org.mcp_java.server.content.AudioContent;
-import org.mcp_java.server.content.ContentBlock;
-import org.mcp_java.server.content.EmbeddedResource;
-import org.mcp_java.server.content.ImageContent;
-import org.mcp_java.server.content.ResourceLink;
-import org.mcp_java.server.content.TextContent;
-import org.mcp_java.server.prompts.PromptMessage;
-import org.mcp_java.server.prompts.PromptResponse;
-import org.mcp_java.server.resources.BlobResourceContents;
-import org.mcp_java.server.resources.ResourceContents;
-import org.mcp_java.server.resources.TextResourceContents;
+import org.mcpjava.server.Role;
+import org.mcpjava.server.content.Annotations;
+import org.mcpjava.server.content.AudioContent;
+import org.mcpjava.server.content.ContentBlock;
+import org.mcpjava.server.content.EmbeddedResource;
+import org.mcpjava.server.content.ImageContent;
+import org.mcpjava.server.content.ResourceLink;
+import org.mcpjava.server.content.TextContent;
+import org.mcpjava.server.prompts.PromptMessage;
+import org.mcpjava.server.prompts.PromptResponse;
+import org.mcpjava.server.resources.BlobResourceContents;
+import org.mcpjava.server.resources.ResourceContents;
+import org.mcpjava.server.resources.TextResourceContents;
 
 public class ContentMapper {
 

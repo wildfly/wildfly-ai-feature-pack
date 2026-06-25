@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.OptionalDouble;
 import java.util.Set;
-import org.mcp_java.server.Role;
+import org.mcpjava.server.Role;
 
 /**
  * Metadata describing an MCP feature (tool, prompt, resource, or completion handler).

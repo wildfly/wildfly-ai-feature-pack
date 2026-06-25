@@ -1,6 +1,6 @@
 package org.wildfly.extension.mcp.api;
 
-import org.mcp_java.server.resources.ResourceContents;
+import org.mcpjava.server.resources.ResourceContents;
 import java.util.List;
 
 /**

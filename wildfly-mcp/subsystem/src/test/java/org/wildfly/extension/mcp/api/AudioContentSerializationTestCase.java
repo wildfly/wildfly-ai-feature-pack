@@ -14,8 +14,8 @@ import jakarta.json.JsonObject;
 import java.util.Base64;
 import java.util.Collection;
 import org.junit.Test;
-import org.mcp_java.server.content.AudioContent;
-import org.mcp_java.server.content.ContentBlock;
+import org.mcpjava.server.content.AudioContent;
+import org.mcpjava.server.content.ContentBlock;
 
 /**
  * Verifies that AudioContent is correctly passed through ContentMapper

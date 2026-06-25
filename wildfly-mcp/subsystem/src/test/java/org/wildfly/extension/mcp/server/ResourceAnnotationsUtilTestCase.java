@@ -15,7 +15,7 @@ import java.util.Optional;
 import java.util.OptionalDouble;
 import java.util.Set;
 import org.junit.Test;
-import org.mcp_java.server.Role;
+import org.mcpjava.server.Role;
 
 public class ResourceAnnotationsUtilTestCase {
 

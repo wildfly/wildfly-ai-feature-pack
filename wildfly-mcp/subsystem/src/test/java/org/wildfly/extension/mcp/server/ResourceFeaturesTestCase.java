@@ -28,7 +28,7 @@ import org.wildfly.extension.mcp.injection.WildFlyMCPRegistry;
 import org.wildfly.extension.mcp.injection.tool.ArgumentMetadata;
 import org.wildfly.extension.mcp.injection.tool.MCPFeatureMetadata;
 import org.wildfly.extension.mcp.injection.tool.MethodMetadata;
-import org.mcp_java.server.Role;
+import org.mcpjava.server.Role;
 
 public class ResourceFeaturesTestCase {
 

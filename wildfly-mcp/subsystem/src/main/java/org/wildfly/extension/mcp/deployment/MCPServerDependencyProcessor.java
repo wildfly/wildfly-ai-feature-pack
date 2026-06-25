@@ -51,6 +51,8 @@ import org.wildfly.extension.mcp.injection.tool.MCPFeatureMetadata;
 import org.wildfly.extension.mcp.injection.tool.MethodMetadata;
 import org.mcpjava.server.Role;
 import org.wildfly.extension.mcp.injection.tool.ToolAnnotations;
+import org.wildfly.mcp.api.tool.InputSchema;
+import org.wildfly.mcp.api.tool.OutputSchema;
 import org.wildfly.mcp.api.elicitation.ElicitationSender;
 import org.mcpjava.server.progress.Progress;
 import org.mcpjava.server.tools.Tool;
@@ -126,6 +128,10 @@ public class MCPServerDependencyProcessor implements DeploymentUnitProcessor {
     private static final DotName ELICITATION_SENDER = DotName.createSimple(ElicitationSender.class);
     private static final DotName PROGRESS = DotName.createSimple(Progress.class);
     private static final DotName COMPLETE_CONTEXT = DotName.createSimple(CompleteContext.class);
+    private static final DotName INPUT_SCHEMA = DotName.createSimple(InputSchema.class);
+    private static final DotName OUTPUT_SCHEMA = DotName.createSimple(OutputSchema.class);
+    private static final String GENERATOR = "generator";
+    private static final String FROM = "from";
 
     private void processTools(WildFlyMCPRegistry registry, List<AnnotationInstance> annotations) {
         if (annotations == null || annotations.isEmpty()) {
@@ -161,22 +167,23 @@ public class MCPServerDependencyProcessor implements DeploymentUnitProcessor {
             String title = annotation.value(TITLE) != null ? annotation.value(TITLE).asString() : "";
             boolean structuredContent = annotation.value(STRUCTURED_CONTENT) != null && annotation.value(STRUCTURED_CONTENT).asBoolean();
             String inputSchemaGenerator = "";
-            if (annotation.value("inputSchema") != null) {
-                AnnotationInstance inputSchemaAnnotation = annotation.value("inputSchema").asNested();
-                if (inputSchemaAnnotation.value("generator") != null) {
-                    inputSchemaGenerator = inputSchemaAnnotation.value("generator").asString();
-                }
+            AnnotationInstance inputSchemaAnnotation = info.annotation(INPUT_SCHEMA);
+            if (inputSchemaAnnotation != null && inputSchemaAnnotation.value(GENERATOR) != null) {
+                inputSchemaGenerator = inputSchemaAnnotation.value(GENERATOR).asClass().name().toString();
             }
             String outputSchemaGenerator = "";
             String outputSchemaFrom = "";
-            if (annotation.value("outputSchema") != null) {
-                AnnotationInstance outputSchemaAnnotation = annotation.value("outputSchema").asNested();
-                if (outputSchemaAnnotation.value("generator") != null) {
-                    outputSchemaGenerator = outputSchemaAnnotation.value("generator").asString();
+            AnnotationInstance outputSchemaAnnotation = info.annotation(OUTPUT_SCHEMA);
+            if (outputSchemaAnnotation != null) {
+                if (outputSchemaAnnotation.value(GENERATOR) != null) {
+                    String genClass = outputSchemaAnnotation.value(GENERATOR).asClass().name().toString();
+                    if (!void.class.getName().equals(genClass)) {
+                        outputSchemaGenerator = genClass;
+                    }
                 }
-                if (outputSchemaAnnotation.value("from") != null) {
-                    String fromClass = outputSchemaAnnotation.value("from").asClass().name().toString();
-                    if (!Tool.OutputSchema.class.getName().equals(fromClass)) {
+                if (outputSchemaAnnotation.value(FROM) != null) {
+                    String fromClass = outputSchemaAnnotation.value(FROM).asClass().name().toString();
+                    if (!void.class.getName().equals(fromClass)) {
                         outputSchemaFrom = fromClass;
                     }
                 }

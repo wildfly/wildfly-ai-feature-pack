@@ -15,7 +15,7 @@ import java.util.Set;
 import jakarta.json.Json;
 import jakarta.json.JsonArrayBuilder;
 import jakarta.json.JsonObjectBuilder;
-import org.mcp_java.server.Role;
+import org.mcpjava.server.Role;
 
 final class ResourceAnnotationsUtil {
 

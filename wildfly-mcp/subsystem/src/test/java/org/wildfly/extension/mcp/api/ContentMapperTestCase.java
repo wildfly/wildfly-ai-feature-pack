@@ -12,10 +12,10 @@ import java.util.Collection;
 import java.util.List;
 
 import org.junit.Test;
-import org.mcp_java.server.Role;
-import org.mcp_java.server.content.TextContent;
-import org.mcp_java.server.prompts.PromptMessage;
-import org.mcp_java.server.prompts.PromptResponse;
+import org.mcpjava.server.Role;
+import org.mcpjava.server.content.TextContent;
+import org.mcpjava.server.prompts.PromptMessage;
+import org.mcpjava.server.prompts.PromptResponse;
 
 public class ContentMapperTestCase {
 
