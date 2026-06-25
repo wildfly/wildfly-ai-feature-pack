@@ -2,6 +2,8 @@ package org.wildfly.extension.mcp.api;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.mcpjava.server.resources.ResourceResponse;
+
 public class MCPMetadata {
 
     private final List<FeatureMetadata<PromptResponse>> prompts;
