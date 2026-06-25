@@ -12,7 +12,7 @@ import jakarta.json.JsonObjectBuilder;
 import java.util.List;
 import java.util.Objects;
 
-import static org.wildfly.mcp.api.MCPApiLogger.ROOT_LOGGER;
+import static org.wildfly.mcp.api._private.MCPApiLogger.ROOT_LOGGER;
 
 /**
  * Schema for a single-select enum elicitation property.

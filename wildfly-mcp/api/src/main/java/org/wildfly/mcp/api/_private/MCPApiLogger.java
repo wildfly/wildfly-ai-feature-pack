@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package org.wildfly.mcp.api;
+package org.wildfly.mcp.api._private;
 
 import java.lang.invoke.MethodHandles;
 

@@ -12,7 +12,7 @@ import java.util.Optional;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.UUID.randomUUID;
-import static org.wildfly.mcp.api.MCPApiLogger.ROOT_LOGGER;
+import static org.wildfly.mcp.api._private.MCPApiLogger.ROOT_LOGGER;
 
 /**
  * Describes an elicitation that a tool sends to the MCP client to collect

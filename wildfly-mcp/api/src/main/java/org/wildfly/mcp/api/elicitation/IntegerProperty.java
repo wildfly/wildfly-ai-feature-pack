@@ -7,7 +7,7 @@ package org.wildfly.mcp.api.elicitation;
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
-import org.wildfly.mcp.api.MCPApiLogger;
+import org.wildfly.mcp.api._private.MCPApiLogger;
 
 /**
  * Schema for an integer elicitation property.
