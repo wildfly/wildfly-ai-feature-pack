@@ -65,7 +65,7 @@ import org.mcpjava.server.resources.ResourceTemplateArg;
 import org.mcpjava.server.completion.CompletePrompt;
 import org.mcpjava.server.completion.CompleteResourceTemplate;
 import org.mcpjava.server.completion.CompleteArg;
-import org.wildfly.mcp.api.completion.CompleteContext;
+import org.mcpjava.server.completion.CompletionContext;
 
 public class MCPServerDependencyProcessor implements DeploymentUnitProcessor {
 
@@ -127,7 +127,7 @@ public class MCPServerDependencyProcessor implements DeploymentUnitProcessor {
 
     private static final DotName ELICITATION_SENDER = DotName.createSimple(ElicitationSender.class);
     private static final DotName PROGRESS = DotName.createSimple(Progress.class);
-    private static final DotName COMPLETE_CONTEXT = DotName.createSimple(CompleteContext.class);
+    private static final DotName COMPLETE_CONTEXT = DotName.createSimple(CompletionContext.class);
     private static final DotName INPUT_SCHEMA = DotName.createSimple(InputSchema.class);
     private static final DotName OUTPUT_SCHEMA = DotName.createSimple(OutputSchema.class);
     private static final String GENERATOR = "generator";
@@ -313,7 +313,7 @@ public class MCPServerDependencyProcessor implements DeploymentUnitProcessor {
             for (MethodParameterInfo param : info.parameters()) {
                 DotName paramTypeName = param.type().name();
                 if (COMPLETE_CONTEXT.equals(paramTypeName)) {
-                    arguments.add(new ArgumentMetadata(param.name(), "", false, CompleteContext.class));
+                    arguments.add(new ArgumentMetadata(param.name(), "", false, CompletionContext.class));
                 } else {
                     AnnotationInstance completeArgAnnotation = param.annotation(completeArgDotName);
                     if (completeArgAnnotation != null) {

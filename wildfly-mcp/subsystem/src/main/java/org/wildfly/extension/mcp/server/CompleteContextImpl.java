@@ -5,7 +5,13 @@
 package org.wildfly.extension.mcp.server;
 
 import java.util.Map;
-import org.wildfly.mcp.api.completion.CompleteContext;
+import java.util.Optional;
+import org.mcpjava.server.completion.CompletionContext;
 
-record CompleteContextImpl(Map<String, String> arguments) implements CompleteContext {
+record CompleteContextImpl(Map<String, String> arguments) implements CompletionContext {
+
+    @Override
+    public Optional<String> getArgument(String name) {
+        return Optional.ofNullable(arguments.get(name));
+    }
 }

@@ -19,7 +19,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import org.wildfly.mcp.api.completion.CompleteContext;
+import org.mcpjava.server.completion.CompletionContext;
 import org.wildfly.extension.mcp.api.MCPConnection;
 import org.wildfly.extension.mcp.api.Responder;
 import org.wildfly.extension.mcp.injection.WildFlyMCPRegistry;
@@ -139,7 +139,7 @@ public class CompletionHandler {
         for (int i = 0; i < argDefs.size(); i++) {
             ArgumentMetadata arg = argDefs.get(i);
             if (arg.type() instanceof Class<?> clazz
-                    && CompleteContext.class.isAssignableFrom(clazz)) {
+                    && CompletionContext.class.isAssignableFrom(clazz)) {
                 result[i] = new CompleteContextImpl(contextArguments);
             } else {
                 result[i] = argumentValue;
