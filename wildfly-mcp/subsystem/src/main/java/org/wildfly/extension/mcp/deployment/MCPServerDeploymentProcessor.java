@@ -4,8 +4,12 @@
  */
 package org.wildfly.extension.mcp.deployment;
 
+import static org.wildfly.extension.mcp.Capabilities.OPENTELEMETRY_CAPABILITY_NAME;
+import static org.wildfly.extension.mcp.MCPLogger.ROOT_LOGGER;
+
 import org.jboss.as.controller.PathElement;
 import org.jboss.as.controller.SimpleAttributeDefinition;
+import org.jboss.as.controller.capability.CapabilityServiceSupport;
 import org.jboss.as.ee.structure.DeploymentType;
 import org.jboss.as.ee.structure.DeploymentTypeMarker;
 import org.jboss.as.server.deployment.Attachments;
@@ -24,10 +28,18 @@ public class MCPServerDeploymentProcessor implements DeploymentUnitProcessor {
 
     @Override
     public void deploy(DeploymentPhaseContext deploymentPhaseContext) throws DeploymentUnitProcessingException {
-        DeploymentUnit unit = deploymentPhaseContext.getDeploymentUnit();
-        if (DeploymentTypeMarker.isType(DeploymentType.WAR, unit)) {
+        DeploymentUnit deploymentUnit = deploymentPhaseContext.getDeploymentUnit();
+        final CapabilityServiceSupport support = deploymentUnit.getAttachment(Attachments.CAPABILITY_SERVICE_SUPPORT);
+        boolean isObservable = support.hasCapability(OPENTELEMETRY_CAPABILITY_NAME);
+        if (!isObservable) {
+            ROOT_LOGGER.debug("No opentelemetry support available");
+        } else {
+            ROOT_LOGGER.debug("OpenTelemetry is active for MCP");
+            deploymentUnit.putAttachment(MCPAttachments.MCP_OBSERVABLE, isObservable);
+        }
+        if (DeploymentTypeMarker.isType(DeploymentType.WAR, deploymentUnit)) {
             new MCPSseHandlerServiceInstaller().install(deploymentPhaseContext);
-            populateDeploymentModel(unit);
+            populateDeploymentModel(deploymentUnit);
         }
     }
 

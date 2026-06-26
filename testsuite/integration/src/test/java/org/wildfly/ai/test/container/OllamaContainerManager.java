@@ -1,12 +1,15 @@
 package org.wildfly.ai.test.container;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 
 import org.testcontainers.ollama.OllamaContainer;
 import org.testcontainers.utility.DockerImageName;
@@ -40,7 +43,7 @@ import org.testcontainers.utility.DockerImageName;
  */
 public class OllamaContainerManager {
 
-    private static final String OLLAMA_IMAGE = "mirror.gcr.io/ollama/ollama:0.24.0";
+    private static final String OLLAMA_IMAGE = System.getProperty("ollama.image", "mirror.gcr.io/ollama/ollama:0.24.0");
     private static final String MODEL_NAME = "llama3.2:1b";
     private static final String EMBEDDING_MODEL_NAME = "nomic-embed-text";
 
@@ -107,8 +110,10 @@ public class OllamaContainerManager {
             // Check if Ollama is already running on the default port
             if (isOllamaRunning(endpoint)) {
                 System.out.println("Using existing Ollama instance at " + endpoint);
-                // Don't create a container, just use the existing instance
                 ollama = null;
+                // Pull models via HTTP — idempotent; fast if the model is already present.
+                pullModelViaHttp(endpoint, MODEL_NAME);
+                pullModelViaHttp(endpoint, EMBEDDING_MODEL_NAME);
             } else {
                 // Start a new container with Testcontainers
                 // asCompatibleSubstituteFor is required when using a mirror image
@@ -137,6 +142,64 @@ public class OllamaContainerManager {
             }
 
             initialized = true;
+        }
+    }
+
+    /**
+     * Pulls {@code modelName} from the Ollama instance at {@code endpoint} via the HTTP API.
+     * The call is idempotent: if the model is already present Ollama responds immediately.
+     *
+     * <p>Uses the default streaming mode ({@code stream: true} is omitted) so that Ollama
+     * sends JSON progress events as it downloads the model. This keeps data flowing on the
+     * socket and prevents {@code readTimeout} from triggering mid-download — a problem with
+     * {@code stream: false} where Ollama sends <em>nothing</em> until the full download is
+     * complete, which can easily exceed the socket read timeout for large models.</p>
+     */
+    private static void pullModelViaHttp(String endpoint, String modelName) {
+        System.out.println("Pulling model '" + modelName + "' from Ollama at " + endpoint + " (may take several minutes)...");
+        HttpURLConnection conn = null;
+        try {
+            URL url = new URI(endpoint + "/api/pull").toURL();
+            conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("POST");
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setDoOutput(true);
+            conn.setConnectTimeout(5_000);
+            // 2 minutes between individual progress events is a very generous bound;
+            // in practice events arrive every few seconds during a normal download.
+            conn.setReadTimeout(120_000);
+            // Omit "stream" → defaults to true; Ollama sends one JSON progress line per chunk.
+            byte[] body = ("{\"name\":\"" + modelName + "\"}")
+                    .getBytes(StandardCharsets.UTF_8);
+            try (OutputStream out = conn.getOutputStream()) {
+                out.write(body);
+            }
+            int status = conn.getResponseCode();
+            if (status == 200) {
+                // Read every progress line; the loop ends when Ollama closes the connection
+                // after emitting the final {"status":"success"} event.
+                try (BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
+                    while (reader.readLine() != null) {
+                        // consume progress events to block until the download is complete
+                    }
+                }
+                System.out.println("Model '" + modelName + "' is ready");
+            } else {
+                String detail = "";
+                try (InputStream err = conn.getErrorStream()) {
+                    if (err != null) {
+                        detail = " — " + new String(err.readAllBytes(), StandardCharsets.UTF_8).trim();
+                    }
+                }
+                System.err.println("Warning: failed to pull model '" + modelName + "' (HTTP " + status + detail + ")");
+            }
+        } catch (IOException | URISyntaxException e) {
+            System.err.println("Warning: failed to pull model '" + modelName + "': " + e.getMessage());
+        } finally {
+            if (conn != null) {
+                conn.disconnect();
+            }
         }
     }
 

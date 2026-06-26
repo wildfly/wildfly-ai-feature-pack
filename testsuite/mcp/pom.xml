@@ -26,6 +26,13 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- JUnit Platform Launcher for test execution listeners -->
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-launcher</artifactId>
+            <scope>test</scope>
+        </dependency>
+
         <!-- Arquillian JUnit 5 -->
         <dependency>
             <groupId>org.jboss.arquillian.junit5</groupId>
@@ -41,11 +48,34 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- Shared test utilities (container lifecycle, LGTM management) -->
+        <dependency>
+            <groupId>org.wildfly.generative-ai</groupId>
+            <artifactId>wildfly-ai-testsuite-common</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Testcontainers -->
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers-junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+
         <!-- AssertJ for fluent assertions -->
         <dependency>
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
-            <version>${version.assertj}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Hamcrest for JUnit matchers -->
+        <dependency>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>hamcrest</artifactId>
+            <version>${version.hamcrest}</version>
             <scope>test</scope>
         </dependency>
 
@@ -62,7 +92,6 @@
             <scope>provided</scope>
         </dependency>
 
-        <!-- Jakarta JSON for response parsing in tests -->
         <dependency>
             <groupId>jakarta.json</groupId>
             <artifactId>jakarta.json-api</artifactId>
@@ -73,8 +102,14 @@
             <artifactId>parsson</artifactId>
             <scope>test</scope>
         </dependency>
+ 
+        <!-- JAX-RS API for test REST endpoints -->
+        <dependency>
+            <groupId>jakarta.ws.rs</groupId>
+            <artifactId>jakarta.ws.rs-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
 
-        <!-- MCP server API for test beans -->
         <dependency>
             <groupId>org.wildfly.generative-ai</groupId>
             <artifactId>wildfly-mcp-model</artifactId>
@@ -93,12 +128,13 @@
             <scope>provided</scope>
         </dependency>
 
-        <!-- JAX-RS API for test REST endpoints -->
+        <!-- OpenTelemetry for observability testing -->
         <dependency>
-            <groupId>jakarta.ws.rs</groupId>
-            <artifactId>jakarta.ws.rs-api</artifactId>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-api</artifactId>
             <scope>provided</scope>
         </dependency>
+
     </dependencies>
 
     <build>
@@ -108,6 +144,7 @@
                 <filtering>true</filtering>
                 <includes>
                     <include>provisioning.xml</include>
+                    <include>provisioning-otel.xml</include>
                 </includes>
             </testResource>
             <testResource>
@@ -115,15 +152,48 @@
                 <filtering>false</filtering>
                 <excludes>
                     <exclude>provisioning.xml</exclude>
+                    <exclude>provisioning-otel.xml</exclude>
                 </excludes>
             </testResource>
         </testResources>
         <plugins>
-            <!-- WildFly Maven Plugin - provision server with MCP support -->
+            <!-- WildFly Maven Plugin -->
             <plugin>
                 <groupId>org.wildfly.plugins</groupId>
                 <artifactId>wildfly-maven-plugin</artifactId>
                 <executions>
+                    <execution>
+                        <id>provision-server-otel</id>
+                        <phase>process-test-resources</phase>
+                        <goals>
+                            <goal>provision</goal>
+                        </goals>
+                        <configuration>
+                            <stability>experimental</stability>
+                            <provisioning-file>${project.build.testOutputDirectory}/provisioning-otel.xml</provisioning-file>
+                            <provisioningDir>${project.build.directory}/server-otel</provisioningDir>
+                            <extraServerContentDirs>extra-content</extraServerContentDirs>
+                            <galleon-options>
+                                <jboss-fork-embedded>true</jboss-fork-embedded>
+                            </galleon-options>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>configure-server</id>
+                        <phase>process-test-classes</phase>
+                        <goals>
+                            <goal>execute-commands</goal>
+                        </goals>
+                        <configuration>
+                            <jboss-home>${project.build.directory}/server-otel</jboss-home>
+                            <stability>experimental</stability>
+                            <offline>true</offline>
+                            <scripts>
+                                <script>${project.build.directory}/server-otel/standalone/configuration/configure-opentelemetry.cli</script>
+                            </scripts>
+                        </configuration>
+                    </execution>
+                    <!-- Provision the default server without OpenTelemetry layer (observable=false) -->
                     <execution>
                         <id>provision-server</id>
                         <phase>process-test-resources</phase>
@@ -131,11 +201,87 @@
                             <goal>provision</goal>
                         </goals>
                         <configuration>
-                            <provisioning-file>${project.build.testOutputDirectory}/provisioning.xml</provisioning-file>
                             <stability>experimental</stability>
+                            <provisioning-file>${project.build.testOutputDirectory}/provisioning.xml</provisioning-file>
                             <galleon-options>
                                 <jboss-fork-embedded>true</jboss-fork-embedded>
                             </galleon-options>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Maven Resources Plugin - Copy extra server content -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-server-resources</id>
+                        <phase>process-test-resources</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/server</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${project.basedir}/extra-content</directory>
+                                    <filtering>false</filtering>
+                                    <excludes>
+                                        <exclude>**/*.cli</exclude>
+                                    </excludes>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+
+                    <!-- Copy non-OTel extra content to the second server (no CLI scripts) -->
+                    <execution>
+                        <id>copy-server-otel-resources</id>
+                        <phase>process-test-resources</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/server-otel</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${project.basedir}/extra-content</directory>
+                                    <filtering>false</filtering>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Maven Dependency Plugin - Copy test libraries for Arquillian deployments -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-test-libs</id>
+                        <phase>process-test-classes</phase>
+                        <goals>
+                            <goal>copy</goal>
+                        </goals>
+                        <configuration>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>org.assertj</groupId>
+                                    <artifactId>assertj-core</artifactId>
+                                    <version>${version.assertj}</version>
+                                    <outputDirectory>${project.build.directory}/test-libs</outputDirectory>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.hamcrest</groupId>
+                                    <artifactId>hamcrest</artifactId>
+                                    <version>${version.hamcrest}</version>
+                                    <outputDirectory>${project.build.directory}/test-libs</outputDirectory>
+                                </artifactItem>
+                            </artifactItems>
                         </configuration>
                     </execution>
                 </executions>

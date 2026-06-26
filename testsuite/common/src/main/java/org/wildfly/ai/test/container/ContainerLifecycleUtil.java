@@ -1,11 +1,19 @@
+/*
+ * Copyright The WildFly Authors
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.wildfly.ai.test.container;
 
 import org.testcontainers.containers.GenericContainer;
 
+import java.util.logging.Logger;
+
 /**
  * Shared utility for container lifecycle management.
  */
-class ContainerLifecycleUtil {
+public class ContainerLifecycleUtil {
+
+    private static final Logger LOG = Logger.getLogger(ContainerLifecycleUtil.class.getName());
 
     private ContainerLifecycleUtil() {
     }
@@ -17,16 +25,16 @@ class ContainerLifecycleUtil {
      * @param container the container to stop, or {@code null} for a locally-running service
      * @param name      human-readable name used in log messages (e.g. "Ollama", "LGTM")
      */
-    static void registerShutdownHook(GenericContainer<?> container, String name) {
+    public static void registerShutdownHook(GenericContainer<?> container, String name) {
         String threadName = name.toLowerCase().replace(" ", "-") + "-container-shutdown";
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             if (container != null && container.isRunning()) {
-                System.out.println("Stopping " + name + " container...");
+                LOG.info("Stopping " + name + " container...");
                 try {
                     container.stop();
-                    System.out.println(name + " container stopped successfully");
+                    LOG.info(name + " container stopped successfully");
                 } catch (Exception e) {
-                    System.err.println("Failed to stop " + name + " container: " + e.getMessage());
+                    LOG.warning("Failed to stop " + name + " container: " + e.getMessage());
                 }
             }
         }, threadName));

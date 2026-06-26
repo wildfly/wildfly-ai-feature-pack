@@ -12,4 +12,6 @@ public interface Capabilities {
 
     NullaryServiceDescriptor<MCPEndpointConfiguration> MCP_SERVER_PROVIDER_DESCRIPTOR = NullaryServiceDescriptor.of("org.wildfly.ai.mcp.server.configuration", MCPEndpointConfiguration.class);
     RuntimeCapability<Void> MCP_SERVER_PROVIDER_CAPABILITY = RuntimeCapability.Builder.of(MCP_SERVER_PROVIDER_DESCRIPTOR).setAllowMultipleRegistrations(false).build();
+
+    String OPENTELEMETRY_CAPABILITY_NAME = "org.wildfly.extension.opentelemetry";
 }

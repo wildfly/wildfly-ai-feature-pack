@@ -1,0 +1,24 @@
+# CLI script to configure OpenTelemetry subsystem for MCP testing
+# This configures WildFly to send traces and metrics to the LGTM container
+
+embed-server --server-config=standalone.xml --stability=experimental
+
+# Add OpenTelemetry subsystem if not already present
+if (outcome != success) of /subsystem=opentelemetry:read-resource
+    /subsystem=opentelemetry:add()
+end-if
+
+# Configure the OTLP exporter endpoint.
+# ${otel.exporter.otlp.endpoint:http://localhost:4317} is a WildFly CLI variable expression:
+# it reads the Java system property -Dotel.exporter.otlp.endpoint (supplied by arquillian.xml
+# for integration tests) and falls back to localhost:4317 for local/manual testing.
+/subsystem=opentelemetry:write-attribute(name=exporter-type, value=otlp)
+/subsystem=opentelemetry:write-attribute(name=endpoint, value="${otel.exporter.otlp.endpoint:http://localhost:4317}")
+/subsystem=opentelemetry:write-attribute(name=service-name, value="wildfly-mcp-test")
+
+# Enable batch span processor for better performance
+/subsystem=opentelemetry:write-attribute(name=batch-delay, value=5000)
+/subsystem=opentelemetry:write-attribute(name=max-queue-size, value=2048)
+/subsystem=opentelemetry:write-attribute(name=max-export-batch-size, value=512)
+
+stop-embedded-server

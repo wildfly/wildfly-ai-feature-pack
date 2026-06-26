@@ -63,10 +63,6 @@ public class ResourceTemplateMessageHandler {
     private final ExecutorService executorService;
     private final int pageSize;
 
-    ResourceTemplateMessageHandler(WildFlyMCPRegistry registry, ClassLoader classLoader, ExecutorService executorService) {
-        this(registry, classLoader, executorService, 0);
-    }
-
     ResourceTemplateMessageHandler(WildFlyMCPRegistry registry, ClassLoader classLoader, ExecutorService executorService, int pageSize) {
         this.registry = registry;
         this.mapper = SHARED_MAPPER;

@@ -10,18 +10,23 @@ import io.undertow.server.handlers.sse.ServerSentEventConnection;
 import io.undertow.server.handlers.sse.ServerSentEventConnectionCallback;
 import io.undertow.util.AttachmentKey;
 import jakarta.json.JsonObject;
-import org.wildfly.extension.mcp.MCPLogger;
 import org.wildfly.extension.mcp.api.ConnectionManager;
 import org.wildfly.extension.mcp.api.JsonRPC;
 
 public class MCPStreamableConnectionCallBack implements ServerSentEventConnectionCallback {
     public static final AttachmentKey<JsonObject> JSON_PAYLOAD = AttachmentKey.create(JsonObject.class);
     public static final AttachmentKey<String> SESSION_ID = AttachmentKey.create(String.class);
+    // Transport metadata carried through the SSE setup phase for OTel instrumentation.
+    public static final AttachmentKey<String> TRANSPORT_CLIENT_ADDRESS = AttachmentKey.create(String.class);
+    public static final AttachmentKey<Integer> TRANSPORT_CLIENT_PORT = AttachmentKey.create(Integer.class);
+    public static final AttachmentKey<String> TRANSPORT_NETWORK_PROTOCOL_VERSION = AttachmentKey.create(String.class);
 
     private final ConnectionManager connectionManager;
+    private final MCPMessageHandler handler;
 
-    public MCPStreamableConnectionCallBack(ConnectionManager connectionManager) {
+    public MCPStreamableConnectionCallBack(ConnectionManager connectionManager, MCPMessageHandler handler) {
         this.connectionManager = connectionManager;
+        this.handler = handler;
     }
 
     @Override
@@ -34,7 +39,11 @@ public class MCPStreamableConnectionCallBack implements ServerSentEventConnectio
         JsonObject content = sseConnection.getAttachment(JSON_PAYLOAD);
         ROOT_LOGGER.debugf("Received message from client: %s", content);
         JsonRPC.validate(content, connection);
-        StreamableHttpHandler.handler.handle(content, connection, connection);
+        String clientAddress = sseConnection.getAttachment(TRANSPORT_CLIENT_ADDRESS);
+        Integer clientPort = sseConnection.getAttachment(TRANSPORT_CLIENT_PORT);
+        String networkProtocolVersion = sseConnection.getAttachment(TRANSPORT_NETWORK_PROTOCOL_VERSION);
+        handler.handle(content, connection, connection,
+                clientAddress, clientPort != null ? clientPort : -1, networkProtocolVersion);
     }
 
 }

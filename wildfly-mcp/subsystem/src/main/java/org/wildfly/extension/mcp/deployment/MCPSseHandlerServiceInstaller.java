@@ -7,8 +7,10 @@ package org.wildfly.extension.mcp.deployment;
 import static org.jboss.as.server.security.VirtualDomainMarkerUtility.virtualDomainName;
 import static org.wildfly.extension.mcp.MCPLogger.ROOT_LOGGER;
 
-import org.wildfly.extension.mcp.MCPEndpointConfiguration;
+import java.util.ArrayList;
 import java.util.List;
+import org.wildfly.extension.mcp.MCPEndpointConfiguration;
+import org.wildfly.extension.mcp.api.MCPMessageListener;
 
 import io.undertow.Handlers;
 import io.undertow.security.handlers.AuthenticationCallHandler;
@@ -37,9 +39,11 @@ import org.wildfly.extension.mcp.Capabilities;
 import org.wildfly.extension.mcp.api.ConnectionManager;
 import org.wildfly.extension.mcp.api.Messages;
 import org.wildfly.extension.mcp.injection.WildFlyMCPRegistry;
+import org.wildfly.extension.mcp.server.MCPMessageHandler;
 import org.wildfly.extension.mcp.server.MCPServerSentConnectionCallBack;
 import org.wildfly.extension.mcp.server.MCPStreamableConnectionCallBack;
 import org.wildfly.extension.mcp.server.MessagesHttpHandler;
+import org.wildfly.extension.mcp.server.OpenTelemetryMCPMessageListener;
 import org.wildfly.extension.mcp.server.StreamableHttpHandler;
 import org.wildfly.extension.undertow.DeploymentDefinition;
 import org.wildfly.extension.undertow.Host;
@@ -83,16 +87,27 @@ public class MCPSseHandlerServiceInstaller implements DeploymentServiceInstaller
             securityDomain = null;
         }
         final MCPEndpointConfiguration configuration = deploymentUnit.getAttachment(MCPAttachments.MCP_ENDPOINT_CONFIGURATION);
+        final Boolean isObservable = deploymentUnit.getAttachment(MCPAttachments.MCP_OBSERVABLE);
+        final List<MCPMessageListener> listeners = new ArrayList<>();
+        if (Boolean.TRUE.equals(isObservable)) {
+            listeners.add(new OpenTelemetryMCPMessageListener(classLoader));
+        }
         final String messagesEndpoint = "/".equals(webContext) ? webContext + configuration.messagesPath() : webContext + '/' + configuration.messagesPath();
         final ConnectionManager connectionManager = new ConnectionManager();
-        final MCPServerSentConnectionCallBack mcpServerSentConnectionCallBack = new MCPServerSentConnectionCallBack(messagesEndpoint, connectionManager);
-        final MCPStreamableConnectionCallBack mcpStreamableConnectionCallBack = new MCPStreamableConnectionCallBack(connectionManager);
+        connectionManager.setListeners(listeners);
         final int pageSize = configuration.pageSize();
-        final MessagesHttpHandler messagesHttpHandler = new MessagesHttpHandler(connectionManager, registry, classLoader, serverName, deploymentUnit.getName(), pageSize);
+        // One shared handler instance for the deployment: both HTTP endpoints and the SSE callback
+        // route through the same MCPMessageHandler so listener state (e.g. session tracking maps)
+        // is consistent across connection types.
+        final MCPMessageHandler mcpMessageHandler = new MCPMessageHandler(
+                connectionManager, registry, classLoader, serverName, deploymentUnit.getName(), pageSize, listeners);
+        final MCPServerSentConnectionCallBack mcpServerSentConnectionCallBack = new MCPServerSentConnectionCallBack(messagesEndpoint, connectionManager);
+        final MCPStreamableConnectionCallBack mcpStreamableConnectionCallBack = new MCPStreamableConnectionCallBack(connectionManager, mcpMessageHandler);
+        final MessagesHttpHandler messagesHttpHandler = new MessagesHttpHandler(connectionManager, mcpMessageHandler);
         final String ssePath = "/".equals(webContext) ? webContext + configuration.ssePath() : webContext + '/' + configuration.ssePath();
         final String streamableEndpoint = "/".equals(webContext) ? webContext + configuration.streamablePath() : webContext + '/' + configuration.streamablePath();
         final ServerSentEventHandler sseHandler = Handlers.serverSentEvents(mcpServerSentConnectionCallBack);
-        final StreamableHttpHandler streamableHttpHandler = new StreamableHttpHandler(connectionManager, registry, classLoader, serverName, deploymentUnit.getName(), Handlers.serverSentEvents(mcpStreamableConnectionCallBack), pageSize);
+        final StreamableHttpHandler streamableHttpHandler = new StreamableHttpHandler(connectionManager, mcpMessageHandler, Handlers.serverSentEvents(mcpStreamableConnectionCallBack));
         Runnable start = new Runnable() {
             @Override
             public void run() {

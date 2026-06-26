@@ -18,7 +18,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import org.wildfly.ai.test.container.OllamaContainerManager;
 
 /**
  * Integration test for Ollama streaming chat model functionality in WildFly.
@@ -31,7 +30,6 @@ import org.wildfly.ai.test.container.OllamaContainerManager;
  *   <li>Multiple sequential streaming requests</li>
  * </ul>
  *
- * @see OllamaContainerManager
  * @see DeploymentFactory
  * @see StreamingChatModel
  */

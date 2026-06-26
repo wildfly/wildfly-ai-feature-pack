@@ -53,6 +53,14 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- Shared test utilities (container lifecycle, LGTM management) -->
+        <dependency>
+            <groupId>org.wildfly.generative-ai</groupId>
+            <artifactId>wildfly-ai-testsuite-common</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+
         <!-- Testcontainers -->
         <dependency>
             <groupId>org.testcontainers</groupId>
@@ -63,22 +71,6 @@
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>testcontainers-ollama</artifactId>
-            <scope>test</scope>
-        </dependency>
-
-        <!-- Grafana LGTM container for OpenTelemetry testing -->
-        <dependency>
-            <groupId>org.testcontainers</groupId>
-            <artifactId>testcontainers-grafana</artifactId>
-            <scope>test</scope>
-        </dependency>
-
-        <!-- commons-lang3 is a direct (unshaded) dependency of docker-java used by
-             Testcontainers 2.x. Without it, DockerClientProviderStrategy fails to
-             instantiate and LgtmContainerManager cannot start the LGTM container. -->
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-lang3</artifactId>
             <scope>test</scope>
         </dependency>
 
@@ -111,7 +103,6 @@
         <dependency>
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
-            <version>${version.assertj}</version>
             <scope>test</scope>
         </dependency>
 

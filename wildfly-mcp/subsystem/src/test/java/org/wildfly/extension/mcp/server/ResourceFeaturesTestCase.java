@@ -20,7 +20,6 @@ import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 import org.wildfly.extension.mcp.api.ConnectionManager;
-import org.wildfly.extension.mcp.api.MCPConnection;
 import org.wildfly.extension.mcp.api.Responder;
 import org.wildfly.extension.mcp.injection.WildFlyMCPRegistry;
 import org.wildfly.extension.mcp.injection.tool.ArgumentMetadata;
@@ -280,7 +279,7 @@ public class ResourceFeaturesTestCase {
 
     @Test
     public void testSubscribeThenNotifyDelivers() {
-        ResourceMessageHandler resourceHandler = new ResourceMessageHandler(registry, getClass().getClassLoader(), null);
+        ResourceMessageHandler resourceHandler = new ResourceMessageHandler(registry, getClass().getClassLoader(), null, 0);
         TestResponderConnection subscriber = new TestResponderConnection("sub-conn-1");
         TestResponder subscribeResponder = new TestResponder();
 
@@ -305,13 +304,13 @@ public class ResourceFeaturesTestCase {
 
     @Test
     public void testNotifyWithNoSubscribersIsNoOp() {
-        ResourceMessageHandler resourceHandler = new ResourceMessageHandler(registry, getClass().getClassLoader(), null);
+        ResourceMessageHandler resourceHandler = new ResourceMessageHandler(registry, getClass().getClassLoader(), null, 0);
         resourceHandler.notifyResourceUpdated("file:///nonexistent");
     }
 
     @Test
     public void testUnsubscribeStopsNotifications() {
-        ResourceMessageHandler resourceHandler = new ResourceMessageHandler(registry, getClass().getClassLoader(), null);
+        ResourceMessageHandler resourceHandler = new ResourceMessageHandler(registry, getClass().getClassLoader(), null, 0);
         TestResponderConnection subscriber = new TestResponderConnection("sub-conn-2");
         TestResponder subResponder = new TestResponder();
 

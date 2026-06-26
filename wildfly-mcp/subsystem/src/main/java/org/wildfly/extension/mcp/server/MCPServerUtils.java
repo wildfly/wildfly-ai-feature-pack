@@ -9,9 +9,12 @@ import static org.wildfly.extension.mcp.injection.MCPFieldNames.IS_ERROR;
 import static org.wildfly.extension.mcp.injection.MCPFieldNames.TEXT;
 import static org.wildfly.extension.mcp.injection.MCPFieldNames.TYPE;
 
+import static org.wildfly.extension.mcp.MCPLogger.ROOT_LOGGER;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.undertow.util.HttpString;
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
@@ -101,6 +104,29 @@ final class MCPServerUtils {
             idx++;
         }
         return ret;
+    }
+
+    /**
+     * Extracts the HTTP version number from an Undertow protocol string (e.g. "HTTP/1.1" → "1.1",
+     * "HTTP/2.0" → "2"). Follows OTel semconv: HTTP/2+ drops the trailing ".0", HTTP/1.x keeps it.
+     * Expects the format "{protocol}/{version}" (e.g. "HTTP/1.1"); returns {@code null} and logs
+     * a warning if the format is not recognized.
+     */
+    static String parseNetworkProtocolVersion(HttpString protocol) {
+        if (protocol == null) {
+            return null;
+        }
+        String s = protocol.toString();
+        int slash = s.indexOf('/');
+        if (slash < 0) {
+            ROOT_LOGGER.debugf("Unexpected HTTP protocol format (no '/' separator): %s", s);
+            return null;
+        }
+        String version = s.substring(slash + 1);
+        if (version.endsWith(".0") && !version.startsWith("1.")) {
+            version = version.substring(0, version.length() - 2);
+        }
+        return version;
     }
 
     /**

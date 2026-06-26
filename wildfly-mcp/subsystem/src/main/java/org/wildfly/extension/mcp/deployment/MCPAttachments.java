@@ -11,4 +11,5 @@ import org.wildfly.extension.mcp.injection.WildFlyMCPRegistry;
 public class MCPAttachments {
     static final AttachmentKey<MCPEndpointConfiguration> MCP_ENDPOINT_CONFIGURATION = AttachmentKey.create(MCPEndpointConfiguration.class);
     static final AttachmentKey<WildFlyMCPRegistry> MCP_REGISTRY_METADATA = AttachmentKey.create(WildFlyMCPRegistry.class);
+    static final AttachmentKey<Boolean> MCP_OBSERVABLE = AttachmentKey.create(Boolean.class);
 }

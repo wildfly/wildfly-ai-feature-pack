@@ -163,6 +163,19 @@ public interface MCPLogger extends BasicLogger {
     @Message(id = 38, value = "Client does not support %s mode elicitation")
     IllegalStateException elicitationModeNotSupported(Elicitation.Mode mode);
 
-    @Message(id = 40, value = "Invalid endpoint path '%s' for parameter '%s': only alphanumeric characters (a-z, A-Z, 0-9), hyphens (-), and underscores (_) are allowed")
+    @Message(id = 39, value = "Invalid endpoint path '%s' for parameter '%s': only alphanumeric characters (a-z, A-Z, 0-9), hyphens (-), and underscores (_) are allowed")
     String invalidEndpointPath(String value, String parameterName);
+
+    @Message(id = 40, value = "Connection was already shut down")
+    String connectionAlreadyShutdown();
+
+    @Message(id = 41, value = "Unable to obtain the connection to be closed: %s")
+    String unableToObtainConnectionToClose(String id);
+
+    @Message(id = 42, value = "Unsupported method: %s")
+    String unsupportedMethod(String method);
+
+    @LogMessage(level = WARN)
+    @Message(id = 43, value = "OpenTelemetry MCP listener initialization failed; tracing and metrics are disabled")
+    void openTelemtryListenerInitializationFailure(@Cause Throwable cause);
 }
