@@ -37,6 +37,7 @@ import jakarta.json.JsonObjectBuilder;
 import jakarta.json.JsonValue;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Base64;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -231,7 +232,7 @@ public class ResourceMessageHandler {
                             contentResource.add(MIME_TYPE, mimeType);
                         }
                         if (content instanceof BlobResourceContents brc) {
-                            contentResource.add(BLOB, java.util.Base64.getEncoder().encodeToString(brc.blob()));
+                            contentResource.add(BLOB, Base64.getEncoder().encodeToString(brc.blob()));
                         } else if (content instanceof TextResourceContents trc) {
                             contentResource.add(TEXT, trc.text());
                         }
