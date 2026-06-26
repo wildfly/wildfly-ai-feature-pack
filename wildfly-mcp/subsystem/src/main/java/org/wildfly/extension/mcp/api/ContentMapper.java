@@ -74,6 +74,9 @@ public class ContentMapper {
         if (result instanceof PromptMessage pm) {
             return List.of(pm);
         }
+        if (result instanceof ContentBlock cb) {
+            return List.of(PromptResponse.of(Role.USER, cb).messages().get(0));
+        }
         return List.of(newUserPromptMessage(result.toString()));
     }
 
