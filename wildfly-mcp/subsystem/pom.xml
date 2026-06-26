@@ -150,5 +150,52 @@
             <artifactId>undertow-core</artifactId>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-context</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <!-- opentelemetry-sdk-testing is not in the WildFly BOM so the version is pinned via
+             ${version.io.opentelemetry.sdk.testing} in the root pom.xml. When the WildFly BOM
+             upgrades the OTel API, that property must be updated to match. -->
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-sdk-testing</artifactId>
+            <version>${version.io.opentelemetry.sdk.testing}</version>
+            <scope>test</scope>
+        </dependency>
+        <!-- The BOM manages opentelemetry-sdk-* with exclusions: *:* so WildFly's module system
+             controls OTel at runtime. Declare the sub-modules explicitly here so the in-memory
+             OTel SDK is on the unit-test classpath (versions are BOM-managed, no explicit version needed). -->
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-sdk-trace</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-sdk-metrics</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-sdk-common</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-sdk-logs</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.wildfly</groupId>
+            <artifactId>wildfly-opentelemetry-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 </project>

@@ -17,6 +17,7 @@ import org.mcpjava.server.progress.Progress;
 import org.mcpjava.server.progress.ProgressNotification;
 import org.mcpjava.server.progress.ProgressToken;
 import org.mcpjava.server.progress.ProgressTracker;
+import org.wildfly.extension.mcp.api.MCPMethods;
 import org.wildfly.extension.mcp.api.Messages;
 import org.wildfly.extension.mcp.api.Responder;
 import org.wildfly.extension.mcp.injection.MCPFieldNames;
@@ -64,7 +65,7 @@ class ProgressImpl implements Progress {
         if (message != null) {
             params.add("message", message);
         }
-        responder.send(Messages.newNotification(MCPMessageHandler.NOTIFICATIONS_PROGRESS, params));
+        responder.send(Messages.newNotification(MCPMethods.NOTIFICATIONS_PROGRESS, params));
     }
 
     static class NotificationBuilderImpl implements ProgressNotification.Builder {

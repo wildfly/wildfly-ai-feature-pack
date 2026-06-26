@@ -4,14 +4,13 @@
  */
 package org.wildfly.extension.mcp.server;
 
+import static org.wildfly.extension.mcp.MCPLogger.ROOT_LOGGER;
+
 import jakarta.json.JsonObject;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
-import org.wildfly.extension.mcp.MCPLogger;
-
-import static org.wildfly.extension.mcp.MCPLogger.ROOT_LOGGER;
 
 /**
  * Tracks pending server-initiated requests (e.g. {@code elicitation/create}) and routes

@@ -89,6 +89,9 @@
 
         <version.junit>5.11.4</version.junit>
         <version.assertj>3.27.7</version.assertj>
+        <!-- Must match the io.opentelemetry:opentelemetry-api version managed by the WildFly BOM.
+             opentelemetry-sdk-testing is not in the BOM so it needs an explicit version here. -->
+        <version.io.opentelemetry.sdk.testing>1.48.0</version.io.opentelemetry.sdk.testing>
 
         <!-- Nexus deployment settings -->
         <nexus.staging.tag>ai-feature-pack-${project.version}</nexus.staging.tag>

@@ -11,23 +11,15 @@ import jakarta.json.JsonObject;
 import jakarta.json.JsonReader;
 import org.wildfly.extension.mcp.api.ConnectionManager;
 import org.wildfly.extension.mcp.api.JsonRPC;
-import org.wildfly.extension.mcp.MCPLogger;
-import org.wildfly.extension.mcp.injection.WildFlyMCPRegistry;
 
 
 public class MessagesHttpHandler implements HttpHandler {
     private final ConnectionManager connectionManager;
-    private static MCPMessageHandler handler;
+    private final MCPMessageHandler handler;
 
-    public MessagesHttpHandler(ConnectionManager connectionManager, WildFlyMCPRegistry registry, ClassLoader classLoader,
-            String serverName, String applicationName) {
-        this(connectionManager, registry, classLoader, serverName, applicationName, 0);
-    }
-
-    public MessagesHttpHandler(ConnectionManager connectionManager, WildFlyMCPRegistry registry, ClassLoader classLoader,
-            String serverName, String applicationName, int pageSize) {
+    public MessagesHttpHandler(ConnectionManager connectionManager, MCPMessageHandler handler) {
         this.connectionManager = connectionManager;
-        handler = new MCPMessageHandler(connectionManager, registry, classLoader, serverName, applicationName, pageSize);
+        this.handler = handler;
     }
 
     @Override
@@ -53,8 +45,10 @@ public class MessagesHttpHandler implements HttpHandler {
         JsonObject content = reader.readObject();
         ROOT_LOGGER.debugf("Received message from client: %s", content);
         JsonRPC.validate(content, connection);
-        handler.handle(content, connection, connection);
+        java.net.InetSocketAddress src = exchange.getSourceAddress();
+        String clientAddress = src != null ? src.getHostString() : null;
+        int clientPort = src != null ? src.getPort() : -1;
+        handler.handle(content, connection, connection,
+                clientAddress, clientPort, MCPServerUtils.parseNetworkProtocolVersion(exchange.getProtocol()));
     }
-
-
 }

@@ -47,5 +47,9 @@
         <module name="org.wildfly.security.elytron-web.undertow-server" optional="true"/>
         <module name="org.wildfly.service"/>
         <module name="org.wildfly.subsystem"/>
+        <!-- OpenTelemetry -->
+        <module name="org.wildfly.extension.opentelemetry-api" optional="true"/>
+        <module name="io.opentelemetry.api" optional="true"/>
+        <module name="io.opentelemetry.context" optional="true"/>
     </dependencies>
 </module>

@@ -34,6 +34,26 @@ public class ConnectionManager {
     public static final HttpString MCP_PROTOCOL_VERSION_HEADER = HttpString.tryFromString("mcp-protocol-version");
     private final ConcurrentMap<String, MCPConnection> connections = new ConcurrentHashMap<>();
     private ScheduledFuture<?> cleanupTask;
+    private volatile List<MCPMessageListener> listeners = List.of();
+
+    /**
+     * Registers message listeners that will be notified via {@link MCPMessageListener#onConnectionClosed}
+     * whenever a connection is removed from this manager (explicit close, timeout, or shutdown).
+     * @param listeners
+     */
+    public void setListeners(List<MCPMessageListener> listeners) {
+        this.listeners = listeners != null ? List.copyOf(listeners) : List.of();
+    }
+
+    private void fireConnectionClosed(String id) {
+        for (MCPMessageListener listener : listeners) {
+            try {
+                listener.onConnectionClosed(id);
+            } catch (Exception e) {
+                ROOT_LOGGER.debugf(e, "MCPMessageListener.onConnectionClosed failed");
+            }
+        }
+    }
 
     /**
      * Generates a new unique, URL-safe session ID for a client connection.
@@ -84,6 +104,7 @@ public class ConnectionManager {
     public boolean remove(String id) {
         MCPConnection connection = connections.remove(id);
         if (connection != null) {
+            fireConnectionClosed(id);
             try {
                 connection.close();
                 return true;

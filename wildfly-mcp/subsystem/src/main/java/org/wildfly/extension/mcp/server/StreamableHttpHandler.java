@@ -8,7 +8,7 @@ import static io.undertow.util.HttpString.tryFromString;
 import static org.wildfly.extension.mcp.MCPLogger.ROOT_LOGGER;
 import static org.wildfly.extension.mcp.api.ConnectionManager.MCP_PROTOCOL_VERSION_HEADER;
 import static org.wildfly.extension.mcp.api.ConnectionManager.MCP_SESSION_ID_HEADER;
-import static org.wildfly.extension.mcp.server.MCPMessageHandler.PROTOCOL_VERSION;
+import static org.wildfly.extension.mcp.api.MCPMethods.PROTOCOL_VERSION;
 import static org.wildfly.extension.mcp.server.MCPStreamableConnectionCallBack.JSON_PAYLOAD;
 import static org.wildfly.extension.mcp.server.MCPStreamableConnectionCallBack.SESSION_ID;
 
@@ -24,25 +24,18 @@ import jakarta.json.JsonReader;
 import java.util.Arrays;
 import org.wildfly.extension.mcp.api.ConnectionManager;
 import org.wildfly.extension.mcp.api.JsonRPC;
-import org.wildfly.extension.mcp.MCPLogger;
-import org.wildfly.extension.mcp.injection.WildFlyMCPRegistry;
 
 public class StreamableHttpHandler implements HttpHandler {
 
     private final ConnectionManager connectionManager;
-    static MCPMessageHandler handler;
+    private final MCPMessageHandler handler;
     private final ServerSentEventHandler sseHandler;
 
-    public StreamableHttpHandler(ConnectionManager connectionManager, WildFlyMCPRegistry registry, ClassLoader classLoader,
-            String serverName, String applicationName, ServerSentEventHandler sseHandler) {
-        this(connectionManager, registry, classLoader, serverName, applicationName, sseHandler, 0);
-    }
-
-    public StreamableHttpHandler(ConnectionManager connectionManager, WildFlyMCPRegistry registry, ClassLoader classLoader,
-            String serverName, String applicationName, ServerSentEventHandler sseHandler, int pageSize) {
+    public StreamableHttpHandler(ConnectionManager connectionManager, MCPMessageHandler handler,
+            ServerSentEventHandler sseHandler) {
         this.connectionManager = connectionManager;
+        this.handler = handler;
         this.sseHandler = sseHandler;
-        handler = new MCPMessageHandler(connectionManager, registry, classLoader, serverName, applicationName, pageSize);
     }
 
     @Override
@@ -78,6 +71,16 @@ public class StreamableHttpHandler implements HttpHandler {
             connectionId = connectionManager.id();
             exchange.putAttachment(SESSION_ID, connectionId);
             exchange.putAttachment(JSON_PAYLOAD, content);
+            // Carry transport metadata through the SSE callback for OTel instrumentation.
+            java.net.InetSocketAddress src = exchange.getSourceAddress();
+            if (src != null) {
+                exchange.putAttachment(MCPStreamableConnectionCallBack.TRANSPORT_CLIENT_ADDRESS, src.getHostString());
+                exchange.putAttachment(MCPStreamableConnectionCallBack.TRANSPORT_CLIENT_PORT, src.getPort());
+            }
+            String netProtoVersion = MCPServerUtils.parseNetworkProtocolVersion(exchange.getProtocol());
+            if (netProtoVersion != null) {
+                exchange.putAttachment(MCPStreamableConnectionCallBack.TRANSPORT_NETWORK_PROTOCOL_VERSION, netProtoVersion);
+            }
             exchange.setStatusCode(200);
             exchange.getResponseHeaders().put(MCP_SESSION_ID_HEADER, connectionId);
             exchange.getResponseHeaders().put(CONTENT_TYPE, "text/event-stream");
@@ -89,7 +92,7 @@ public class StreamableHttpHandler implements HttpHandler {
         }
         String protocolVersion = exchange.getRequestHeaders().getFirst(MCP_PROTOCOL_VERSION_HEADER);
         if (protocolVersion != null && !PROTOCOL_VERSION.equals(protocolVersion)) {
-            MCPLogger.ROOT_LOGGER.invalidProtocolVersion(PROTOCOL_VERSION, protocolVersion);
+            ROOT_LOGGER.invalidProtocolVersion(PROTOCOL_VERSION, protocolVersion);
             exchange.setStatusCode(400);
             exchange.endExchange();
             return;
@@ -101,7 +104,11 @@ public class StreamableHttpHandler implements HttpHandler {
         exchange.getResponseHeaders().put(tryFromString("Access-Control-Allow-Origin"), "*");
         exchange.getResponseHeaders().put(tryFromString("Access-Control-Expose-Headers"), "mcp-session-id");
         exchange.getResponseHeaders().put(CACHE_CONTROL, "no-cache");
-        handler.handle(content, connection, connection);
+        java.net.InetSocketAddress src = exchange.getSourceAddress();
+        String clientAddress = src != null ? src.getHostString() : null;
+        int clientPort = src != null ? src.getPort() : -1;
+        handler.handle(content, connection, connection,
+                clientAddress, clientPort, MCPServerUtils.parseNetworkProtocolVersion(exchange.getProtocol()));
     }
 
     private boolean isValidAcceptHeader(HeaderValues accepts) {

@@ -248,6 +248,77 @@ public class ConnectionManagerTestCase {
         assertTrue(initializing.receivedMessages().isEmpty());
     }
 
+    // ==================== onConnectionClosed listener ====================
+
+    @Test
+    public void testListenerNotifiedOnRemove() {
+        TrackingListener listener = new TrackingListener();
+        manager.setListeners(List.of(listener));
+        TestableConnection conn = new TestableConnection("conn-1");
+        manager.add(conn);
+
+        manager.remove("conn-1");
+
+        assertEquals(List.of("conn-1"), listener.closedIds());
+    }
+
+    @Test
+    public void testListenerNotifiedOnCleanup() {
+        TrackingListener listener = new TrackingListener();
+        manager.setListeners(List.of(listener));
+        TestableConnection stale = new TestableConnection("stale");
+        stale.setLastActivity(System.currentTimeMillis() - 3_600_000L);
+        manager.add(stale);
+
+        manager.cleanup(1800L);
+
+        assertEquals(List.of("stale"), listener.closedIds());
+    }
+
+    @Test
+    public void testListenerNotifiedOnShutdown() {
+        TrackingListener listener = new TrackingListener();
+        manager.setListeners(List.of(listener));
+        TestableConnection conn1 = new TestableConnection("conn-1");
+        TestableConnection conn2 = new TestableConnection("conn-2");
+        manager.add(conn1);
+        manager.add(conn2);
+
+        manager.shutdown();
+
+        assertEquals(2, listener.closedIds().size());
+        assertTrue(listener.closedIds().contains("conn-1"));
+        assertTrue(listener.closedIds().contains("conn-2"));
+    }
+
+    @Test
+    public void testListenerNotNotifiedForUnknownId() {
+        TrackingListener listener = new TrackingListener();
+        manager.setListeners(List.of(listener));
+
+        manager.remove("nonexistent");
+
+        assertTrue(listener.closedIds().isEmpty());
+    }
+
+    @Test
+    public void testThrowingListenerInOnConnectionClosedDoesNotBreakOtherListeners() {
+        MCPMessageListener throwingListener = new MCPMessageListener() {
+            @Override
+            public void onConnectionClosed(String connectionId) {
+                throw new RuntimeException("boom in onConnectionClosed");
+            }
+        };
+        TrackingListener trackingListener = new TrackingListener();
+        manager.setListeners(List.of(throwingListener, trackingListener));
+
+        TestableConnection conn = new TestableConnection("conn-1");
+        manager.add(conn);
+        manager.remove("conn-1");
+
+        assertEquals(List.of("conn-1"), trackingListener.closedIds());
+    }
+
     // ==================== Test helper ====================
 
     private static class TestableConnection implements MCPConnection {
@@ -494,5 +565,18 @@ public class ConnectionManagerTestCase {
                 .build();
         // Must not throw when there are no connections
         manager.broadcastThenShutdown(notification);
+    }
+
+    private static class TrackingListener implements MCPMessageListener {
+        private final List<String> closedIds = new ArrayList<>();
+
+        @Override
+        public void onConnectionClosed(String connectionId) {
+            closedIds.add(connectionId);
+        }
+
+        List<String> closedIds() {
+            return closedIds;
+        }
     }
 }

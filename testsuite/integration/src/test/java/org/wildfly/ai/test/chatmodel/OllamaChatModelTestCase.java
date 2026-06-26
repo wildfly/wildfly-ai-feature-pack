@@ -11,7 +11,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.wildfly.ai.test.util.DeploymentFactory;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import org.wildfly.ai.test.container.OllamaContainerManager;
 
 /**
  * Integration test for Ollama chat model functionality in WildFly.
@@ -23,11 +22,6 @@ import org.wildfly.ai.test.container.OllamaContainerManager;
  *   <li>Question answering capabilities</li>
  * </ul>
  *
- * <p>The test uses Arquillian for container management and deploys a minimal
- * WAR archive created by {@link DeploymentFactory}. The Ollama instance is
- * managed by {@link OllamaContainerManager}.</p>
- *
- * @see OllamaContainerManager
  * @see DeploymentFactory
  */
 @ExtendWith(ArquillianExtension.class)

@@ -67,10 +67,6 @@ public class ResourceMessageHandler {
     private final int pageSize;
     private final ConcurrentHashMap<String, Set<MCPConnection>> subscriptions = new ConcurrentHashMap<>();
 
-    ResourceMessageHandler(WildFlyMCPRegistry registry, ClassLoader classLoader, ExecutorService executorService) {
-        this(registry, classLoader, executorService, 0);
-    }
-
     ResourceMessageHandler(WildFlyMCPRegistry registry, ClassLoader classLoader, ExecutorService executorService, int pageSize) {
         this.registry = registry;
         this.mapper = SHARED_MAPPER;

@@ -65,10 +65,6 @@ public class PromptMessageHandler {
     private final ExecutorService executorService;
     private final int pageSize;
 
-    PromptMessageHandler(WildFlyMCPRegistry registry, ClassLoader classLoader, ExecutorService executorService) {
-        this(registry, classLoader, executorService, 0);
-    }
-
     PromptMessageHandler(WildFlyMCPRegistry registry, ClassLoader classLoader, ExecutorService executorService, int pageSize) {
         this.registry = registry;
         this.mapper = SHARED_MAPPER;
