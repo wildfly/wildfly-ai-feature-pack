@@ -31,6 +31,12 @@ import org.wildfly.security.manager.WildFlySecurityManager;
 
 public class CompletionHandler {
 
+    /**
+     * Completion must return at most 100 values as specified
+     * in <a href="https://modelcontextprotocol.io/specification/2025-11-25/server/utilities/completion#completeresult">CompleteResult</a>.
+     */
+    private static final int MAX_COMPLETION_VALUES = 100;
+
     private final WildFlyMCPRegistry registry;
     private final ClassLoader classLoader;
 
@@ -147,8 +153,6 @@ public class CompletionHandler {
         }
         return result;
     }
-
-    private static final int MAX_COMPLETION_VALUES = 100;
 
     @SuppressWarnings("unchecked")
     private void sendCompletionResponse(String id, Object result, Responder responder) {
