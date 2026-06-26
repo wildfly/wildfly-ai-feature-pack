@@ -24,19 +24,4 @@ public interface MCPLogger extends BasicLogger {
     @LogMessage(level = ERROR)
     @Message(id = 1, value = "Unexpected error")
     void unexpectedError(@Cause Throwable cause);
-
-    @Message(id = 2, value = "Parameter %s must not be null")
-    String parameterMustNotBeNull(String name);
-
-    @Message(id = 3, value = "Parameter %s must be positive")
-    IllegalArgumentException parameterMustBePositive(String name);
-
-    @Message(id = 4, value = "Parameter %s must not be empty")
-    IllegalArgumentException parameterMustNotBeEmpty(String name);
-
-    @Message(id = 5, value = "Parameter %s must have the same size as parameter %s")
-    IllegalArgumentException parameterMustHaveSameSize(String parameter1, String parameter2);
-
-    @Message(id = 6, value = "Parameter 'max' (%s) can not be less than 'min' (%s) ")
-    IllegalArgumentException maxCanNotBeLessThanMin(Integer max, Integer min);
 }
