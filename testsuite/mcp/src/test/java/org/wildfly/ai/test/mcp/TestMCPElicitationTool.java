@@ -9,8 +9,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
-import org.mcp_java.server.tools.Tool;
-import org.mcp_java.server.tools.ToolArg;
+import org.mcpjava.server.tools.Tool;
+import org.mcpjava.server.tools.ToolArg;
 import org.wildfly.mcp.model.elicitation.BooleanProperty;
 import org.wildfly.mcp.model.elicitation.Elicitation;
 import org.wildfly.mcp.model.elicitation.ElicitationSender;

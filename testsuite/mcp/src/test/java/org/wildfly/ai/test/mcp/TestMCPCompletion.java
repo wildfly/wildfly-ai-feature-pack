@@ -7,9 +7,9 @@ package org.wildfly.ai.test.mcp;
 import java.util.List;
 import java.util.stream.Stream;
 import org.wildfly.mcp.model.completion.CompleteContext;
-import org.mcp_java.server.completion.CompleteArg;
-import org.mcp_java.server.completion.CompletePrompt;
-import org.mcp_java.server.completion.CompleteResourceTemplate;
+import org.mcpjava.server.completion.CompleteArg;
+import org.mcpjava.server.completion.CompletePrompt;
+import org.mcpjava.server.completion.CompleteResourceTemplate;
 
 public class TestMCPCompletion {
 
