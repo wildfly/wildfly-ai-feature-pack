@@ -131,60 +131,61 @@ public final class WildFlyMcpServerSPI implements McpServerSPI {
     // ================================================================
 
     private record TextContentImpl(String text, Optional<Annotations> annotations,
-            Map<String, Object> metadata) implements TextContent {
+                                   Map<String, Object> metadata) implements TextContent {
     }
 
     private record AudioContentImpl(byte[] data, String mimeType, Optional<Annotations> annotations,
-            Map<String, Object> metadata) implements AudioContent {
+                                    Map<String, Object> metadata) implements AudioContent {
     }
 
     private record ImageContentImpl(byte[] data, String mimeType, Optional<Annotations> annotations,
-            Map<String, Object> metadata) implements ImageContent {
+                                    Map<String, Object> metadata) implements ImageContent {
     }
 
     private record EmbeddedResourceImpl(ResourceContents resource, Optional<Annotations> annotations,
-            Map<String, Object> metadata) implements EmbeddedResource {
+                                        Map<String, Object> metadata) implements EmbeddedResource {
     }
 
     private record ResourceLinkImpl(String name, String title, String uri,
-            Optional<String> description, Optional<String> mimeType,
-            Optional<Annotations> annotations, OptionalLong size,
-            Map<String, Object> metadata) implements ResourceLink {
+                                    Optional<String> description, Optional<String> mimeType,
+                                    Optional<Annotations> annotations, OptionalLong size,
+                                    Map<String, Object> metadata) implements ResourceLink {
     }
 
     private record AnnotationsImpl(Optional<Set<Role>> audience, OptionalDouble priority,
-            Optional<Instant> lastModified) implements Annotations {
+                                   Optional<Instant> lastModified) implements Annotations {
     }
 
     private record PromptMessageImpl(Role role, ContentBlock content) implements PromptMessage {
     }
 
     private record PromptResponseImpl(Optional<String> description, List<PromptMessage> messages,
-            Map<String, Object> metadata) implements PromptResponse {
+                                      Map<String, Object> metadata) implements PromptResponse {
     }
 
     private record TextResourceContentsImpl(String uri, String text, Optional<String> mimeType,
-            Map<String, Object> metadata) implements TextResourceContents {
+                                            Map<String, Object> metadata) implements TextResourceContents {
     }
 
     private record BlobResourceContentsImpl(String uri, byte[] blob, Optional<String> mimeType,
-            Map<String, Object> metadata) implements BlobResourceContents {
+                                            Map<String, Object> metadata) implements BlobResourceContents {
     }
 
     private record ResourceResponseImpl(List<ResourceContents> getContents,
-            Map<String, Object> metadata) implements ResourceResponse {
+                                        Map<String, Object> metadata) implements ResourceResponse {
     }
 
     private record CompletionResultImpl(List<String> values, OptionalInt total,
-            Optional<Boolean> hasMore, Map<String, Object> metadata) implements CompletionResult {
+                                        Optional<Boolean> hasMore,
+                                        Map<String, Object> metadata) implements CompletionResult {
     }
 
     private record ToolResponseImpl(List<ContentBlock> content, Optional<Object> structuredContent,
-            boolean isError, Map<String, Object> metadata) implements ToolResponse {
+                                    boolean isError, Map<String, Object> metadata) implements ToolResponse {
     }
 
     private record IconImpl(String src, Optional<String> mimeType,
-            List<String> sizes, Optional<Icon.Theme> theme) implements Icon {
+                            List<String> sizes, Optional<Icon.Theme> theme) implements Icon {
     }
 
     // ================================================================
@@ -203,16 +204,32 @@ public final class WildFlyMcpServerSPI implements McpServerSPI {
     private abstract static class MetaBuilder<B extends MetaCarrier.Builder<B>> implements MetaCarrier.Builder<B> {
         final Map<String, Object> metadata = new HashMap<>();
 
-        @Override public B putMetadata(String key, Object value) { metadata.put(key, value); return (B) this; }
-        @Override public B setMetadata(Map<String, Object> m) { metadata.clear(); metadata.putAll(m); return (B) this; }
+        @Override
+        public B putMetadata(String key, Object value) {
+            metadata.put(key, value);
+            return (B) this;
+        }
+
+        @Override
+        public B setMetadata(Map<String, Object> m) {
+            metadata.clear();
+            metadata.putAll(m);
+            return (B) this;
+        }
     }
 
     @SuppressWarnings("unchecked")
     private abstract static class AnnotatedMetaBuilder<B extends MetaCarrier.Builder<B>> extends MetaBuilder<B> {
         Annotations annotations;
 
-        public B setAnnotations(Annotations annotations) { this.annotations = annotations; return (B) this; }
-        Optional<Annotations> optAnnotations() { return Optional.ofNullable(annotations); }
+        public B setAnnotations(Annotations annotations) {
+            this.annotations = annotations;
+            return (B) this;
+        }
+
+        Optional<Annotations> optAnnotations() {
+            return Optional.ofNullable(annotations);
+        }
     }
 
     // ================================================================
@@ -222,9 +239,13 @@ public final class WildFlyMcpServerSPI implements McpServerSPI {
     private static final class TextContentBuilderImpl
             extends AnnotatedMetaBuilder<TextContent.Builder> implements TextContent.Builder {
         private final String text;
-        TextContentBuilderImpl(String text) { this.text = text; }
 
-        @Override public TextContent build() {
+        TextContentBuilderImpl(String text) {
+            this.text = text;
+        }
+
+        @Override
+        public TextContent build() {
             return new TextContentImpl(text, optAnnotations(), freezeMap(metadata));
         }
     }
@@ -233,9 +254,14 @@ public final class WildFlyMcpServerSPI implements McpServerSPI {
             extends AnnotatedMetaBuilder<AudioContent.Builder> implements AudioContent.Builder {
         private final byte[] data;
         private final String mimeType;
-        AudioContentBuilderImpl(byte[] data, String mimeType) { this.data = data; this.mimeType = mimeType; }
 
-        @Override public AudioContent build() {
+        AudioContentBuilderImpl(byte[] data, String mimeType) {
+            this.data = data;
+            this.mimeType = mimeType;
+        }
+
+        @Override
+        public AudioContent build() {
             return new AudioContentImpl(data, mimeType, optAnnotations(), freezeMap(metadata));
         }
     }
@@ -244,9 +270,14 @@ public final class WildFlyMcpServerSPI implements McpServerSPI {
             extends AnnotatedMetaBuilder<ImageContent.Builder> implements ImageContent.Builder {
         private final byte[] data;
         private final String mimeType;
-        ImageContentBuilderImpl(byte[] data, String mimeType) { this.data = data; this.mimeType = mimeType; }
 
-        @Override public ImageContent build() {
+        ImageContentBuilderImpl(byte[] data, String mimeType) {
+            this.data = data;
+            this.mimeType = mimeType;
+        }
+
+        @Override
+        public ImageContent build() {
             return new ImageContentImpl(data, mimeType, optAnnotations(), freezeMap(metadata));
         }
     }
@@ -254,11 +285,23 @@ public final class WildFlyMcpServerSPI implements McpServerSPI {
     private static final class EmbeddedResourceBuilderImpl
             extends AnnotatedMetaBuilder<EmbeddedResource.Builder> implements EmbeddedResource.Builder {
         private final ResourceContents resource;
-        EmbeddedResourceBuilderImpl(ResourceContents resource, String uri) { this.resource = resource; }
 
-        @Override public EmbeddedResource.Builder setMimeType(String mimeType) { return this; }
-        @Override public EmbeddedResource.Builder putResourceMeta(String k, Object v) { return this; }
-        @Override public EmbeddedResource build() {
+        EmbeddedResourceBuilderImpl(ResourceContents resource, String uri) {
+            this.resource = resource;
+        }
+
+        @Override
+        public EmbeddedResource.Builder setMimeType(String mimeType) {
+            return this;
+        }
+
+        @Override
+        public EmbeddedResource.Builder putResourceMeta(String k, Object v) {
+            return this;
+        }
+
+        @Override
+        public EmbeddedResource build() {
             return new EmbeddedResourceImpl(resource, optAnnotations(), freezeMap(metadata));
         }
     }
@@ -272,13 +315,39 @@ public final class WildFlyMcpServerSPI implements McpServerSPI {
         private String mimeType;
         private long size = -1;
         private boolean sizeSet = false;
-        ResourceLinkBuilderImpl(String name, String uri) { this.name = name; this.uri = uri; }
 
-        @Override public ResourceLink.Builder setTitle(String t) { this.title = t; return this; }
-        @Override public ResourceLink.Builder setDescription(String d) { this.description = d; return this; }
-        @Override public ResourceLink.Builder setMimeType(String m) { this.mimeType = m; return this; }
-        @Override public ResourceLink.Builder setSize(long s) { this.size = s; this.sizeSet = true; return this; }
-        @Override public ResourceLink build() {
+        ResourceLinkBuilderImpl(String name, String uri) {
+            this.name = name;
+            this.uri = uri;
+        }
+
+        @Override
+        public ResourceLink.Builder setTitle(String t) {
+            this.title = t;
+            return this;
+        }
+
+        @Override
+        public ResourceLink.Builder setDescription(String d) {
+            this.description = d;
+            return this;
+        }
+
+        @Override
+        public ResourceLink.Builder setMimeType(String m) {
+            this.mimeType = m;
+            return this;
+        }
+
+        @Override
+        public ResourceLink.Builder setSize(long s) {
+            this.size = s;
+            this.sizeSet = true;
+            return this;
+        }
+
+        @Override
+        public ResourceLink build() {
             return new ResourceLinkImpl(name, title, uri,
                     Optional.ofNullable(description), Optional.ofNullable(mimeType),
                     optAnnotations(), sizeSet ? OptionalLong.of(size) : OptionalLong.empty(),
@@ -291,13 +360,33 @@ public final class WildFlyMcpServerSPI implements McpServerSPI {
         private OptionalDouble priority = OptionalDouble.empty();
         private Instant lastModified;
 
-        @Override public Annotations.Builder setAudience(Role... roles) {
-            audience = new HashSet<>(); Collections.addAll(audience, roles); return this;
+        @Override
+        public Annotations.Builder setAudience(Role... roles) {
+            audience = new HashSet<>();
+            Collections.addAll(audience, roles);
+            return this;
         }
-        @Override public Annotations.Builder setAudience(Set<Role> roles) { audience = new HashSet<>(roles); return this; }
-        @Override public Annotations.Builder setPriority(double p) { this.priority = OptionalDouble.of(p); return this; }
-        @Override public Annotations.Builder setLastModified(Instant t) { this.lastModified = t; return this; }
-        @Override public Annotations build() {
+
+        @Override
+        public Annotations.Builder setAudience(Set<Role> roles) {
+            audience = new HashSet<>(roles);
+            return this;
+        }
+
+        @Override
+        public Annotations.Builder setPriority(double p) {
+            this.priority = OptionalDouble.of(p);
+            return this;
+        }
+
+        @Override
+        public Annotations.Builder setLastModified(Instant t) {
+            this.lastModified = t;
+            return this;
+        }
+
+        @Override
+        public Annotations build() {
             return new AnnotationsImpl(Optional.ofNullable(audience).map(Set::copyOf), priority, Optional.ofNullable(lastModified));
         }
     }
@@ -307,11 +396,20 @@ public final class WildFlyMcpServerSPI implements McpServerSPI {
         private String description;
         private final List<PromptMessage> messages = new ArrayList<>();
 
-        @Override public PromptResponse.Builder setDescription(String d) { this.description = d; return this; }
-        @Override public PromptResponse.Builder addMessage(Role role, ContentBlock content) {
-            messages.add(new PromptMessageImpl(role, content)); return this;
+        @Override
+        public PromptResponse.Builder setDescription(String d) {
+            this.description = d;
+            return this;
         }
-        @Override public PromptResponse build() {
+
+        @Override
+        public PromptResponse.Builder addMessage(Role role, ContentBlock content) {
+            messages.add(new PromptMessageImpl(role, content));
+            return this;
+        }
+
+        @Override
+        public PromptResponse build() {
             return new PromptResponseImpl(Optional.ofNullable(description), freezeList(messages), freezeMap(metadata));
         }
     }
@@ -321,10 +419,20 @@ public final class WildFlyMcpServerSPI implements McpServerSPI {
         private final String uri;
         private final String text;
         private String mimeType;
-        TextResourceContentsBuilderImpl(String uri, String text) { this.uri = uri; this.text = text; }
 
-        @Override public TextResourceContents.Builder setMimeType(String m) { this.mimeType = m; return this; }
-        @Override public TextResourceContents build() {
+        TextResourceContentsBuilderImpl(String uri, String text) {
+            this.uri = uri;
+            this.text = text;
+        }
+
+        @Override
+        public TextResourceContents.Builder setMimeType(String m) {
+            this.mimeType = m;
+            return this;
+        }
+
+        @Override
+        public TextResourceContents build() {
             return new TextResourceContentsImpl(uri, text, Optional.ofNullable(mimeType), freezeMap(metadata));
         }
     }
@@ -334,10 +442,20 @@ public final class WildFlyMcpServerSPI implements McpServerSPI {
         private final String uri;
         private final byte[] data;
         private String mimeType;
-        BlobResourceContentsBuilderImpl(String uri, byte[] data) { this.uri = uri; this.data = data; }
 
-        @Override public BlobResourceContents.Builder setMimeType(String m) { this.mimeType = m; return this; }
-        @Override public BlobResourceContents build() {
+        BlobResourceContentsBuilderImpl(String uri, byte[] data) {
+            this.uri = uri;
+            this.data = data;
+        }
+
+        @Override
+        public BlobResourceContents.Builder setMimeType(String m) {
+            this.mimeType = m;
+            return this;
+        }
+
+        @Override
+        public BlobResourceContents build() {
             return new BlobResourceContentsImpl(uri, data, Optional.ofNullable(mimeType), freezeMap(metadata));
         }
     }
@@ -346,8 +464,14 @@ public final class WildFlyMcpServerSPI implements McpServerSPI {
             extends MetaBuilder<ResourceResponse.Builder> implements ResourceResponse.Builder {
         private final List<ResourceContents> contents = new ArrayList<>();
 
-        @Override public ResourceResponse.Builder addContents(ResourceContents c) { this.contents.add(c); return this; }
-        @Override public ResourceResponse build() {
+        @Override
+        public ResourceResponse.Builder addContents(ResourceContents c) {
+            this.contents.add(c);
+            return this;
+        }
+
+        @Override
+        public ResourceResponse build() {
             return new ResourceResponseImpl(freezeList(contents), freezeMap(metadata));
         }
     }
@@ -358,11 +482,32 @@ public final class WildFlyMcpServerSPI implements McpServerSPI {
         private OptionalInt total = OptionalInt.empty();
         private Boolean hasMore;
 
-        @Override public CompletionResult.Builder addValue(String v) { values.add(v); return this; }
-        @Override public CompletionResult.Builder addValues(Collection<String> v) { this.values.addAll(v); return this; }
-        @Override public CompletionResult.Builder setTotal(int t) { this.total = OptionalInt.of(t); return this; }
-        @Override public CompletionResult.Builder setHasMore(Boolean h) { this.hasMore = h; return this; }
-        @Override public CompletionResult build() {
+        @Override
+        public CompletionResult.Builder addValue(String v) {
+            values.add(v);
+            return this;
+        }
+
+        @Override
+        public CompletionResult.Builder addValues(Collection<String> v) {
+            this.values.addAll(v);
+            return this;
+        }
+
+        @Override
+        public CompletionResult.Builder setTotal(int t) {
+            this.total = OptionalInt.of(t);
+            return this;
+        }
+
+        @Override
+        public CompletionResult.Builder setHasMore(Boolean h) {
+            this.hasMore = h;
+            return this;
+        }
+
+        @Override
+        public CompletionResult build() {
             return new CompletionResultImpl(freezeList(values), total, Optional.ofNullable(hasMore), freezeMap(metadata));
         }
     }
@@ -373,11 +518,32 @@ public final class WildFlyMcpServerSPI implements McpServerSPI {
         private Object structuredContent;
         private boolean isError;
 
-        @Override public ToolResponse.Builder addContent(ContentBlock b) { content.add(b); return this; }
-        @Override public ToolResponse.Builder addTextContent(String t) { content.add(TextContent.of(t)); return this; }
-        @Override public ToolResponse.Builder setStructuredContent(Object sc) { this.structuredContent = sc; return this; }
-        @Override public ToolResponse.Builder setError(boolean e) { this.isError = e; return this; }
-        @Override public ToolResponse build() {
+        @Override
+        public ToolResponse.Builder addContent(ContentBlock b) {
+            content.add(b);
+            return this;
+        }
+
+        @Override
+        public ToolResponse.Builder addTextContent(String t) {
+            content.add(TextContent.of(t));
+            return this;
+        }
+
+        @Override
+        public ToolResponse.Builder setStructuredContent(Object sc) {
+            this.structuredContent = sc;
+            return this;
+        }
+
+        @Override
+        public ToolResponse.Builder setError(boolean e) {
+            this.isError = e;
+            return this;
+        }
+
+        @Override
+        public ToolResponse build() {
             return new ToolResponseImpl(freezeList(content), Optional.ofNullable(structuredContent), isError, freezeMap(metadata));
         }
     }
@@ -387,13 +553,37 @@ public final class WildFlyMcpServerSPI implements McpServerSPI {
         private String mimeType;
         private final List<String> sizes = new ArrayList<>();
         private Icon.Theme theme;
-        IconBuilderImpl(String src) { this.src = src; }
 
-        @Override public Icon.Builder setMimeType(String m) { this.mimeType = m; return this; }
-        @Override public Icon.Builder addSize(int w, int h) { sizes.add(w + "x" + h); return this; }
-        @Override public Icon.Builder setAnySize() { sizes.add("any"); return this; }
-        @Override public Icon.Builder setTheme(Icon.Theme t) { this.theme = t; return this; }
-        @Override public Icon build() {
+        IconBuilderImpl(String src) {
+            this.src = src;
+        }
+
+        @Override
+        public Icon.Builder setMimeType(String m) {
+            this.mimeType = m;
+            return this;
+        }
+
+        @Override
+        public Icon.Builder addSize(int w, int h) {
+            sizes.add(w + "x" + h);
+            return this;
+        }
+
+        @Override
+        public Icon.Builder setAnySize() {
+            sizes.add("any");
+            return this;
+        }
+
+        @Override
+        public Icon.Builder setTheme(Icon.Theme t) {
+            this.theme = t;
+            return this;
+        }
+
+        @Override
+        public Icon build() {
             return new IconImpl(src, Optional.ofNullable(mimeType), freezeList(sizes), Optional.ofNullable(theme));
         }
     }
