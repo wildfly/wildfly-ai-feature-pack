@@ -19,6 +19,7 @@ import java.util.OptionalLong;
 import java.util.Set;
 
 import org.mcpjava.server.Icon;
+import org.mcpjava.server.MetaCarrier;
 import org.mcpjava.server.Role;
 import org.mcpjava.server.completion.CompletionResult;
 import org.mcpjava.server.content.Annotations;
@@ -187,232 +188,101 @@ public final class WildFlyMcpServerSPI implements McpServerSPI {
     }
 
     // ================================================================
+    //  Shared builder support
+    // ================================================================
+
+    private static Map<String, Object> freezeMap(Map<String, Object> map) {
+        return Collections.unmodifiableMap(new HashMap<>(map));
+    }
+
+    private static <E> List<E> freezeList(List<E> list) {
+        return Collections.unmodifiableList(new ArrayList<>(list));
+    }
+
+    @SuppressWarnings("unchecked")
+    private abstract static class MetaBuilder<B extends MetaCarrier.Builder<B>> implements MetaCarrier.Builder<B> {
+        final Map<String, Object> metadata = new HashMap<>();
+
+        @Override public B putMetadata(String key, Object value) { metadata.put(key, value); return (B) this; }
+        @Override public B setMetadata(Map<String, Object> m) { metadata.clear(); metadata.putAll(m); return (B) this; }
+    }
+
+    @SuppressWarnings("unchecked")
+    private abstract static class AnnotatedMetaBuilder<B extends MetaCarrier.Builder<B>> extends MetaBuilder<B> {
+        Annotations annotations;
+
+        public B setAnnotations(Annotations annotations) { this.annotations = annotations; return (B) this; }
+        Optional<Annotations> optAnnotations() { return Optional.ofNullable(annotations); }
+    }
+
+    // ================================================================
     //  Builder implementations
     // ================================================================
 
-    private static final class TextContentBuilderImpl implements TextContent.Builder {
+    private static final class TextContentBuilderImpl
+            extends AnnotatedMetaBuilder<TextContent.Builder> implements TextContent.Builder {
         private final String text;
-        private Annotations annotations;
-        private final Map<String, Object> metadata = new HashMap<>();
+        TextContentBuilderImpl(String text) { this.text = text; }
 
-        TextContentBuilderImpl(String text) {
-            this.text = text;
-        }
-
-        @Override
-        public TextContent.Builder setAnnotations(Annotations annotations) {
-            this.annotations = annotations;
-            return this;
-        }
-
-        @Override
-        public TextContent.Builder putMetadata(String key, Object value) {
-            metadata.put(key, value);
-            return this;
-        }
-
-        @Override
-        public TextContent.Builder setMetadata(Map<String, Object> metadata) {
-            this.metadata.clear();
-            this.metadata.putAll(metadata);
-            return this;
-        }
-
-        @Override
-        public TextContent build() {
-            return new TextContentImpl(text, Optional.ofNullable(annotations),
-                    Collections.unmodifiableMap(new HashMap<>(metadata)));
+        @Override public TextContent build() {
+            return new TextContentImpl(text, optAnnotations(), freezeMap(metadata));
         }
     }
 
-    private static final class AudioContentBuilderImpl implements AudioContent.Builder {
+    private static final class AudioContentBuilderImpl
+            extends AnnotatedMetaBuilder<AudioContent.Builder> implements AudioContent.Builder {
         private final byte[] data;
         private final String mimeType;
-        private Annotations annotations;
-        private final Map<String, Object> metadata = new HashMap<>();
+        AudioContentBuilderImpl(byte[] data, String mimeType) { this.data = data; this.mimeType = mimeType; }
 
-        AudioContentBuilderImpl(byte[] data, String mimeType) {
-            this.data = data;
-            this.mimeType = mimeType;
-        }
-
-        @Override
-        public AudioContent.Builder setAnnotations(Annotations annotations) {
-            this.annotations = annotations;
-            return this;
-        }
-
-        @Override
-        public AudioContent.Builder putMetadata(String key, Object value) {
-            metadata.put(key, value);
-            return this;
-        }
-
-        @Override
-        public AudioContent.Builder setMetadata(Map<String, Object> metadata) {
-            this.metadata.clear();
-            this.metadata.putAll(metadata);
-            return this;
-        }
-
-        @Override
-        public AudioContent build() {
-            return new AudioContentImpl(data, mimeType, Optional.ofNullable(annotations),
-                    Collections.unmodifiableMap(new HashMap<>(metadata)));
+        @Override public AudioContent build() {
+            return new AudioContentImpl(data, mimeType, optAnnotations(), freezeMap(metadata));
         }
     }
 
-    private static final class ImageContentBuilderImpl implements ImageContent.Builder {
+    private static final class ImageContentBuilderImpl
+            extends AnnotatedMetaBuilder<ImageContent.Builder> implements ImageContent.Builder {
         private final byte[] data;
         private final String mimeType;
-        private Annotations annotations;
-        private final Map<String, Object> metadata = new HashMap<>();
+        ImageContentBuilderImpl(byte[] data, String mimeType) { this.data = data; this.mimeType = mimeType; }
 
-        ImageContentBuilderImpl(byte[] data, String mimeType) {
-            this.data = data;
-            this.mimeType = mimeType;
-        }
-
-        @Override
-        public ImageContent.Builder setAnnotations(Annotations annotations) {
-            this.annotations = annotations;
-            return this;
-        }
-
-        @Override
-        public ImageContent.Builder putMetadata(String key, Object value) {
-            metadata.put(key, value);
-            return this;
-        }
-
-        @Override
-        public ImageContent.Builder setMetadata(Map<String, Object> metadata) {
-            this.metadata.clear();
-            this.metadata.putAll(metadata);
-            return this;
-        }
-
-        @Override
-        public ImageContent build() {
-            return new ImageContentImpl(data, mimeType, Optional.ofNullable(annotations),
-                    Collections.unmodifiableMap(new HashMap<>(metadata)));
+        @Override public ImageContent build() {
+            return new ImageContentImpl(data, mimeType, optAnnotations(), freezeMap(metadata));
         }
     }
 
-    private static final class EmbeddedResourceBuilderImpl implements EmbeddedResource.Builder {
-        private ResourceContents resource;
-        private Annotations annotations;
-        private String mimeType;
-        private final Map<String, Object> metadata = new HashMap<>();
+    private static final class EmbeddedResourceBuilderImpl
+            extends AnnotatedMetaBuilder<EmbeddedResource.Builder> implements EmbeddedResource.Builder {
+        private final ResourceContents resource;
+        EmbeddedResourceBuilderImpl(ResourceContents resource, String uri) { this.resource = resource; }
 
-        EmbeddedResourceBuilderImpl(ResourceContents resource, String uri) {
-            this.resource = resource;
-        }
-
-        @Override
-        public EmbeddedResource.Builder setAnnotations(Annotations annotations) {
-            this.annotations = annotations;
-            return this;
-        }
-
-        @Override
-        public EmbeddedResource.Builder setMimeType(String mimeType) {
-            this.mimeType = mimeType;
-            return this;
-        }
-
-        @Override
-        public EmbeddedResource.Builder putResourceMeta(String key, Object value) {
-            // resource-level metadata not tracked in this implementation
-            return this;
-        }
-
-        @Override
-        public EmbeddedResource.Builder putMetadata(String key, Object value) {
-            metadata.put(key, value);
-            return this;
-        }
-
-        @Override
-        public EmbeddedResource.Builder setMetadata(Map<String, Object> metadata) {
-            this.metadata.clear();
-            this.metadata.putAll(metadata);
-            return this;
-        }
-
-        @Override
-        public EmbeddedResource build() {
-            return new EmbeddedResourceImpl(resource, Optional.ofNullable(annotations),
-                    Collections.unmodifiableMap(new HashMap<>(metadata)));
+        @Override public EmbeddedResource.Builder setMimeType(String mimeType) { return this; }
+        @Override public EmbeddedResource.Builder putResourceMeta(String k, Object v) { return this; }
+        @Override public EmbeddedResource build() {
+            return new EmbeddedResourceImpl(resource, optAnnotations(), freezeMap(metadata));
         }
     }
 
-    private static final class ResourceLinkBuilderImpl implements ResourceLink.Builder {
+    private static final class ResourceLinkBuilderImpl
+            extends AnnotatedMetaBuilder<ResourceLink.Builder> implements ResourceLink.Builder {
         private final String name;
         private final String uri;
         private String title;
         private String description;
         private String mimeType;
-        private Annotations annotations;
         private long size = -1;
         private boolean sizeSet = false;
-        private final Map<String, Object> metadata = new HashMap<>();
+        ResourceLinkBuilderImpl(String name, String uri) { this.name = name; this.uri = uri; }
 
-        ResourceLinkBuilderImpl(String name, String uri) {
-            this.name = name;
-            this.uri = uri;
-        }
-
-        @Override
-        public ResourceLink.Builder setTitle(String title) {
-            this.title = title;
-            return this;
-        }
-
-        @Override
-        public ResourceLink.Builder setDescription(String description) {
-            this.description = description;
-            return this;
-        }
-
-        @Override
-        public ResourceLink.Builder setMimeType(String mimeType) {
-            this.mimeType = mimeType;
-            return this;
-        }
-
-        @Override
-        public ResourceLink.Builder setAnnotations(Annotations annotations) {
-            this.annotations = annotations;
-            return this;
-        }
-
-        @Override
-        public ResourceLink.Builder setSize(long size) {
-            this.size = size;
-            this.sizeSet = true;
-            return this;
-        }
-
-        @Override
-        public ResourceLink.Builder putMetadata(String key, Object value) {
-            metadata.put(key, value);
-            return this;
-        }
-
-        @Override
-        public ResourceLink.Builder setMetadata(Map<String, Object> metadata) {
-            this.metadata.clear();
-            this.metadata.putAll(metadata);
-            return this;
-        }
-
-        @Override
-        public ResourceLink build() {
+        @Override public ResourceLink.Builder setTitle(String t) { this.title = t; return this; }
+        @Override public ResourceLink.Builder setDescription(String d) { this.description = d; return this; }
+        @Override public ResourceLink.Builder setMimeType(String m) { this.mimeType = m; return this; }
+        @Override public ResourceLink.Builder setSize(long s) { this.size = s; this.sizeSet = true; return this; }
+        @Override public ResourceLink build() {
             return new ResourceLinkImpl(name, title, uri,
                     Optional.ofNullable(description), Optional.ofNullable(mimeType),
-                    Optional.ofNullable(annotations), sizeSet ? OptionalLong.of(size) : OptionalLong.empty(),
-                    Collections.unmodifiableMap(new HashMap<>(metadata)));
+                    optAnnotations(), sizeSet ? OptionalLong.of(size) : OptionalLong.empty(),
+                    freezeMap(metadata));
         }
     }
 
@@ -421,285 +291,94 @@ public final class WildFlyMcpServerSPI implements McpServerSPI {
         private OptionalDouble priority = OptionalDouble.empty();
         private Instant lastModified;
 
-        @Override
-        public Annotations.Builder setAudience(Role... roles) {
-            audience = new HashSet<>();
-            Collections.addAll(audience, roles);
-            return this;
+        @Override public Annotations.Builder setAudience(Role... roles) {
+            audience = new HashSet<>(); Collections.addAll(audience, roles); return this;
         }
-
-        @Override
-        public Annotations.Builder setAudience(Set<Role> roles) {
-            audience = new HashSet<>(roles);
-            return this;
-        }
-
-        @Override
-        public Annotations.Builder setPriority(double priority) {
-            this.priority = OptionalDouble.of(priority);
-            return this;
-        }
-
-        @Override
-        public Annotations.Builder setLastModified(Instant lastModified) {
-            this.lastModified = lastModified;
-            return this;
-        }
-
-        @Override
-        public Annotations build() {
-            return new AnnotationsImpl(
-                    Optional.ofNullable(audience).map(Set::copyOf),
-                    priority,
-                    Optional.ofNullable(lastModified));
+        @Override public Annotations.Builder setAudience(Set<Role> roles) { audience = new HashSet<>(roles); return this; }
+        @Override public Annotations.Builder setPriority(double p) { this.priority = OptionalDouble.of(p); return this; }
+        @Override public Annotations.Builder setLastModified(Instant t) { this.lastModified = t; return this; }
+        @Override public Annotations build() {
+            return new AnnotationsImpl(Optional.ofNullable(audience).map(Set::copyOf), priority, Optional.ofNullable(lastModified));
         }
     }
 
-    private static final class PromptResponseBuilderImpl implements PromptResponse.Builder {
+    private static final class PromptResponseBuilderImpl
+            extends MetaBuilder<PromptResponse.Builder> implements PromptResponse.Builder {
         private String description;
         private final List<PromptMessage> messages = new ArrayList<>();
-        private final Map<String, Object> metadata = new HashMap<>();
 
-        @Override
-        public PromptResponse.Builder setDescription(String description) {
-            this.description = description;
-            return this;
+        @Override public PromptResponse.Builder setDescription(String d) { this.description = d; return this; }
+        @Override public PromptResponse.Builder addMessage(Role role, ContentBlock content) {
+            messages.add(new PromptMessageImpl(role, content)); return this;
         }
-
-        @Override
-        public PromptResponse.Builder addMessage(Role role, ContentBlock content) {
-            messages.add(new PromptMessageImpl(role, content));
-            return this;
-        }
-
-        @Override
-        public PromptResponse.Builder putMetadata(String key, Object value) {
-            metadata.put(key, value);
-            return this;
-        }
-
-        @Override
-        public PromptResponse.Builder setMetadata(Map<String, Object> metadata) {
-            this.metadata.clear();
-            this.metadata.putAll(metadata);
-            return this;
-        }
-
-        @Override
-        public PromptResponse build() {
-            return new PromptResponseImpl(Optional.ofNullable(description),
-                    Collections.unmodifiableList(new ArrayList<>(messages)),
-                    Collections.unmodifiableMap(new HashMap<>(metadata)));
+        @Override public PromptResponse build() {
+            return new PromptResponseImpl(Optional.ofNullable(description), freezeList(messages), freezeMap(metadata));
         }
     }
 
-    private static final class TextResourceContentsBuilderImpl implements TextResourceContents.Builder {
+    private static final class TextResourceContentsBuilderImpl
+            extends MetaBuilder<TextResourceContents.Builder> implements TextResourceContents.Builder {
         private final String uri;
         private final String text;
         private String mimeType;
-        private final Map<String, Object> metadata = new HashMap<>();
+        TextResourceContentsBuilderImpl(String uri, String text) { this.uri = uri; this.text = text; }
 
-        TextResourceContentsBuilderImpl(String uri, String text) {
-            this.uri = uri;
-            this.text = text;
-        }
-
-        @Override
-        public TextResourceContents.Builder setMimeType(String mimeType) {
-            this.mimeType = mimeType;
-            return this;
-        }
-
-        @Override
-        public TextResourceContents.Builder putMetadata(String key, Object value) {
-            metadata.put(key, value);
-            return this;
-        }
-
-        @Override
-        public TextResourceContents.Builder setMetadata(Map<String, Object> metadata) {
-            this.metadata.clear();
-            this.metadata.putAll(metadata);
-            return this;
-        }
-
-        @Override
-        public TextResourceContents build() {
-            return new TextResourceContentsImpl(uri, text, Optional.ofNullable(mimeType),
-                    Collections.unmodifiableMap(new HashMap<>(metadata)));
+        @Override public TextResourceContents.Builder setMimeType(String m) { this.mimeType = m; return this; }
+        @Override public TextResourceContents build() {
+            return new TextResourceContentsImpl(uri, text, Optional.ofNullable(mimeType), freezeMap(metadata));
         }
     }
 
-    private static final class BlobResourceContentsBuilderImpl implements BlobResourceContents.Builder {
+    private static final class BlobResourceContentsBuilderImpl
+            extends MetaBuilder<BlobResourceContents.Builder> implements BlobResourceContents.Builder {
         private final String uri;
         private final byte[] data;
         private String mimeType;
-        private final Map<String, Object> metadata = new HashMap<>();
+        BlobResourceContentsBuilderImpl(String uri, byte[] data) { this.uri = uri; this.data = data; }
 
-        BlobResourceContentsBuilderImpl(String uri, byte[] data) {
-            this.uri = uri;
-            this.data = data;
-        }
-
-        @Override
-        public BlobResourceContents.Builder setMimeType(String mimeType) {
-            this.mimeType = mimeType;
-            return this;
-        }
-
-        @Override
-        public BlobResourceContents.Builder putMetadata(String key, Object value) {
-            metadata.put(key, value);
-            return this;
-        }
-
-        @Override
-        public BlobResourceContents.Builder setMetadata(Map<String, Object> metadata) {
-            this.metadata.clear();
-            this.metadata.putAll(metadata);
-            return this;
-        }
-
-        @Override
-        public BlobResourceContents build() {
-            return new BlobResourceContentsImpl(uri, data, Optional.ofNullable(mimeType),
-                    Collections.unmodifiableMap(new HashMap<>(metadata)));
+        @Override public BlobResourceContents.Builder setMimeType(String m) { this.mimeType = m; return this; }
+        @Override public BlobResourceContents build() {
+            return new BlobResourceContentsImpl(uri, data, Optional.ofNullable(mimeType), freezeMap(metadata));
         }
     }
 
-    private static final class ResourceResponseBuilderImpl implements ResourceResponse.Builder {
+    private static final class ResourceResponseBuilderImpl
+            extends MetaBuilder<ResourceResponse.Builder> implements ResourceResponse.Builder {
         private final List<ResourceContents> contents = new ArrayList<>();
-        private final Map<String, Object> metadata = new HashMap<>();
 
-        @Override
-        public ResourceResponse.Builder addContents(ResourceContents contents) {
-            this.contents.add(contents);
-            return this;
-        }
-
-        @Override
-        public ResourceResponse.Builder putMetadata(String key, Object value) {
-            metadata.put(key, value);
-            return this;
-        }
-
-        @Override
-        public ResourceResponse.Builder setMetadata(Map<String, Object> metadata) {
-            this.metadata.clear();
-            this.metadata.putAll(metadata);
-            return this;
-        }
-
-        @Override
-        public ResourceResponse build() {
-            return new ResourceResponseImpl(
-                    Collections.unmodifiableList(new ArrayList<>(contents)),
-                    Collections.unmodifiableMap(new HashMap<>(metadata)));
+        @Override public ResourceResponse.Builder addContents(ResourceContents c) { this.contents.add(c); return this; }
+        @Override public ResourceResponse build() {
+            return new ResourceResponseImpl(freezeList(contents), freezeMap(metadata));
         }
     }
 
-    private static final class CompletionResultBuilderImpl implements CompletionResult.Builder {
+    private static final class CompletionResultBuilderImpl
+            extends MetaBuilder<CompletionResult.Builder> implements CompletionResult.Builder {
         private final List<String> values = new ArrayList<>();
         private OptionalInt total = OptionalInt.empty();
         private Boolean hasMore;
-        private final Map<String, Object> metadata = new HashMap<>();
 
-        @Override
-        public CompletionResult.Builder addValue(String value) {
-            values.add(value);
-            return this;
-        }
-
-        @Override
-        public CompletionResult.Builder addValues(Collection<String> values) {
-            this.values.addAll(values);
-            return this;
-        }
-
-        @Override
-        public CompletionResult.Builder setTotal(int total) {
-            this.total = OptionalInt.of(total);
-            return this;
-        }
-
-        @Override
-        public CompletionResult.Builder setHasMore(Boolean hasMore) {
-            this.hasMore = hasMore;
-            return this;
-        }
-
-        @Override
-        public CompletionResult.Builder putMetadata(String key, Object value) {
-            metadata.put(key, value);
-            return this;
-        }
-
-        @Override
-        public CompletionResult.Builder setMetadata(Map<String, Object> metadata) {
-            this.metadata.clear();
-            this.metadata.putAll(metadata);
-            return this;
-        }
-
-        @Override
-        public CompletionResult build() {
-            return new CompletionResultImpl(
-                    Collections.unmodifiableList(new ArrayList<>(values)),
-                    total, Optional.ofNullable(hasMore),
-                    Collections.unmodifiableMap(new HashMap<>(metadata)));
+        @Override public CompletionResult.Builder addValue(String v) { values.add(v); return this; }
+        @Override public CompletionResult.Builder addValues(Collection<String> v) { this.values.addAll(v); return this; }
+        @Override public CompletionResult.Builder setTotal(int t) { this.total = OptionalInt.of(t); return this; }
+        @Override public CompletionResult.Builder setHasMore(Boolean h) { this.hasMore = h; return this; }
+        @Override public CompletionResult build() {
+            return new CompletionResultImpl(freezeList(values), total, Optional.ofNullable(hasMore), freezeMap(metadata));
         }
     }
 
-    private static final class ToolResponseBuilderImpl implements ToolResponse.Builder {
+    private static final class ToolResponseBuilderImpl
+            extends MetaBuilder<ToolResponse.Builder> implements ToolResponse.Builder {
         private final List<ContentBlock> content = new ArrayList<>();
         private Object structuredContent;
         private boolean isError;
-        private final Map<String, Object> metadata = new HashMap<>();
 
-        @Override
-        public ToolResponse.Builder addContent(ContentBlock block) {
-            content.add(block);
-            return this;
-        }
-
-        @Override
-        public ToolResponse.Builder addTextContent(String text) {
-            content.add(TextContent.of(text));
-            return this;
-        }
-
-        @Override
-        public ToolResponse.Builder setStructuredContent(Object structuredContent) {
-            this.structuredContent = structuredContent;
-            return this;
-        }
-
-        @Override
-        public ToolResponse.Builder setError(boolean isError) {
-            this.isError = isError;
-            return this;
-        }
-
-        @Override
-        public ToolResponse.Builder putMetadata(String key, Object value) {
-            metadata.put(key, value);
-            return this;
-        }
-
-        @Override
-        public ToolResponse.Builder setMetadata(Map<String, Object> metadata) {
-            this.metadata.clear();
-            this.metadata.putAll(metadata);
-            return this;
-        }
-
-        @Override
-        public ToolResponse build() {
-            return new ToolResponseImpl(
-                    Collections.unmodifiableList(new ArrayList<>(content)),
-                    Optional.ofNullable(structuredContent),
-                    isError,
-                    Collections.unmodifiableMap(new HashMap<>(metadata)));
+        @Override public ToolResponse.Builder addContent(ContentBlock b) { content.add(b); return this; }
+        @Override public ToolResponse.Builder addTextContent(String t) { content.add(TextContent.of(t)); return this; }
+        @Override public ToolResponse.Builder setStructuredContent(Object sc) { this.structuredContent = sc; return this; }
+        @Override public ToolResponse.Builder setError(boolean e) { this.isError = e; return this; }
+        @Override public ToolResponse build() {
+            return new ToolResponseImpl(freezeList(content), Optional.ofNullable(structuredContent), isError, freezeMap(metadata));
         }
     }
 
@@ -708,40 +387,14 @@ public final class WildFlyMcpServerSPI implements McpServerSPI {
         private String mimeType;
         private final List<String> sizes = new ArrayList<>();
         private Icon.Theme theme;
+        IconBuilderImpl(String src) { this.src = src; }
 
-        IconBuilderImpl(String src) {
-            this.src = src;
-        }
-
-        @Override
-        public Icon.Builder setMimeType(String mimeType) {
-            this.mimeType = mimeType;
-            return this;
-        }
-
-        @Override
-        public Icon.Builder addSize(int width, int height) {
-            sizes.add(width + "x" + height);
-            return this;
-        }
-
-        @Override
-        public Icon.Builder setAnySize() {
-            sizes.add("any");
-            return this;
-        }
-
-        @Override
-        public Icon.Builder setTheme(Icon.Theme theme) {
-            this.theme = theme;
-            return this;
-        }
-
-        @Override
-        public Icon build() {
-            return new IconImpl(src, Optional.ofNullable(mimeType),
-                    Collections.unmodifiableList(new ArrayList<>(sizes)),
-                    Optional.ofNullable(theme));
+        @Override public Icon.Builder setMimeType(String m) { this.mimeType = m; return this; }
+        @Override public Icon.Builder addSize(int w, int h) { sizes.add(w + "x" + h); return this; }
+        @Override public Icon.Builder setAnySize() { sizes.add("any"); return this; }
+        @Override public Icon.Builder setTheme(Icon.Theme t) { this.theme = t; return this; }
+        @Override public Icon build() {
+            return new IconImpl(src, Optional.ofNullable(mimeType), freezeList(sizes), Optional.ofNullable(theme));
         }
     }
 }
