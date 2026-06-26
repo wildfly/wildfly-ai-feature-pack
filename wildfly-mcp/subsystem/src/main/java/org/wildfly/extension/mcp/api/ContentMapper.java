@@ -179,6 +179,6 @@ public class ContentMapper {
         if (collection.isEmpty()) {
             return false;
         }
-        return targetType.isInstance(collection.iterator().next());
+        return collection.stream().allMatch(targetType::isInstance);
     }
 }

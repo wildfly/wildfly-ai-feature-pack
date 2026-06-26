@@ -70,12 +70,12 @@ public final class WildFlyMcpServerSPI implements McpServerSPI {
 
     @Override
     public EmbeddedResource.Builder textEmbeddedResourceBuilder(String text, String uri) {
-        return new EmbeddedResourceBuilderImpl(TextResourceContents.of(uri, text), uri);
+        return new EmbeddedResourceBuilderImpl(text, uri);
     }
 
     @Override
     public EmbeddedResource.Builder blobEmbeddedResourceBuilder(byte[] data, String uri) {
-        return new EmbeddedResourceBuilderImpl(BlobResourceContents.of(uri, data), uri);
+        return new EmbeddedResourceBuilderImpl(data, uri);
     }
 
     @Override
@@ -284,24 +284,44 @@ public final class WildFlyMcpServerSPI implements McpServerSPI {
 
     private static final class EmbeddedResourceBuilderImpl
             extends AnnotatedMetaBuilder<EmbeddedResource.Builder> implements EmbeddedResource.Builder {
-        private final ResourceContents resource;
+        private final String uri;
+        private final String text;
+        private final byte[] data;
+        private String mimeType;
+        private final Map<String, Object> resourceMeta = new HashMap<>();
 
-        EmbeddedResourceBuilderImpl(ResourceContents resource, String uri) {
-            this.resource = resource;
+        EmbeddedResourceBuilderImpl(String text, String uri) {
+            this.text = text;
+            this.data = null;
+            this.uri = uri;
+        }
+
+        EmbeddedResourceBuilderImpl(byte[] data, String uri) {
+            this.text = null;
+            this.data = data;
+            this.uri = uri;
         }
 
         @Override
         public EmbeddedResource.Builder setMimeType(String mimeType) {
+            this.mimeType = mimeType;
             return this;
         }
 
         @Override
         public EmbeddedResource.Builder putResourceMeta(String k, Object v) {
+            resourceMeta.put(k, v);
             return this;
         }
 
         @Override
         public EmbeddedResource build() {
+            final ResourceContents resource;
+            if (text != null) {
+                resource = new TextResourceContentsImpl(uri, text, Optional.ofNullable(mimeType), freezeMap(resourceMeta));
+            } else {
+                resource = new BlobResourceContentsImpl(uri, data, Optional.ofNullable(mimeType), freezeMap(resourceMeta));
+            }
             return new EmbeddedResourceImpl(resource, optAnnotations(), freezeMap(metadata));
         }
     }
