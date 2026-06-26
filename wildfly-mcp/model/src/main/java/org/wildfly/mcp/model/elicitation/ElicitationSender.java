@@ -5,23 +5,37 @@
 package org.wildfly.mcp.model.elicitation;
 
 /**
- * Injected into tool methods to allow pausing execution and requesting additional
- * user input from the MCP client.
+ * Allows MCP methods (tools, prompts, resources, resource templates) to pause
+ * execution and request additional user input from the MCP client.
  *
  * <p>The client must declare the {@code "elicitation"} capability during initialization.
- * Use {@link #isFormSupported()} or {@link #isUrlSupported()} ()}  to check before calling {@link #send}.</p>
+ * Use {@link #isFormSupported()} or {@link #isUrlSupported()} to check before calling {@link #send}.</p>
  *
- * <p>Example tool method signature:</p>
+ * <p>An {@code ElicitationSender} can be obtained either by CDI injection or as a
+ * tool method parameter:</p>
+ *
+ * <p><b>CDI injection (recommended):</b></p>
  * <pre>{@code
+ * @Inject
+ * ElicitationSender elicitationSender;
+ *
  * @Tool(description = "Creates a user account")
- * public String createAccount(String email, ElicitationSender elicitationSender) throws Exception {
- *     if (elicitation.isFormSupported()) {
+ * public String createAccount(String email) throws Exception {
+ *     if (elicitationSender.isFormSupported()) {
  *         Elicitation.FormBuilder form = Elicitation.formBuilder("Please confirm the account details");
  *         BooleanProperty confirm = form.addBoolean("confirm");
  *         Elicitation.Response response = elicitationSender.send(form.build());
  *         if (!response.isAccepted()) return "Cancelled";
  *     }
  *     // proceed...
+ * }
+ * }</pre>
+ *
+ * <p><b>Method parameter (only for tool invocation):</b></p>
+ * <pre>{@code
+ * @Tool(description = "Creates a user account")
+ * public String createAccount(String email, ElicitationSender elicitationSender) throws Exception {
+ *     // same usage as above
  * }
  * }</pre>
  */

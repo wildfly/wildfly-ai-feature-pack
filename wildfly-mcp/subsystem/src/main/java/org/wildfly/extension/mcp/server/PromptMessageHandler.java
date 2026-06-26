@@ -28,6 +28,7 @@ import static org.wildfly.extension.mcp.server.MCPServerUtils.sendInvocationFail
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.spi.CDI;
+import static org.wildfly.extension.mcp.server.MCPServerUtils.runWithCDIContext;
 import jakarta.json.Json;
 import jakarta.json.JsonArrayBuilder;
 import jakarta.json.JsonObject;
@@ -135,7 +136,7 @@ public class PromptMessageHandler {
         final ClassLoader prevCL = WildFlySecurityManager.getCurrentContextClassLoaderPrivileged();
         try {
             WildFlySecurityManager.setCurrentContextClassLoaderPrivileged(classLoader);
-            connection.task(executorService.submit(() -> {
+            connection.task(executorService.submit(() -> runWithCDIContext(connection, responder, () -> {
                 try {
                     MethodMetadata methodMetadata = metadata.method();
                     Class<?> clazz = classLoader.loadClass(methodMetadata.declaringClassName());
@@ -193,7 +194,7 @@ public class PromptMessageHandler {
                     ROOT_LOGGER.errorInvokingPrompt(ex, promptName);
                     sendInvocationFailureResult(id, ex, responder);
                 }
-            }));
+            })));
         } finally {
             WildFlySecurityManager.setCurrentContextClassLoaderPrivileged(prevCL);
         }
