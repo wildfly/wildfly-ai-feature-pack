@@ -25,6 +25,7 @@
         <version.maven.resources.plugin>3.5.0</version.maven.resources.plugin>
         <lgtm.image>mirror.gcr.io/grafana/otel-lgtm:0.17.1</lgtm.image>
         <ollama.image>mirror.gcr.io/ollama/ollama:0.24.0</ollama.image>
+        <version.testcontainers-keycloak>4.2.1</version.testcontainers-keycloak>
     </properties>
 
     <dependencyManagement>
@@ -53,6 +54,11 @@
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-lang3</artifactId>
                 <version>${version.commons-lang3}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.dasniko</groupId>
+                <artifactId>testcontainers-keycloak</artifactId>
+                <version>${version.testcontainers-keycloak}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

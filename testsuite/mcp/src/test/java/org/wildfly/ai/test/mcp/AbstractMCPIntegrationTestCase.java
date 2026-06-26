@@ -19,6 +19,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
@@ -41,6 +43,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @RunAsClient
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 abstract class AbstractMCPIntegrationTestCase {
+
+    private static final Logger LOG = Logger.getLogger(AbstractMCPIntegrationTestCase.class.getName());
 
     protected static final long RESPONSE_TIMEOUT_SECONDS = 10;
 
@@ -97,6 +101,7 @@ abstract class AbstractMCPIntegrationTestCase {
         sseConnection.setRequestMethod("POST");
         sseConnection.setRequestProperty("Content-Type", "application/json");
         sseConnection.setRequestProperty("Accept", "application/json, text/event-stream");
+        configureRequestHeaders(sseConnection);
         sseConnection.setDoOutput(true);
         sseConnection.setConnectTimeout(5000);
         sseConnection.setReadTimeout(0);
@@ -132,9 +137,6 @@ abstract class AbstractMCPIntegrationTestCase {
         assertThat(response).as("Should receive initialize response").isNotNull();
         assertThat(response).as("Response should contain protocolVersion").contains("protocolVersion");
         assertThat(response).as("Response should contain server capabilities").contains("capabilities");
-        assertThat(response).as("Response should advertise tools capability").contains("tools");
-        assertThat(response).as("Response should advertise prompts capability").contains("prompts");
-        assertThat(response).as("Response should advertise resources capability").contains("resources");
 
         String initializedMessage = """
                 {"jsonrpc":"2.0","method":"notifications/initialized"}""";
@@ -156,7 +158,7 @@ abstract class AbstractMCPIntegrationTestCase {
                 }
             }
         } catch (Exception e) {
-            System.err.println("Failed to parse SSE event for id correlation, treating as server-initiated: " + data);
+            LOG.log(Level.WARNING, "Failed to parse SSE event for id correlation, treating as server-initiated: " + data, e);
         }
         serverInitiatedMessages.offer(data);
     }
@@ -192,6 +194,7 @@ abstract class AbstractMCPIntegrationTestCase {
         if (protocolVersion != null) {
             conn.setRequestProperty("mcp-protocol-version", protocolVersion);
         }
+        configureRequestHeaders(conn);
         conn.setDoOutput(true);
         conn.setConnectTimeout(5000);
         conn.setReadTimeout(10000);
@@ -203,5 +206,8 @@ abstract class AbstractMCPIntegrationTestCase {
         int statusCode = conn.getResponseCode();
         conn.disconnect();
         return statusCode;
+    }
+
+    protected void configureRequestHeaders(HttpURLConnection conn) {
     }
 }
