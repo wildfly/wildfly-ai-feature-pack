@@ -32,6 +32,20 @@
                 </property>
             </configuration>
         </container>
+        <container qualifier="wildfly-managed-oidc">
+            <configuration>
+                <property name="jbossHome">${jboss.home.oidc:target/server-oidc}</property>
+                <property name="serverConfig">standalone-oidc.xml</property>
+                <property name="managementAddress">127.0.0.1</property>
+                <property name="managementPort">19990</property>
+                <property name="startupTimeoutInSeconds">120</property>
+                <property name="allowConnectingToRunningServer">false</property>
+                <property name="jbossArguments">--stability=experimental</property>
+                <property name="javaVmArguments">
+                    -Djboss.socket.binding.port-offset=10000
+                </property>
+            </configuration>
+        </container>
     </group>
 
 </arquillian>

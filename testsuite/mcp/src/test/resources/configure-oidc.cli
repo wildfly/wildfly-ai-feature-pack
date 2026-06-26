@@ -1,0 +1,4 @@
+embed-server --server-config=standalone-oidc.xml --stability=experimental
+# OIDC secure-deployment configuration is provided via WEB-INF/oidc.json
+# in the deployment archive, allowing dynamic Keycloak URL resolution.
+stop-embedded-server
