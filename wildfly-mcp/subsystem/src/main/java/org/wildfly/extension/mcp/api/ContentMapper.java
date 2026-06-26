@@ -4,6 +4,7 @@
  */
 package org.wildfly.extension.mcp.api;
 
+import static org.wildfly.extension.mcp.MCPLogger.ROOT_LOGGER;
 import static org.wildfly.extension.mcp.injection.MCPFieldNames.ANNOTATIONS;
 import static org.wildfly.extension.mcp.injection.MCPFieldNames.AUDIENCE;
 import static org.wildfly.extension.mcp.injection.MCPFieldNames.PRIORITY;
@@ -144,6 +145,8 @@ public class ContentMapper {
                 json.add("size", size.getAsLong());
             }
             addAnnotations(json, rl.annotations());
+        } else {
+            ROOT_LOGGER.warnUnhandledContentBlockType(block.getClass().getName());
         }
         return json;
     }

@@ -178,4 +178,8 @@ public interface MCPLogger extends BasicLogger {
     @LogMessage(level = WARN)
     @Message(id = 43, value = "OpenTelemetry MCP listener initialization failed; tracing and metrics are disabled")
     void openTelemtryListenerInitializationFailure(@Cause Throwable cause);
+
+    @Message(id = 44, value = "Unhandled content block type: %s")
+    @LogMessage(level = WARN)
+    void warnUnhandledContentBlockType(String className);
 }
