@@ -20,6 +20,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.mcpjava.server.completion.CompletionContext;
+import org.mcpjava.server.completion.CompletionResult;
 import org.wildfly.extension.mcp.api.MCPConnection;
 import org.wildfly.extension.mcp.api.Responder;
 import org.wildfly.extension.mcp.injection.WildFlyMCPRegistry;
@@ -154,39 +155,39 @@ public class CompletionHandler {
         return result;
     }
 
-    @SuppressWarnings("unchecked")
     private void sendCompletionResponse(String id, Object result, Responder responder) {
-        JsonArrayBuilder valuesArray = Json.createArrayBuilder();
-        int total = 0;
-        boolean hasMore = false;
-
-        if (result instanceof List<?> list) {
-            total = list.size();
-            hasMore = total > MAX_COMPLETION_VALUES;
-            int limit = Math.min(total, MAX_COMPLETION_VALUES);
-            for (int i = 0; i < limit; i++) {
-                valuesArray.add(list.get(i).toString());
+        final CompletionResult cr;
+        if (result instanceof CompletionResult completionResult) {
+            cr = completionResult;
+        } else if (result instanceof List<?> list) {
+            List<String> values = list.stream().map(Object::toString).toList();
+            if (values.size() > MAX_COMPLETION_VALUES) {
+                cr = CompletionResult.newResult(values.subList(0, MAX_COMPLETION_VALUES), values.size());
+            } else {
+                cr = CompletionResult.newCompleteResult(values);
             }
-        } else if (result instanceof String string) {
-            valuesArray.add(string);
-            total = 1;
+        } else if (result instanceof String s) {
+            cr = CompletionResult.newCompleteResult(List.of(s));
         } else if (result != null) {
-            valuesArray.add(result.toString());
-            total = 1;
+            cr = CompletionResult.newCompleteResult(List.of(result.toString()));
+        } else {
+            sendEmptyCompletion(id, responder);
+            return;
         }
-
-        JsonObjectBuilder completion = Json.createObjectBuilder()
-                .add("values", valuesArray)
-                .add("total", total)
-                .add("hasMore", hasMore);
-        responder.sendResult(id, Json.createObjectBuilder().add("completion", completion));
+        responder.sendResult(id, Json.createObjectBuilder().add("completion", serializeCompletionResult(cr)));
     }
 
     private void sendEmptyCompletion(String id, Responder responder) {
         responder.sendResult(id, Json.createObjectBuilder()
-                .add("completion", Json.createObjectBuilder()
-                        .add("values", Json.createArrayBuilder())
-                        .add("hasMore", false)
-                        .add("total", 0)));
+                .add("completion", serializeCompletionResult(CompletionResult.newCompleteResult(List.of()))));
+    }
+
+    private static JsonObjectBuilder serializeCompletionResult(CompletionResult cr) {
+        JsonArrayBuilder valuesArray = Json.createArrayBuilder();
+        cr.values().forEach(valuesArray::add);
+        JsonObjectBuilder completion = Json.createObjectBuilder().add("values", valuesArray);
+        cr.total().ifPresent(t -> completion.add("total", t));
+        cr.hasMore().ifPresent(h -> completion.add("hasMore", h));
+        return completion;
     }
 }
