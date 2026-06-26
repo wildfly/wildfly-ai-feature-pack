@@ -8,8 +8,8 @@ import java.util.List;
 
 import jakarta.inject.Inject;
 
-import org.mcp_java.server.prompts.Prompt;
-import org.mcp_java.server.prompts.PromptArg;
+import org.mcpjava.server.prompts.Prompt;
+import org.mcpjava.server.prompts.PromptArg;
 import org.wildfly.mcp.model.content.TextContent;
 import org.wildfly.mcp.model.elicitation.Elicitation;
 import org.wildfly.mcp.model.elicitation.ElicitationSender;

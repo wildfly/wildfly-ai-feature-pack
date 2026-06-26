@@ -6,8 +6,8 @@ package org.wildfly.ai.test.mcp;
 
 import jakarta.inject.Inject;
 
-import org.mcp_java.server.resources.ResourceTemplate;
-import org.mcp_java.server.resources.ResourceTemplateArg;
+import org.mcpjava.server.resources.ResourceTemplate;
+import org.mcpjava.server.resources.ResourceTemplateArg;
 import org.wildfly.mcp.model.elicitation.Elicitation;
 import org.wildfly.mcp.model.elicitation.ElicitationSender;
 import org.wildfly.mcp.model.resource.ResourceContents;

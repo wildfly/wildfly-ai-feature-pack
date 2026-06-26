@@ -6,7 +6,7 @@ package org.wildfly.ai.test.mcp;
 
 import jakarta.inject.Inject;
 
-import org.mcp_java.server.tools.Tool;
+import org.mcpjava.server.tools.Tool;
 import org.wildfly.mcp.model.elicitation.Elicitation;
 import org.wildfly.mcp.model.elicitation.ElicitationSender;
 
