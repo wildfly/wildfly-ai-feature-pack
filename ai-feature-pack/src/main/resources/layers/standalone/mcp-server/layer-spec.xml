@@ -8,8 +8,8 @@
         <prop name="org.wildfly.category" value="Model Context Protocol Server"/>
         <prop name="org.wildfly.description" value="Support for MCP Server"/>
         <prop name="org.wildfly.stability" value="experimental"/>
-        <prop name="org.wildfly.rule.class" value="org.mcpjava.*,org.wildfly.mcp.model.*"/>
-        <prop name="org.wildfly.rule.annotations" value="org.mcpjava.server.*,org.wildfly.mcp.model.*"/>
+        <prop name="org.wildfly.rule.class" value="org.mcpjava.*,org.wildfly.mcp.api.*"/>
+        <prop name="org.wildfly.rule.annotations" value="org.mcpjava.server.*,org.wildfly.mcp.api.*"/>
     </props>
     <dependencies>
         <layer name="cdi"/>

@@ -6,7 +6,7 @@ package org.wildfly.ai.test.mcp;
 
 import java.util.List;
 import java.util.stream.Stream;
-import org.wildfly.mcp.model.completion.CompleteContext;
+import org.mcpjava.server.completion.CompletionContext;
 import org.mcpjava.server.completion.CompleteArg;
 import org.mcpjava.server.completion.CompletePrompt;
 import org.mcpjava.server.completion.CompleteResourceTemplate;
@@ -27,8 +27,8 @@ public class TestMCPCompletion {
     @CompletePrompt("code-review")
     List<String> completeVersionWithContext(
             @CompleteArg(name = "version") String version,
-            CompleteContext context) {
-        String language = context.arguments().getOrDefault("language", "");
+            CompletionContext context) {
+        String language = context.getArgument("language").orElse("");
         return switch (language) {
             case "python" -> PYTHON_VERSIONS.stream()
                     .filter(v -> v.startsWith(version)).toList();

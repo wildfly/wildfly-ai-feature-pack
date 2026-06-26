@@ -4,15 +4,15 @@
  */
 package org.wildfly.ai.test.mcp;
 
-import java.util.List;
+import org.mcpjava.server.Role;
+import org.mcpjava.server.content.TextContent;
 import org.mcpjava.server.prompts.Prompt;
 import org.mcpjava.server.prompts.PromptArg;
+import org.mcpjava.server.prompts.PromptResponse;
 import org.mcpjava.server.resources.Resource;
+import org.mcpjava.server.resources.TextResourceContents;
 import org.mcpjava.server.tools.Tool;
 import org.mcpjava.server.tools.ToolArg;
-import org.wildfly.mcp.model.content.TextContent;
-import org.wildfly.mcp.model.prompt.PromptMessage;
-import org.wildfly.mcp.model.resource.ResourceContents;
 
 /**
  * MCP-annotated beans providing enough tools, prompts, and resources to
@@ -106,68 +106,68 @@ public class TestMCPPaginationFixtures {
     // ==================== Prompts (6 total) ====================
 
     @Prompt(name = "summarize", description = "Summarizes the provided text")
-    PromptMessage summarize(@PromptArg(description = "Text to summarize") String text) {
-        return PromptMessage.user(List.of(TextContent.of("Please summarize: " + text)));
+    PromptResponse summarize(@PromptArg(description = "Text to summarize") String text) {
+        return PromptResponse.of(Role.USER, TextContent.of("Please summarize: " + text));
     }
 
     @Prompt(name = "translate", description = "Translates text into a target language")
-    PromptMessage translate(
+    PromptResponse translate(
             @PromptArg(description = "Text to translate") String text,
             @PromptArg(description = "Target language") String language) {
-        return PromptMessage.user(List.of(TextContent.of("Translate '" + text + "' into " + language)));
+        return PromptResponse.of(Role.USER, TextContent.of("Translate '" + text + "' into " + language));
     }
 
     @Prompt(name = "classify", description = "Classifies text into categories")
-    PromptMessage classify(@PromptArg(description = "Text to classify") String text) {
-        return PromptMessage.user(List.of(TextContent.of("Classify the following: " + text)));
+    PromptResponse classify(@PromptArg(description = "Text to classify") String text) {
+        return PromptResponse.of(Role.USER, TextContent.of("Classify the following: " + text));
     }
 
     @Prompt(name = "analyze", description = "Analyzes text for sentiment and tone")
-    PromptMessage analyze(@PromptArg(description = "Text to analyze") String text) {
-        return PromptMessage.assistant(List.of(TextContent.of("Sentiment analysis of: " + text)));
+    PromptResponse analyze(@PromptArg(description = "Text to analyze") String text) {
+        return PromptResponse.of(Role.ASSISTANT, TextContent.of("Sentiment analysis of: " + text));
     }
 
     @Prompt(name = "compare", description = "Compares two items and highlights differences")
-    PromptMessage compare(
+    PromptResponse compare(
             @PromptArg(description = "First item") String first,
             @PromptArg(description = "Second item") String second) {
-        return PromptMessage.user(List.of(TextContent.of("Compare '" + first + "' with '" + second + "'")));
+        return PromptResponse.of(Role.USER, TextContent.of("Compare '" + first + "' with '" + second + "'"));
     }
 
     @Prompt(name = "explain", description = "Explains a concept in plain language")
-    PromptMessage explain(@PromptArg(description = "Concept to explain") String concept) {
-        return PromptMessage.assistant(List.of(TextContent.of("Here is a plain-language explanation of: " + concept)));
+    PromptResponse explain(@PromptArg(description = "Concept to explain") String concept) {
+        return PromptResponse.of(Role.ASSISTANT, TextContent.of("Here is a plain-language explanation of: " + concept));
     }
 
     // ==================== Resources (6 total) ====================
 
     @Resource(uri = "test://config", mimeType = "text/plain", name = "test-config")
-    ResourceContents config() {
-        return ResourceContents.text("test://config", "max-connections=100\ntimeout=30s\nretry-count=3");
+    TextResourceContents config() {
+        return TextResourceContents.of("test://config", "max-connections=100\ntimeout=30s\nretry-count=3");
     }
 
     @Resource(uri = "test://metrics", mimeType = "application/json", name = "test-metrics")
-    ResourceContents metrics() {
-        return ResourceContents.text("test://metrics", "{\"requests\":1000,\"errors\":5,\"latency_ms\":42}");
+    TextResourceContents metrics() {
+        return TextResourceContents.of("test://metrics", "{\"requests\":1000,\"errors\":5,\"latency_ms\":42}");
     }
 
     @Resource(uri = "test://health", mimeType = "application/json", name = "test-health")
-    ResourceContents health() {
-        return ResourceContents.text("test://health", "{\"status\":\"healthy\",\"uptime\":\"10d\"}");
+    TextResourceContents health() {
+        return TextResourceContents.of("test://health", "{\"status\":\"healthy\",\"uptime\":\"10d\"}");
     }
 
     @Resource(uri = "test://version", mimeType = "text/plain", name = "test-version")
-    ResourceContents version() {
-        return ResourceContents.text("test://version", "2.0.0");
+    TextResourceContents version() {
+        return TextResourceContents.of("test://version", "2.0.0");
     }
 
     @Resource(uri = "test://docs", mimeType = "text/plain", name = "test-docs")
-    ResourceContents docs() {
-        return ResourceContents.text("test://docs", "WildFly MCP Integration Test Documentation");
+    TextResourceContents docs() {
+        return TextResourceContents.of("test://docs", "WildFly MCP Integration Test Documentation");
     }
 
     @Resource(uri = "test://logs", mimeType = "text/plain", name = "test-logs")
-    ResourceContents logs() {
-        return ResourceContents.text("test://logs", "2025-01-01 INFO Server started\n2025-01-01 INFO Ready to serve");
+    TextResourceContents logs() {
+        return TextResourceContents.of("test://logs", "2025-01-01 INFO Server started\n2025-01-01 INFO Ready to serve");
     }
 }

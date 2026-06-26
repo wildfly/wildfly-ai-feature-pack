@@ -6,20 +6,22 @@ package org.wildfly.extension.mcp.api;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.util.Collection;
 import java.util.List;
 
 import org.junit.Test;
-import org.wildfly.mcp.model.Role;
-import org.wildfly.mcp.model.content.TextContent;
-import org.wildfly.mcp.model.prompt.PromptMessage;
+import org.mcpjava.server.Role;
+import org.mcpjava.server.content.TextContent;
+import org.mcpjava.server.prompts.PromptMessage;
+import org.mcpjava.server.prompts.PromptResponse;
 
 public class ContentMapperTestCase {
 
     @Test
     public void testSinglePromptMessage() {
-        PromptMessage input = PromptMessage.user(List.of(TextContent.of("Hello")));
+        PromptMessage input = PromptResponse.of(Role.USER, TextContent.of("Hello")).messages().get(0);
 
         Collection<? extends PromptMessage> result = ContentMapper.processResultAsPromptMessage(input);
 
@@ -27,13 +29,12 @@ public class ContentMapperTestCase {
         assertEquals(1, result.size());
         PromptMessage msg = result.iterator().next();
         assertEquals(Role.USER, msg.role());
-        assertEquals(1, msg.content().size());
-        assertEquals("text", msg.content().get(0).type());
+        assertTrue("Expected TextContent", msg.content() instanceof TextContent);
     }
 
     @Test
     public void testAssistantPromptMessage() {
-        PromptMessage input = PromptMessage.assistant(List.of(TextContent.of("Analysis")));
+        PromptMessage input = PromptResponse.of(Role.ASSISTANT, TextContent.of("Analysis")).messages().get(0);
 
         Collection<? extends PromptMessage> result = ContentMapper.processResultAsPromptMessage(input);
 
@@ -46,8 +47,8 @@ public class ContentMapperTestCase {
     @Test
     public void testCollectionOfPromptMessages() {
         List<PromptMessage> input = List.of(
-                PromptMessage.user(List.of(TextContent.of("Question"))),
-                PromptMessage.assistant(List.of(TextContent.of("Answer"))));
+                PromptResponse.of(Role.USER, TextContent.of("Question")).messages().get(0),
+                PromptResponse.of(Role.ASSISTANT, TextContent.of("Answer")).messages().get(0));
 
         Collection<? extends PromptMessage> result = ContentMapper.processResultAsPromptMessage(input);
 
@@ -58,8 +59,8 @@ public class ContentMapperTestCase {
     @Test
     public void testPromptMessageArray() {
         PromptMessage[] input = new PromptMessage[] {
-                PromptMessage.user(List.of(TextContent.of("Q1"))),
-                PromptMessage.user(List.of(TextContent.of("Q2")))
+                PromptResponse.of(Role.USER, TextContent.of("Q1")).messages().get(0),
+                PromptResponse.of(Role.USER, TextContent.of("Q2")).messages().get(0)
         };
 
         Collection<? extends PromptMessage> result = ContentMapper.processResultAsPromptMessage(input);
@@ -78,14 +79,13 @@ public class ContentMapperTestCase {
         assertEquals(1, result.size());
         PromptMessage msg = result.iterator().next();
         assertEquals(Role.USER, msg.role());
-        assertEquals(1, msg.content().size());
-        TextContent content = (TextContent) msg.content().get(0);
+        TextContent content = (TextContent) msg.content();
         assertEquals("plain text", content.text());
     }
 
     @Test
     public void testRoleValues() {
-        assertEquals("user", Role.USER.getValue());
-        assertEquals("assistant", Role.ASSISTANT.getValue());
+        assertEquals("user", Role.USER.name().toLowerCase());
+        assertEquals("assistant", Role.ASSISTANT.name().toLowerCase());
     }
 }

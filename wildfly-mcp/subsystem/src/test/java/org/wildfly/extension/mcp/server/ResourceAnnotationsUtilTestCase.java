@@ -11,24 +11,18 @@ import static org.junit.Assert.assertTrue;
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
+import java.util.Optional;
+import java.util.OptionalDouble;
+import java.util.Set;
 import org.junit.Test;
-import org.wildfly.mcp.model.Annotations;
-import org.wildfly.mcp.model.Role;
+import org.mcpjava.server.Role;
 
 public class ResourceAnnotationsUtilTestCase {
 
     @Test
-    public void testNullAnnotationsAddsNothing() {
+    public void testEmptyAnnotationsAddsNothing() {
         JsonObjectBuilder builder = Json.createObjectBuilder();
-        ResourceAnnotationsUtil.addAnnotations(builder, null);
-        JsonObject result = builder.build();
-        assertFalse(result.containsKey("annotations"));
-    }
-
-    @Test
-    public void testAnnotationsWithAllEmptyFieldsAddsNothing() {
-        JsonObjectBuilder builder = Json.createObjectBuilder();
-        ResourceAnnotationsUtil.addAnnotations(builder, Annotations.builder().build());
+        ResourceAnnotationsUtil.addAnnotations(builder, Optional.empty(), OptionalDouble.empty());
         JsonObject result = builder.build();
         assertFalse(result.containsKey("annotations"));
     }
@@ -36,7 +30,7 @@ public class ResourceAnnotationsUtilTestCase {
     @Test
     public void testAudienceOnly() {
         JsonObjectBuilder builder = Json.createObjectBuilder();
-        ResourceAnnotationsUtil.addAnnotations(builder, Annotations.builder().setAudience(Role.USER).build());
+        ResourceAnnotationsUtil.addAnnotations(builder, Optional.of(Set.of(Role.USER)), OptionalDouble.empty());
         JsonObject result = builder.build();
         assertTrue(result.containsKey("annotations"));
         JsonObject annotations = result.getJsonObject("annotations");
@@ -48,7 +42,7 @@ public class ResourceAnnotationsUtilTestCase {
     @Test
     public void testPriorityOnly() {
         JsonObjectBuilder builder = Json.createObjectBuilder();
-        ResourceAnnotationsUtil.addAnnotations(builder, Annotations.builder().setPriority(0.8).build());
+        ResourceAnnotationsUtil.addAnnotations(builder, Optional.empty(), OptionalDouble.of(0.8));
         JsonObject result = builder.build();
         assertTrue(result.containsKey("annotations"));
         JsonObject annotations = result.getJsonObject("annotations");
@@ -59,8 +53,7 @@ public class ResourceAnnotationsUtilTestCase {
     @Test
     public void testBothAudienceAndPriority() {
         JsonObjectBuilder builder = Json.createObjectBuilder();
-        ResourceAnnotationsUtil.addAnnotations(builder,
-                Annotations.builder().setAudience(Role.ASSISTANT).setPriority(0.5).build());
+        ResourceAnnotationsUtil.addAnnotations(builder, Optional.of(Set.of(Role.ASSISTANT)), OptionalDouble.of(0.5));
         JsonObject result = builder.build();
         assertTrue(result.containsKey("annotations"));
         JsonObject annotations = result.getJsonObject("annotations");

@@ -159,7 +159,7 @@
             </dependency>
             <dependency>
                 <groupId>${project.groupId}</groupId>
-                <artifactId>wildfly-mcp-model</artifactId>
+                <artifactId>wildfly-mcp-api</artifactId>
                 <version>${project.version}</version>
                 <exclusions>
                     <exclusion>

@@ -9,8 +9,8 @@ import java.util.List;
 import org.mcpjava.server.tools.Tool;
 import org.mcpjava.server.tools.ToolArg;
 import org.wildfly.extension.mcp.injection.tool.ToolSchemaGenerator;
-import org.wildfly.mcp.model.tool.InputSchema;
-import org.wildfly.mcp.model.tool.OutputSchema;
+import org.wildfly.mcp.api.tool.InputSchema;
+import org.wildfly.mcp.api.tool.OutputSchema;
 
 public class TestMCPSchemaGeneratorTool {
 

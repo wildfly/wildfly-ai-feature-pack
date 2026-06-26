@@ -4,21 +4,18 @@
  */
 package org.wildfly.extension.mcp.api;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.json.Json;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonObjectBuilder;
-import java.io.StringReader;
-import java.io.StringWriter;
 import java.util.Base64;
 import java.util.Collection;
 import org.junit.Test;
-import org.wildfly.mcp.model.content.AudioContent;
-import org.wildfly.mcp.model.content.ContentBlock;
+import org.mcpjava.server.content.AudioContent;
+import org.mcpjava.server.content.ContentBlock;
 
 /**
  * Verifies that AudioContent is correctly passed through ContentMapper
@@ -26,72 +23,57 @@ import org.wildfly.mcp.model.content.ContentBlock;
  */
 public class AudioContentSerializationTestCase {
 
-    private static final ObjectMapper MAPPER = new ObjectMapper();
-
     @Test
     public void testAudioContentPassesThroughContentMapper() {
-        AudioContent audio = AudioContent.of("dGVzdA==", "audio/wav");
+        byte[] data = Base64.getDecoder().decode("dGVzdA==");
+        AudioContent audio = AudioContent.of(data, "audio/wav");
 
         Collection<? extends ContentBlock> result = ContentMapper.processResultAsText(audio);
 
         assertNotNull(result);
         assertEquals(1, result.size());
         ContentBlock block = result.iterator().next();
-        assertEquals("audio", block.type());
+        assertTrue("Expected AudioContent instance", block instanceof AudioContent);
         AudioContent resultAudio = (AudioContent) block;
-        assertEquals("dGVzdA==", resultAudio.data());
+        assertArrayEquals(data, resultAudio.data());
         assertEquals("audio/wav", resultAudio.mimeType());
     }
 
     @Test
-    public void testAudioContentSerializesToCorrectMcpJson() throws Exception {
-        AudioContent audio = AudioContent.of(Base64.getEncoder().encodeToString("hello".getBytes()), "audio/mp3");
+    public void testAudioContentSerializesToCorrectMcpJson() {
+        byte[] data = "hello".getBytes();
+        AudioContent audio = AudioContent.of(data, "audio/mp3");
 
-        JsonObject json = serializeContentBlock(audio);
+        JsonObject json = ContentMapper.contentBlockToJson(audio).build();
 
         assertEquals("audio", json.getString("type"));
-        assertEquals(Base64.getEncoder().encodeToString("hello".getBytes()), json.getString("data"));
+        assertEquals(Base64.getEncoder().encodeToString(data), json.getString("data"));
         assertEquals("audio/mp3", json.getString("mimeType"));
-        // annotations must not appear when null
+        // annotations must not appear when empty
         assertFalse(json.containsKey("annotations"));
     }
 
     @Test
-    public void testAudioContentTypeIsNotText() throws Exception {
-        AudioContent audio = AudioContent.of("dGVzdA==", "audio/wav");
+    public void testAudioContentTypeIsNotText() {
+        byte[] data = Base64.getDecoder().decode("dGVzdA==");
+        AudioContent audio = AudioContent.of(data, "audio/wav");
 
-        JsonObject json = serializeContentBlock(audio);
+        JsonObject json = ContentMapper.contentBlockToJson(audio).build();
 
         assertFalse("audio content must not use type=text", "text".equals(json.getString("type")));
     }
 
     @Test
-    public void testAudioContentViaContentMapperSerializesCorrectly() throws Exception {
-        AudioContent audio = AudioContent.of("dGVzdA==", "audio/ogg");
+    public void testAudioContentViaContentMapperSerializesCorrectly() {
+        byte[] data = Base64.getDecoder().decode("dGVzdA==");
+        AudioContent audio = AudioContent.of(data, "audio/ogg");
 
         Collection<? extends ContentBlock> blocks = ContentMapper.processResultAsText(audio);
         ContentBlock block = blocks.iterator().next();
-        JsonObject json = serializeContentBlock(block);
+        JsonObject json = ContentMapper.contentBlockToJson(block).build();
 
         assertEquals("audio", json.getString("type"));
-        assertEquals("dGVzdA==", json.getString("data"));
+        assertEquals(Base64.getEncoder().encodeToString(data), json.getString("data"));
         assertEquals("audio/ogg", json.getString("mimeType"));
-    }
-
-    /** Mirrors the null-filtering serialization logic used in ToolMessageHandler. */
-    private static JsonObject serializeContentBlock(ContentBlock block) throws Exception {
-        try (StringWriter out = new StringWriter()) {
-            MAPPER.writeValue(out, block);
-            try (StringReader in = new StringReader(out.toString())) {
-                JsonObject raw = Json.createReader(in).readObject();
-                JsonObjectBuilder filtered = Json.createObjectBuilder();
-                for (String key : raw.keySet()) {
-                    if (!raw.isNull(key)) {
-                        filtered.add(key, raw.get(key));
-                    }
-                }
-                return filtered.build();
-            }
-        }
     }
 }
