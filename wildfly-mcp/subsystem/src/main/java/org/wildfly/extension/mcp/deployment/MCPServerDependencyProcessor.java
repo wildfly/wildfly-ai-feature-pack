@@ -357,9 +357,15 @@ public class MCPServerDependencyProcessor implements DeploymentUnitProcessor {
             return ResourceAnnotationValues.EMPTY;
         }
         AnnotationInstance nested = annotationsValue.asNested();
-        Optional<Set<Role>> audience = nested.value(AUDIENCE) != null
-                ? Optional.of(Set.of(Role.valueOf(nested.value(AUDIENCE).asEnum())))
-                : Optional.empty();
+        Optional<Set<Role>> audience = Optional.empty();
+        if (nested.value(AUDIENCE) != null) {
+            try {
+                audience = Optional.of(Set.of(Role.valueOf(nested.value(AUDIENCE).asEnum())));
+            } catch (IllegalArgumentException e) {
+                ROOT_LOGGER.debugf("Ignoring unrecognized audience role '%s' on %s",
+                        nested.value(AUDIENCE).asEnum(), annotation.target());
+            }
+        }
         OptionalDouble priority = nested.value(PRIORITY) != null
                 ? OptionalDouble.of(nested.value(PRIORITY).asDouble())
                 : OptionalDouble.empty();
