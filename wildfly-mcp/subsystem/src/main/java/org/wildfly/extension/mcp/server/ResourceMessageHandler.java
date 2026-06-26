@@ -49,6 +49,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import org.mcpjava.server.resources.BlobResourceContents;
 import org.mcpjava.server.resources.ResourceContents;
+import org.mcpjava.server.resources.ResourceResponse;
 import org.mcpjava.server.resources.TextResourceContents;
 import org.wildfly.extension.mcp.api.ContentMapper;
 import org.wildfly.extension.mcp.api.Cursor;
@@ -222,7 +223,12 @@ public class ResourceMessageHandler {
                         Method method = clazz.getMethod(methodMetadata.name(), methodMetadata.argumentTypes());
                         result = invokeViaReflection(method, prepareArguments(metadata.arguments(), args, mapper));
                     }
-                    Collection<? extends ResourceContents> contents = ContentMapper.processResultAsResourceText(methodMetadata.uri(), result);
+                    Collection<? extends ResourceContents> contents;
+                    if (result instanceof ResourceResponse rr) {
+                        contents = rr.getContents();
+                    } else {
+                        contents = ContentMapper.processResultAsResourceText(methodMetadata.uri(), result);
+                    }
                     JsonArrayBuilder jsonContent = Json.createArrayBuilder();
                     for (ResourceContents content : contents) {
                         JsonObjectBuilder contentResource = Json.createObjectBuilder();

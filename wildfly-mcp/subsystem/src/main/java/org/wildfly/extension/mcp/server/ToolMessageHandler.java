@@ -67,6 +67,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 import org.mcpjava.server.content.ContentBlock;
+import org.mcpjava.server.tools.ToolResponse;
 import org.wildfly.extension.mcp.injection.tool.ToolAnnotations;
 import org.mcpjava.server.progress.Progress;
 import org.mcpjava.server.progress.ProgressToken;
@@ -388,21 +389,39 @@ public class ToolMessageHandler {
                         Method method = clazz.getMethod(methodMetadata.name(), methodMetadata.argumentTypes());
                         result = invokeViaReflection(method, builtArgs);
                     }
-                    Collection<? extends ContentBlock> content = ContentMapper.processResultAsText(result);
                     JsonArrayBuilder contentArray = Json.createArrayBuilder();
-                    for (var contentBlock : content) {
-                        contentArray.add(ContentMapper.contentBlockToJson(contentBlock));
-                    }
                     JsonObjectBuilder builder = Json.createObjectBuilder();
-                    builder.add(CONTENT, contentArray);
-                    if (metadata.structuredContent() && result != null) {
-                        try (StringWriter out = new StringWriter()) {
-                            mapper.writeValue(out, result);
-                            builder.add(STRUCTURED_CONTENT, Json.createReader(new StringReader(out.toString())).readValue());
-                        } catch (IOException e) {
-                            ROOT_LOGGER.errorSerializingStructuredContent(e, toolName);
-                            sendInvocationFailureResult(id, e, responder);
-                            return;
+                    if (result instanceof ToolResponse tr) {
+                        for (var contentBlock : tr.content()) {
+                            contentArray.add(ContentMapper.contentBlockToJson(contentBlock));
+                        }
+                        builder.add(CONTENT, contentArray);
+                        if (tr.isError()) {
+                            builder.add("isError", true);
+                        }
+                        tr.structuredContent().ifPresent(sc -> {
+                            try (StringWriter out = new StringWriter()) {
+                                mapper.writeValue(out, sc);
+                                builder.add(STRUCTURED_CONTENT, Json.createReader(new StringReader(out.toString())).readValue());
+                            } catch (IOException e) {
+                                ROOT_LOGGER.errorSerializingStructuredContent(e, toolName);
+                            }
+                        });
+                    } else {
+                        Collection<? extends ContentBlock> content = ContentMapper.processResultAsText(result);
+                        for (var contentBlock : content) {
+                            contentArray.add(ContentMapper.contentBlockToJson(contentBlock));
+                        }
+                        builder.add(CONTENT, contentArray);
+                        if (metadata.structuredContent() && result != null) {
+                            try (StringWriter out = new StringWriter()) {
+                                mapper.writeValue(out, result);
+                                builder.add(STRUCTURED_CONTENT, Json.createReader(new StringReader(out.toString())).readValue());
+                            } catch (IOException e) {
+                                ROOT_LOGGER.errorSerializingStructuredContent(e, toolName);
+                                sendInvocationFailureResult(id, e, responder);
+                                return;
+                            }
                         }
                     }
                     responder.sendResult(id, builder);
