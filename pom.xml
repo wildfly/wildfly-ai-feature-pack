@@ -65,7 +65,7 @@
         <version.com.github.victools.jsonschema-generator>4.38.0</version.com.github.victools.jsonschema-generator>
         <version.com.google.apis>v1-rev20240821-2.0.0</version.com.google.apis>
         <version.com.knuddels.jtokkit>1.1.0</version.com.knuddels.jtokkit>
-        <version.com.microsoft.onnxruntime>1.22.0</version.com.microsoft.onnxruntime>
+        <version.com.microsoft.onnxruntime>1.26.0</version.com.microsoft.onnxruntime>
         <version.com.squareup.okhttp>5.1.0</version.com.squareup.okhttp>
         <version.com.squareup.okio-jvm>3.6.0</version.com.squareup.okio-jvm>
         <version.com.squareup.retrofit2>2.11.0</version.com.squareup.retrofit2>
