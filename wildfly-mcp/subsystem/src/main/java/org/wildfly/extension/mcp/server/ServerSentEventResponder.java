@@ -18,6 +18,7 @@ import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.wildfly.extension.mcp.api.InitializeRequest;
 import org.wildfly.extension.mcp.api.MCPConnection;
@@ -28,12 +29,12 @@ public class ServerSentEventResponder implements Responder, MCPConnection {
     private final JsonWriterFactory jsonWriterFactory = Json.createWriterFactory(Collections.emptyMap());
     private final ServerSentEventConnection connection;
     private final String id;
-    private int lastEventId = -1;
+    private final AtomicInteger lastEventId = new AtomicInteger(-1);
     private final AtomicReference<Status> status;
     private final AtomicReference<InitializeRequest> initializeRequest;
     private final PendingRequestRegistry pendingRequestRegistry = new PendingRequestRegistry();
     private volatile long lastActivity;
-    private Future future;
+    private final AtomicReference<Future<?>> future = new AtomicReference<>();
 
     ServerSentEventResponder(ServerSentEventConnection connection, String id) {
         this.connection = connection;
@@ -140,25 +141,21 @@ public class ServerSentEventResponder implements Responder, MCPConnection {
     }
 
     @Override
-    public void task(Future future) {
-        if (this.future != null && !this.future.isDone()) {
-            Future task = this.future;
-            this.future = null;
+    public void task(Future<?> future) {
+        Future<?> previous = this.future.getAndSet(future);
+        if (previous != null && !previous.isDone()) {
             ROOT_LOGGER.debug("Task not finished");
-            task.cancel(true);
+            previous.cancel(true);
         }
-        this.future = future;
     }
 
     @Override
     public void cancel() {
-        if (this.future != null && !this.future.isDone()) {
-            Future task = this.future;
-            this.future = null;
+        Future<?> currentFuture = this.future.getAndSet(null);
+        if (currentFuture != null && !currentFuture.isDone()) {
             ROOT_LOGGER.debug("Task cancelled");
-            task.cancel(true);
+            currentFuture.cancel(true);
         }
-
     }
 
     @Override
@@ -173,6 +170,6 @@ public class ServerSentEventResponder implements Responder, MCPConnection {
 
     @Override
     public int lastEventId() {
-        return lastEventId++;
+        return lastEventId.incrementAndGet();
     }
 }

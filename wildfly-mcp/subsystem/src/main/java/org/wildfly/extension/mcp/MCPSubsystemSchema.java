@@ -12,8 +12,6 @@ import static org.wildfly.extension.mcp.MCPSubsystemRegistrar.TIMEOUT;
 
 import java.util.List;
 import java.util.Set;
-import org.jboss.as.controller.PathElement;
-import org.jboss.as.controller.ResourceRegistration;
 import org.jboss.as.controller.SubsystemSchema;
 import org.jboss.as.controller.persistence.xml.ResourceXMLParticleFactory;
 import org.jboss.as.controller.persistence.xml.SubsystemResourceRegistrationXMLElement;
@@ -30,8 +28,6 @@ enum MCPSubsystemSchema implements SubsystemResourceXMLSchema<MCPSubsystemSchema
     VERSION_1_0(1, 0),
     VERSION_2_0(2, 0),;
     static final MCPSubsystemSchema CURRENT = VERSION_2_0;
-
-    private static final ResourceRegistration LEGACY_MCP_SERVER = ResourceRegistration.of(PathElement.pathElement("mcp-server"));
 
     private final VersionedNamespace<IntVersion, MCPSubsystemSchema> namespace;
     private final ResourceXMLParticleFactory factory = ResourceXMLParticleFactory.newInstance(this);

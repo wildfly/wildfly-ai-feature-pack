@@ -68,14 +68,4 @@ public interface Responder {
     default void sendError(String id, int code, String message) {
         send(newError(id, code,message));
     }
-
-    /**
-     * Sends a JSON-RPC internal error response ({@code -32603}).
-     *
-     * @param id the JSON-RPC request ID to correlate with the response
-     */
-    default void sendInternalError(String id) {
-        sendError(id, JsonRPC.INTERNAL_ERROR, "Internal error");
-    }
-
 }

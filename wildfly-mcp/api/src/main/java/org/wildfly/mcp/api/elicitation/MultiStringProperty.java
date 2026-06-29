@@ -8,6 +8,8 @@ import jakarta.json.Json;
 import jakarta.json.JsonArrayBuilder;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
+import static org.wildfly.mcp.api._private.MCPApiLogger.ROOT_LOGGER;
+
 import java.util.List;
 import java.util.Objects;
 
@@ -30,10 +32,11 @@ public final class MultiStringProperty implements ElicitationProperty<List<Strin
     private List<String> defaultValue;
 
     public MultiStringProperty(String name, List<String> enumValues) {
+        Objects.requireNonNull(name, ROOT_LOGGER.parameterMustNotBeNull("name"));
         this.name = name;
-        Objects.requireNonNull(enumValues, "enumValues must not be null");
+        Objects.requireNonNull(enumValues, ROOT_LOGGER.parameterMustNotBeNull("enumValues"));
         if (enumValues.isEmpty()) {
-            throw new IllegalArgumentException("enumValues must not be empty");
+            throw ROOT_LOGGER.parameterMustNotBeEmpty("enumValues");
         }
         this.enumValues = List.copyOf(enumValues);
     }
@@ -59,9 +62,9 @@ public final class MultiStringProperty implements ElicitationProperty<List<Strin
     }
 
     public MultiStringProperty enumTitles(List<String> enumTitles) {
-        Objects.requireNonNull(enumTitles, "enumTitles must not be null");
+        Objects.requireNonNull(enumTitles, ROOT_LOGGER.parameterMustNotBeNull("enumTitles"));
         if (enumTitles.size() != enumValues.size()) {
-            throw new IllegalArgumentException("enumTitles must have the same length as enumValues");
+            throw ROOT_LOGGER.parameterMustHaveSameSize("enumTitles", "enumValues");
         }
         this.enumTitles = List.copyOf(enumTitles);
         return this;

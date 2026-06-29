@@ -43,6 +43,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -62,11 +63,16 @@ import org.wildfly.security.manager.WildFlySecurityManager;
 
 public class ResourceTemplateMessageHandler {
 
+    private static final Pattern PARAM_PATTERN = Pattern.compile("\\{([^}]+)}");
+
     private final WildFlyMCPRegistry registry;
     private final ObjectMapper mapper;
     private final ClassLoader classLoader;
     private final ExecutorService executorService;
     private final int pageSize;
+    private final Map<String, CompiledTemplate> templateCache = new ConcurrentHashMap<>();
+
+    private record CompiledTemplate(List<String> paramNames, Pattern valuePattern) {}
 
     ResourceTemplateMessageHandler(WildFlyMCPRegistry registry, ClassLoader classLoader, ExecutorService executorService, int pageSize) {
         this.registry = registry;
@@ -144,7 +150,7 @@ public class ResourceTemplateMessageHandler {
                             }
                         } catch (Throwable ex) {
                             ROOT_LOGGER.errorInvokingResourceTemplate(ex, resourceUri);
-                            responder.sendError(id, INTERNAL_ERROR, ex.getMessage());
+                            responder.sendError(id, INTERNAL_ERROR, "Internal error");
                             return;
                         }
                     } else {
@@ -180,7 +186,7 @@ public class ResourceTemplateMessageHandler {
                     MCPException.sendError(e, id, responder);
                 } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException | SecurityException | ClassNotFoundException | InstantiationException | IllegalArgumentException ex) {
                     ROOT_LOGGER.errorInvokingResourceTemplate(ex, resourceUri);
-                    responder.sendError(id, INTERNAL_ERROR, ex.getMessage());
+                    responder.sendError(id, INTERNAL_ERROR, "Internal error");
                 }
             })));
         } finally {
@@ -189,21 +195,21 @@ public class ResourceTemplateMessageHandler {
     }
 
     private Map<String, JsonValue> extractTemplateArguments(String uriTemplate, String uri) {
+        CompiledTemplate compiled = templateCache.computeIfAbsent(uriTemplate, t -> {
+            Matcher paramMatcher = PARAM_PATTERN.matcher(t);
+            List<String> paramNames = new ArrayList<>();
+            while (paramMatcher.find()) {
+                paramNames.add(paramMatcher.group(1));
+            }
+            String regex = t.replaceAll("\\{[^}]+}", "([^/]+)");
+            return new CompiledTemplate(List.copyOf(paramNames), Pattern.compile(regex));
+        });
         Map<String, JsonValue> args = new HashMap<>();
-        // Extract parameter names from template
-        Pattern paramPattern = Pattern.compile("\\{([^}]+)}");
-        Matcher paramMatcher = paramPattern.matcher(uriTemplate);
-        java.util.List<String> paramNames = new ArrayList<>();
-        while (paramMatcher.find()) {
-            paramNames.add(paramMatcher.group(1));
-        }
-        // Build regex from template to extract values
-        String regex = uriTemplate.replaceAll("\\{[^}]+}", "([^/]+)");
-        Matcher valueMatcher = Pattern.compile(regex).matcher(uri);
+        Matcher valueMatcher = compiled.valuePattern().matcher(uri);
         if (valueMatcher.matches()) {
+            List<String> paramNames = compiled.paramNames();
             for (int i = 0; i < paramNames.size() && i < valueMatcher.groupCount(); i++) {
-                String value = valueMatcher.group(i + 1);
-                args.put(paramNames.get(i), Json.createValue(value));
+                args.put(paramNames.get(i), Json.createValue(valueMatcher.group(i + 1)));
             }
         }
         return args;

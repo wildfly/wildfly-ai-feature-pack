@@ -4,6 +4,10 @@
  */
 package org.wildfly.mcp.api.elicitation;
 
+import static org.wildfly.mcp.api._private.MCPApiLogger.ROOT_LOGGER;
+
+import java.util.Objects;
+
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
@@ -23,6 +27,7 @@ public final class NumberProperty implements ElicitationProperty<Double> {
     private Double defaultValue;
 
     public NumberProperty(String name) {
+        Objects.requireNonNull(name, ROOT_LOGGER.parameterMustNotBeNull("name"));
         this.name = name;
     }
 
@@ -48,11 +53,13 @@ public final class NumberProperty implements ElicitationProperty<Double> {
 
     public NumberProperty min(double min) {
         this.min = min;
+        RangeValidation.validateMinMax(this.min, this.max);
         return this;
     }
 
     public NumberProperty max(double max) {
         this.max = max;
+        RangeValidation.validateMinMax(this.min, this.max);
         return this;
     }
 

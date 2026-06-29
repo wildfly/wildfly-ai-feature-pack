@@ -58,9 +58,5 @@ public record MCPFeatureMetadata(Kind kind, String name, MethodMetadata method, 
         RESOURCE_TEMPLATE,
         PROMPT_COMPLETE,
         RESOURCE_TEMPLATE_COMPLETE;
-
-        public boolean requiresUri() {
-            return this == RESOURCE || this == RESOURCE_TEMPLATE;
-        }
     }
 }

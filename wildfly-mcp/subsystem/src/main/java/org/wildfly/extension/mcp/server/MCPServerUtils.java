@@ -164,9 +164,7 @@ final class MCPServerUtils {
      * for reporting invocation errors back to the model.
      */
     static void sendInvocationFailureResult(String id, Throwable cause, Responder responder) {
-        String message = cause != null && cause.getMessage() != null
-                ? cause.getMessage()
-                : (cause != null ? cause.getClass().getName() : "Unknown error");
+        String message = cause instanceof MCPException ? cause.getMessage() : "Invocation failed";
         JsonObjectBuilder builder = Json.createObjectBuilder();
         builder.add(CONTENT, Json.createArrayBuilder()
                 .add(Json.createObjectBuilder()

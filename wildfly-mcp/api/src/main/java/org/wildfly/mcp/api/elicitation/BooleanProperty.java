@@ -4,6 +4,10 @@
  */
 package org.wildfly.mcp.api.elicitation;
 
+import static org.wildfly.mcp.api._private.MCPApiLogger.ROOT_LOGGER;
+
+import java.util.Objects;
+
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
@@ -21,6 +25,7 @@ public final class BooleanProperty implements ElicitationProperty<Boolean> {
     private Boolean defaultValue;
 
     public BooleanProperty(String name) {
+        Objects.requireNonNull(name, ROOT_LOGGER.parameterMustNotBeNull("name"));
         this.name = name;
     }
 

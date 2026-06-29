@@ -31,6 +31,7 @@ public final class EnumProperty implements ElicitationProperty<String> {
     private String defaultValue;
 
     public EnumProperty(String name, List<String> enumValues) {
+        Objects.requireNonNull(name, ROOT_LOGGER.parameterMustNotBeNull("name"));
         this.name = name;
         Objects.requireNonNull(enumValues, ROOT_LOGGER.parameterMustNotBeNull("enumValues"));
         if (enumValues.isEmpty()) {
