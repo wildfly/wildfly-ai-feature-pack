@@ -35,6 +35,7 @@ import jakarta.json.JsonValue;
 import java.lang.invoke.MethodHandle;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Base64;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -44,7 +45,10 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.wildfly.mcp.model.resource.ResourceContents;
+import org.mcpjava.server.resources.BlobResourceContents;
+import org.mcpjava.server.resources.ResourceContents;
+import org.mcpjava.server.resources.ResourceResponse;
+import org.mcpjava.server.resources.TextResourceContents;
 import org.wildfly.extension.mcp.api.ContentMapper;
 import org.wildfly.extension.mcp.api.Cursor;
 import org.wildfly.extension.mcp.api.MCPConnection;
@@ -90,7 +94,7 @@ public class ResourceTemplateMessageHandler {
             if (metadata.title() != null) {
                 template.add("title", metadata.title());
             }
-            ResourceAnnotationsUtil.addAnnotations(template, metadata.annotations());
+            ResourceAnnotationsUtil.addAnnotations(template, metadata.audience(), metadata.priority());
             templates.add(template);
         }
         JsonObjectBuilder resultBuilder = Json.createObjectBuilder().add(RESOURCE_TEMPLATES, templates);
@@ -146,19 +150,24 @@ public class ResourceTemplateMessageHandler {
                         Method method = clazz.getMethod(methodMetadata.name(), methodMetadata.argumentTypes());
                         result = invokeViaReflection(method, prepareArguments(metadata.arguments(), args, mapper));
                     }
-                    Collection<? extends ResourceContents> contents = ContentMapper.processResultAsResourceText(resourceUri, result);
+                    Collection<? extends ResourceContents> contents;
+                    if (result instanceof ResourceResponse rr) {
+                        contents = rr.getContents();
+                    } else {
+                        contents = ContentMapper.processResultAsResourceText(resourceUri, result);
+                    }
                     JsonArrayBuilder jsonContent = Json.createArrayBuilder();
                     for (ResourceContents content : contents) {
                         JsonObjectBuilder contentResource = Json.createObjectBuilder();
                         contentResource.add(URI, content.uri());
-                        String mimeType = content.mimeType() != null ? content.mimeType() : methodMetadata.mimeType();
+                        String mimeType = content.mimeType().orElse(methodMetadata.mimeType());
                         if (mimeType != null && !mimeType.isEmpty()) {
                             contentResource.add(MIME_TYPE, mimeType);
                         }
-                        if (content.isBlob()) {
-                            contentResource.add(BLOB, content.blob());
-                        } else {
-                            contentResource.add(TEXT, content.text());
+                        if (content instanceof BlobResourceContents brc) {
+                            contentResource.add(BLOB, Base64.getEncoder().encodeToString(brc.blob()));
+                        } else if (content instanceof TextResourceContents trc) {
+                            contentResource.add(TEXT, trc.text());
                         }
                         jsonContent.add(contentResource);
                     }

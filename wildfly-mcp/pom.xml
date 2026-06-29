@@ -19,7 +19,7 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>model</module>
+        <module>api</module>
         <module>injection</module>
         <module>subsystem</module>
     </modules>

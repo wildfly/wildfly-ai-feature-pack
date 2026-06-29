@@ -27,6 +27,8 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalDouble;
+import java.util.Set;
 import org.jboss.as.server.deployment.Attachments;
 import org.jboss.as.server.deployment.DeploymentPhaseContext;
 import org.jboss.as.server.deployment.DeploymentUnit;
@@ -47,12 +49,11 @@ import org.wildfly.extension.mcp.injection.WildFlyMCPRegistry;
 import org.wildfly.extension.mcp.injection.tool.ArgumentMetadata;
 import org.wildfly.extension.mcp.injection.tool.MCPFeatureMetadata;
 import org.wildfly.extension.mcp.injection.tool.MethodMetadata;
-import org.wildfly.mcp.model.Annotations;
-import org.wildfly.mcp.model.Role;
-import org.wildfly.mcp.model.tool.InputSchema;
-import org.wildfly.mcp.model.tool.OutputSchema;
-import org.wildfly.mcp.model.tool.ToolAnnotations;
-import org.wildfly.mcp.model.elicitation.ElicitationSender;
+import org.mcpjava.server.Role;
+import org.wildfly.extension.mcp.injection.tool.ToolAnnotations;
+import org.wildfly.mcp.api.tool.InputSchema;
+import org.wildfly.mcp.api.tool.OutputSchema;
+import org.wildfly.mcp.api.elicitation.ElicitationSender;
 import org.mcpjava.server.progress.Progress;
 import org.mcpjava.server.tools.Tool;
 import org.mcpjava.server.tools.ToolArg;
@@ -64,7 +65,7 @@ import org.mcpjava.server.resources.ResourceTemplateArg;
 import org.mcpjava.server.completion.CompletePrompt;
 import org.mcpjava.server.completion.CompleteResourceTemplate;
 import org.mcpjava.server.completion.CompleteArg;
-import org.wildfly.mcp.model.completion.CompleteContext;
+import org.mcpjava.server.completion.CompletionContext;
 
 public class MCPServerDependencyProcessor implements DeploymentUnitProcessor {
 
@@ -126,7 +127,7 @@ public class MCPServerDependencyProcessor implements DeploymentUnitProcessor {
 
     private static final DotName ELICITATION_SENDER = DotName.createSimple(ElicitationSender.class);
     private static final DotName PROGRESS = DotName.createSimple(Progress.class);
-    private static final DotName COMPLETE_CONTEXT = DotName.createSimple(CompleteContext.class);
+    private static final DotName COMPLETE_CONTEXT = DotName.createSimple(CompletionContext.class);
     private static final DotName INPUT_SCHEMA = DotName.createSimple(InputSchema.class);
     private static final DotName OUTPUT_SCHEMA = DotName.createSimple(OutputSchema.class);
     private static final String GENERATOR = "generator";
@@ -234,8 +235,8 @@ public class MCPServerDependencyProcessor implements DeploymentUnitProcessor {
                 title = null;
             }
             int size = annotation.value(SIZE) != null ? annotation.value(SIZE).asInt() : -1;
-            Annotations resourceAnnotations = extractAnnotations(annotation);
             MethodInfo info = annotation.target().asMethod();
+            ResourceAnnotationValues resourceAnnotations = extractResourceAnnotations(annotation);
             ROOT_LOGGER.debugf("Resource detected on class %s with method %s", info.declaringClass(), info.name());
             MCPFeatureMetadata metadata = new MCPFeatureMetadata(MCPFeatureMetadata.Kind.RESOURCE,
                     name,
@@ -247,7 +248,7 @@ public class MCPServerDependencyProcessor implements DeploymentUnitProcessor {
                             List.of(),
                             info.declaringClass().toString(),
                             annotation.target().asMethod().returnType().name().toString()),
-                    title, size, resourceAnnotations
+                    title, size, resourceAnnotations.audience(), resourceAnnotations.priority()
             );
             registry.addResource(uri, metadata);
         }
@@ -267,9 +268,9 @@ public class MCPServerDependencyProcessor implements DeploymentUnitProcessor {
             if (title != null && title.isEmpty()) {
                 title = null;
             }
-            Annotations resourceAnnotations = extractAnnotations(annotation);
             MethodInfo info = annotation.target().asMethod();
             List<ArgumentMetadata> arguments = buildArguments(info, resourceTemplateArg);
+            ResourceAnnotationValues resourceAnnotations = extractResourceAnnotations(annotation);
             ROOT_LOGGER.debugf("ResourceTemplate detected on class %s with method %s with the following annotated parameters %s", info.declaringClass(), info.name(), arguments);
             MCPFeatureMetadata metadata = new MCPFeatureMetadata(MCPFeatureMetadata.Kind.RESOURCE_TEMPLATE,
                     name,
@@ -281,7 +282,7 @@ public class MCPServerDependencyProcessor implements DeploymentUnitProcessor {
                             arguments,
                             info.declaringClass().toString(),
                             annotation.target().asMethod().returnType().name().toString()),
-                    title, -1, resourceAnnotations
+                    title, -1, resourceAnnotations.audience(), resourceAnnotations.priority()
             );
             registry.addResourceTemplate(uriTemplate, metadata);
         }
@@ -312,7 +313,7 @@ public class MCPServerDependencyProcessor implements DeploymentUnitProcessor {
             for (MethodParameterInfo param : info.parameters()) {
                 DotName paramTypeName = param.type().name();
                 if (COMPLETE_CONTEXT.equals(paramTypeName)) {
-                    arguments.add(new ArgumentMetadata(param.name(), "", false, CompleteContext.class));
+                    arguments.add(new ArgumentMetadata(param.name(), "", false, CompletionContext.class));
                 } else {
                     AnnotationInstance completeArgAnnotation = param.annotation(completeArgDotName);
                     if (completeArgAnnotation != null) {
@@ -346,20 +347,29 @@ public class MCPServerDependencyProcessor implements DeploymentUnitProcessor {
         return annotation.value(name) == null ? null : annotation.value(name).asBoolean();
     }
 
-    private Annotations extractAnnotations(AnnotationInstance annotation) {
+    private record ResourceAnnotationValues(Optional<Set<Role>> audience, OptionalDouble priority) {
+        static final ResourceAnnotationValues EMPTY = new ResourceAnnotationValues(Optional.empty(), OptionalDouble.empty());
+    }
+
+    private ResourceAnnotationValues extractResourceAnnotations(AnnotationInstance annotation) {
         AnnotationValue annotationsValue = annotation.value(ANNOTATIONS);
         if (annotationsValue == null) {
-            return null;
+            return ResourceAnnotationValues.EMPTY;
         }
         AnnotationInstance nested = annotationsValue.asNested();
-        Annotations.Builder builder = Annotations.builder();
+        Optional<Set<Role>> audience = Optional.empty();
         if (nested.value(AUDIENCE) != null) {
-            builder.setAudience(Role.fromValue(nested.value(AUDIENCE).asEnum().toLowerCase()));
+            try {
+                audience = Optional.of(Set.of(Role.valueOf(nested.value(AUDIENCE).asEnum())));
+            } catch (IllegalArgumentException e) {
+                ROOT_LOGGER.debugf("Ignoring unrecognized audience role '%s' on %s",
+                        nested.value(AUDIENCE).asEnum(), annotation.target());
+            }
         }
-        if (nested.value(PRIORITY) != null) {
-            builder.setPriority(nested.value(PRIORITY).asDouble());
-        }
-        return builder.build();
+        OptionalDouble priority = nested.value(PRIORITY) != null
+                ? OptionalDouble.of(nested.value(PRIORITY).asDouble())
+                : OptionalDouble.empty();
+        return new ResourceAnnotationValues(audience, priority);
     }
 
     private List<ArgumentMetadata> buildArguments(MethodInfo info, DotName argAnnotation) {

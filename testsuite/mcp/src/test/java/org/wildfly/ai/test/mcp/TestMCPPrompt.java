@@ -4,21 +4,21 @@
  */
 package org.wildfly.ai.test.mcp;
 
-import java.util.List;
+import org.mcpjava.server.Role;
+import org.mcpjava.server.content.TextContent;
 import org.mcpjava.server.prompts.Prompt;
 import org.mcpjava.server.prompts.PromptArg;
-import org.wildfly.mcp.model.content.TextContent;
-import org.wildfly.mcp.model.prompt.PromptMessage;
+import org.mcpjava.server.prompts.PromptResponse;
 
 public class TestMCPPrompt {
 
     @Prompt(name = "greeting", description = "Generates a greeting message")
-    PromptMessage greeting(@PromptArg(description = "Name of the person to greet") String name) {
-        return PromptMessage.user(List.of(TextContent.of("Hello, " + name + "! How can I help you today?")));
+    PromptResponse greeting(@PromptArg(description = "Name of the person to greet") String name) {
+        return PromptResponse.of(Role.USER, TextContent.of("Hello, " + name + "! How can I help you today?"));
     }
 
     @Prompt(name = "assistant-reply", description = "Generates an assistant reply")
-    PromptMessage assistantReply(@PromptArg(description = "Topic to reply about") String topic) {
-        return PromptMessage.assistant(List.of(TextContent.of("Here is my analysis of " + topic)));
+    PromptResponse assistantReply(@PromptArg(description = "Topic to reply about") String topic) {
+        return PromptResponse.of(Role.ASSISTANT, TextContent.of("Here is my analysis of " + topic));
     }
 }

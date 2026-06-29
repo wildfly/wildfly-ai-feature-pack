@@ -19,7 +19,8 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import org.wildfly.mcp.model.completion.CompleteContext;
+import org.mcpjava.server.completion.CompletionContext;
+import org.mcpjava.server.completion.CompletionResult;
 import org.wildfly.extension.mcp.api.MCPConnection;
 import org.wildfly.extension.mcp.api.Responder;
 import org.wildfly.extension.mcp.injection.WildFlyMCPRegistry;
@@ -30,6 +31,12 @@ import org.wildfly.extension.mcp.injection.tool.MCPResource;
 import org.wildfly.security.manager.WildFlySecurityManager;
 
 public class CompletionHandler {
+
+    /**
+     * Completion must return at most 100 values as specified
+     * in <a href="https://modelcontextprotocol.io/specification/2025-11-25/server/utilities/completion#completeresult">CompleteResult</a>.
+     */
+    private static final int MAX_COMPLETION_VALUES = 100;
 
     private final WildFlyMCPRegistry registry;
     private final ClassLoader classLoader;
@@ -139,7 +146,7 @@ public class CompletionHandler {
         for (int i = 0; i < argDefs.size(); i++) {
             ArgumentMetadata arg = argDefs.get(i);
             if (arg.type() instanceof Class<?> clazz
-                    && CompleteContext.class.isAssignableFrom(clazz)) {
+                    && CompletionContext.class.isAssignableFrom(clazz)) {
                 result[i] = new CompleteContextImpl(contextArguments);
             } else {
                 result[i] = argumentValue;
@@ -148,47 +155,39 @@ public class CompletionHandler {
         return result;
     }
 
-    @SuppressWarnings("unchecked")
     private void sendCompletionResponse(String id, Object result, Responder responder) {
-        JsonArrayBuilder valuesArray = Json.createArrayBuilder();
-        Integer total = null;
-        Boolean hasMore = false;
-
-        if (result instanceof org.wildfly.mcp.model.completion.CompleteResult completeResult) {
-            for (String value : completeResult.completion().values()) {
-                valuesArray.add(value);
-            }
-            total = completeResult.completion().total();
-            hasMore = completeResult.completion().hasMore();
+        final CompletionResult cr;
+        if (result instanceof CompletionResult completionResult) {
+            cr = completionResult;
         } else if (result instanceof List<?> list) {
-            for (Object item : list) {
-                valuesArray.add(item.toString());
+            List<String> values = list.stream().map(Object::toString).toList();
+            if (values.size() > MAX_COMPLETION_VALUES) {
+                cr = CompletionResult.newResult(values.subList(0, MAX_COMPLETION_VALUES), values.size());
+            } else {
+                cr = CompletionResult.newCompleteResult(values);
             }
-            total = list.size();
-        } else if (result instanceof String string) {
-            valuesArray.add(string);
-            total = 1;
+        } else if (result instanceof String s) {
+            cr = CompletionResult.newCompleteResult(List.of(s));
         } else if (result != null) {
-            valuesArray.add(result.toString());
-            total = 1;
+            cr = CompletionResult.newCompleteResult(List.of(result.toString()));
+        } else {
+            sendEmptyCompletion(id, responder);
+            return;
         }
-
-        JsonObjectBuilder completion = Json.createObjectBuilder()
-                .add("values", valuesArray);
-        if (total != null) {
-            completion.add("total", total);
-        }
-        if (hasMore != null) {
-            completion.add("hasMore", hasMore);
-        }
-        responder.sendResult(id, Json.createObjectBuilder().add("completion", completion));
+        responder.sendResult(id, Json.createObjectBuilder().add("completion", serializeCompletionResult(cr)));
     }
 
     private void sendEmptyCompletion(String id, Responder responder) {
         responder.sendResult(id, Json.createObjectBuilder()
-                .add("completion", Json.createObjectBuilder()
-                        .add("values", Json.createArrayBuilder())
-                        .add("hasMore", false)
-                        .add("total", 0)));
+                .add("completion", serializeCompletionResult(CompletionResult.newCompleteResult(List.of()))));
+    }
+
+    private static JsonObjectBuilder serializeCompletionResult(CompletionResult cr) {
+        JsonArrayBuilder valuesArray = Json.createArrayBuilder();
+        cr.values().forEach(valuesArray::add);
+        JsonObjectBuilder completion = Json.createObjectBuilder().add("values", valuesArray);
+        cr.total().ifPresent(t -> completion.add("total", t));
+        cr.hasMore().ifPresent(h -> completion.add("hasMore", h));
+        return completion;
     }
 }

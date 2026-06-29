@@ -20,7 +20,7 @@ import org.junit.Test;
 import org.wildfly.extension.mcp.api.ClientCapability;
 import org.wildfly.extension.mcp.api.Implementation;
 import org.wildfly.extension.mcp.api.InitializeRequest;
-import org.wildfly.mcp.model.elicitation.Elicitation;
+import org.wildfly.mcp.api.elicitation.Elicitation;
 
 public class ElicitationSenderImplTestCase {
 
