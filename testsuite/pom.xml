@@ -20,11 +20,14 @@
         <version.wildfly.arquillian>5.1.0.Final</version.wildfly.arquillian>
         <version.maven.surefire>3.5.5</version.maven.surefire>
         <version.testcontainers>2.0.5</version.testcontainers>
+        <version.logback-classic>1.5.18</version.logback-classic>
         <version.commons-lang3>3.20.0</version.commons-lang3>
         <version.hamcrest>3.0</version.hamcrest>
         <version.maven.resources.plugin>3.5.0</version.maven.resources.plugin>
+        <keycloack.image>quay.io/keycloak/keycloak:26.6.3</keycloack.image>
         <lgtm.image>mirror.gcr.io/grafana/otel-lgtm:0.17.1</lgtm.image>
         <ollama.image>mirror.gcr.io/ollama/ollama:0.24.0</ollama.image>
+        <version.testcontainers-keycloak>4.2.1</version.testcontainers-keycloak>
     </properties>
 
     <dependencyManagement>
@@ -53,6 +56,18 @@
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-lang3</artifactId>
                 <version>${version.commons-lang3}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.dasniko</groupId>
+                <artifactId>testcontainers-keycloak</artifactId>
+                <version>${version.testcontainers-keycloak}</version>
+            </dependency>
+        <!-- Logback for Testcontainers logging (logback-test.xml) -->
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-classic</artifactId>
+                <version>${version.logback-classic}</version>
+                <scope>test</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>

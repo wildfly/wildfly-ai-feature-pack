@@ -48,7 +48,7 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- Shared test utilities (container lifecycle, LGTM management) -->
+        <!-- Shared test utilities (container lifecycle, Keycloak management) -->
         <dependency>
             <groupId>org.wildfly.generative-ai</groupId>
             <artifactId>wildfly-ai-testsuite-common</artifactId>
@@ -62,7 +62,6 @@
             <artifactId>testcontainers-junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
-
 
         <!-- AssertJ for fluent assertions -->
         <dependency>
@@ -102,7 +101,7 @@
             <artifactId>parsson</artifactId>
             <scope>test</scope>
         </dependency>
- 
+
         <!-- JAX-RS API for test REST endpoints -->
         <dependency>
             <groupId>jakarta.ws.rs</groupId>
@@ -135,6 +134,12 @@
             <scope>provided</scope>
         </dependency>
 
+        <!-- Logback for Testcontainers logging (logback-test.xml) -->
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -145,6 +150,7 @@
                 <includes>
                     <include>provisioning.xml</include>
                     <include>provisioning-otel.xml</include>
+                    <include>provisioning-oidc.xml</include>
                 </includes>
             </testResource>
             <testResource>
@@ -153,6 +159,7 @@
                 <excludes>
                     <exclude>provisioning.xml</exclude>
                     <exclude>provisioning-otel.xml</exclude>
+                    <exclude>provisioning-oidc.xml</exclude>
                 </excludes>
             </testResource>
         </testResources>
@@ -203,6 +210,22 @@
                         <configuration>
                             <stability>experimental</stability>
                             <provisioning-file>${project.build.testOutputDirectory}/provisioning.xml</provisioning-file>
+                            <galleon-options>
+                                <jboss-fork-embedded>true</jboss-fork-embedded>
+                            </galleon-options>
+                        </configuration>
+                    </execution>
+                    <!-- Provision OIDC-enabled server for authentication tests -->
+                    <execution>
+                        <id>provision-server-oidc</id>
+                        <phase>process-test-resources</phase>
+                        <goals>
+                            <goal>provision</goal>
+                        </goals>
+                        <configuration>
+                            <provisioning-file>${project.build.testOutputDirectory}/provisioning-oidc.xml</provisioning-file>
+                            <provisioningDir>${project.build.directory}/server-oidc</provisioningDir>
+                            <stability>experimental</stability>
                             <galleon-options>
                                 <jboss-fork-embedded>true</jboss-fork-embedded>
                             </galleon-options>
