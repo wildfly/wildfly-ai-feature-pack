@@ -39,6 +39,19 @@ public class TestMCPInjectedProgress {
         return "Completed " + steps + " steps";
     }
 
+    @Tool(name = "progress-injected-notification-test", description = "Tests individual progress notifications via CDI-injected Progress")
+    String progressNotificationTest() {
+        if (progress.token().isPresent()) {
+            progress.notificationBuilder()
+                    .setProgress(50)
+                    .setTotal(100)
+                    .setMessage("Halfway done")
+                    .build()
+                    .sendAndForget();
+        }
+        return "Done";
+    }
+
     @Tool(name = "progress-injected-no-token", description = "Tests injected progress when no token is provided")
     String progressNoToken() {
         return progress.token().isPresent() ? "has-token" : "no-token";

@@ -9,6 +9,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.io.StringReader;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import jakarta.json.Json;
 import jakarta.json.JsonArray;
@@ -19,9 +20,14 @@ import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.EmptyAsset;
 import org.jboss.shrinkwrap.api.spec.WebArchive;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
- * Integration tests for MCP progress notifications, including CDI-injected Progress.
+ * Integration tests for MCP progress notifications.
+ *
+ * <p>Tool-based tests are parameterized to run against both method-parameter injection
+ * ({@link TestMCPProgressTool}) and CDI injection ({@link TestMCPInjectedProgress}).</p>
  */
 public class ProgressIntegrationTestCase extends AbstractMCPIntegrationTestCase {
 
@@ -36,31 +42,59 @@ public class ProgressIntegrationTestCase extends AbstractMCPIntegrationTestCase 
                 .addAsWebInfResource(EmptyAsset.INSTANCE, "beans.xml");
     }
 
-    // ==================== Method Parameter Progress (tools only) ====================
+    // ==================== Method sources ====================
 
-    @Test
-    public void testProgressToolListedWithoutProgressParam() throws Exception {
-        String response = sendAndReceive("tools/list", null);
-        assertThat(response).as("Should list the progress-test tool").contains("progress-test");
-        assertThat(response).as("Progress must not appear in inputSchema").doesNotContain("\"Progress\"");
-        assertThat(response).as("Progress must not appear as property name").doesNotContain("\"progress\"");
+    static Stream<String> progressTrackerToolNames() {
+        return Stream.of("progress-test", "progress-injected-test");
     }
 
-    @Test
-    public void testProgressNotificationsSent() throws Exception {
+    static Stream<String> progressNotificationToolNames() {
+        return Stream.of("progress-notification-test", "progress-injected-notification-test");
+    }
+
+    static Stream<String> progressNoTokenToolNames() {
+        return Stream.of("progress-no-token", "progress-injected-no-token");
+    }
+
+    // ==================== Progress tool schema ====================
+
+    @ParameterizedTest
+    @MethodSource("progressTrackerToolNames")
+    public void testProgressToolListedWithoutProgressParam(String toolName) throws Exception {
+        String response = sendAndReceive("tools/list", null);
+        assertThat(response).as("Should list the %s tool", toolName).contains(toolName);
+
+        JsonObject json = Json.createReader(new StringReader(response)).readObject();
+        JsonArray tools = json.getJsonObject("result").getJsonArray("tools");
+        JsonObject progressTool = null;
+        for (int i = 0; i < tools.size(); i++) {
+            if (toolName.equals(tools.getJsonObject(i).getString("name"))) {
+                progressTool = tools.getJsonObject(i);
+                break;
+            }
+        }
+        assertThat(progressTool).as("%s tool should be present", toolName).isNotNull();
+        JsonObject properties = progressTool.getJsonObject("inputSchema").getJsonObject("properties");
+        assertThat(properties.containsKey("progress")).as("%s should not expose progress in schema", toolName).isFalse();
+    }
+
+    // ==================== Progress tracker notifications ====================
+
+    @ParameterizedTest
+    @MethodSource("progressTrackerToolNames")
+    public void testProgressNotificationsSent(String toolName) throws Exception {
         long toolCallId = nextId.getAndIncrement();
         CompletableFuture<String> toolResultFuture = new CompletableFuture<>();
         pendingResponses.put(toolCallId, toolResultFuture);
 
         String toolCallMessage = """
-                {"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":"progress-test","arguments":{"steps":"3"},"_meta":{"progressToken":"test-token-1"}}}"""
-                .formatted(toolCallId);
+                {"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":"%s","arguments":{"steps":"3"},"_meta":{"progressToken":"test-token-1"}}}"""
+                .formatted(toolCallId, toolName);
         postToStreamable(toolCallMessage);
 
         String toolResult = toolResultFuture.get(RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
         assertThat(toolResult).as("Should receive tool result").isNotNull();
 
-        // Collect all progress notifications (3 steps expected)
         for (int i = 0; i < 3; i++) {
             String notification = serverInitiatedMessages.poll(RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
             assertThat(notification).as("Should receive progress notification " + (i + 1)).isNotNull();
@@ -81,15 +115,18 @@ public class ProgressIntegrationTestCase extends AbstractMCPIntegrationTestCase 
         assertThat(content.getJsonObject(0).getString("text")).as("Should confirm completion").contains("Completed 3 steps");
     }
 
-    @Test
-    public void testProgressNotificationWithMessage() throws Exception {
+    // ==================== Progress notification with message ====================
+
+    @ParameterizedTest
+    @MethodSource("progressNotificationToolNames")
+    public void testProgressNotificationWithMessage(String toolName) throws Exception {
         long toolCallId = nextId.getAndIncrement();
         CompletableFuture<String> toolResultFuture = new CompletableFuture<>();
         pendingResponses.put(toolCallId, toolResultFuture);
 
         String toolCallMessage = """
-                {"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":"progress-notification-test","arguments":{},"_meta":{"progressToken":"msg-token"}}}"""
-                .formatted(toolCallId);
+                {"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":"%s","arguments":{},"_meta":{"progressToken":"msg-token"}}}"""
+                .formatted(toolCallId, toolName);
         postToStreamable(toolCallMessage);
 
         String toolResult = toolResultFuture.get(RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
@@ -108,10 +145,13 @@ public class ProgressIntegrationTestCase extends AbstractMCPIntegrationTestCase 
         assertThat(params.getString("message")).as("Message should be present").isEqualTo("Halfway done");
     }
 
-    @Test
-    public void testProgressNoTokenDoesNotSendNotifications() throws Exception {
+    // ==================== Progress without token ====================
+
+    @ParameterizedTest
+    @MethodSource("progressNoTokenToolNames")
+    public void testProgressNoTokenDoesNotSendNotifications(String toolName) throws Exception {
         String response = sendAndReceive("tools/call", Json.createObjectBuilder()
-                .add("name", "progress-no-token")
+                .add("name", toolName)
                 .add("arguments", Json.createObjectBuilder())
                 .build());
 
@@ -121,53 +161,6 @@ public class ProgressIntegrationTestCase extends AbstractMCPIntegrationTestCase 
 
         String notification = serverInitiatedMessages.poll(RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
         assertThat(notification).as("No notifications should be sent without a token").isNull();
-    }
-
-    // ==================== CDI-Injected Progress in Tools ====================
-
-    @Test
-    public void testInjectedProgressToolNotificationsSent() throws Exception {
-        long toolCallId = nextId.getAndIncrement();
-        CompletableFuture<String> toolResultFuture = new CompletableFuture<>();
-        pendingResponses.put(toolCallId, toolResultFuture);
-
-        String toolCallMessage = """
-                {"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":"progress-injected-test","arguments":{"steps":"3"},"_meta":{"progressToken":"injected-token-1"}}}"""
-                .formatted(toolCallId);
-        postToStreamable(toolCallMessage);
-
-        String toolResult = toolResultFuture.get(RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-        assertThat(toolResult).as("Should receive tool result").isNotNull();
-
-        for (int i = 0; i < 3; i++) {
-            String notification = serverInitiatedMessages.poll(RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-            assertThat(notification).as("Should receive progress notification " + (i + 1)).isNotNull();
-
-            JsonObject notificationJson = Json.createReader(new StringReader(notification)).readObject();
-            assertThat(notificationJson.getString("method")).as("Should be notifications/progress")
-                    .isEqualTo(NOTIFICATIONS_PROGRESS);
-            JsonObject params = notificationJson.getJsonObject("params");
-            assertThat(params.getString(PROGRESS_TOKEN)).as("Token should match").isEqualTo("injected-token-1");
-            assertThat(params.getJsonNumber("total").intValue()).as("Total should be 3").isEqualTo(3);
-            assertThat(params.getJsonNumber("progress").intValue()).as("Progress should be " + (i + 1))
-                    .isEqualTo(i + 1);
-        }
-
-        JsonObject resultJson = Json.createReader(new StringReader(toolResult)).readObject();
-        JsonArray content = resultJson.getJsonObject("result").getJsonArray("content");
-        assertThat(content.getJsonObject(0).getString("text")).as("Should confirm completion").contains("Completed 3 steps");
-    }
-
-    @Test
-    public void testInjectedProgressToolNoToken() throws Exception {
-        String response = sendAndReceive("tools/call", Json.createObjectBuilder()
-                .add("name", "progress-injected-no-token")
-                .add("arguments", Json.createObjectBuilder())
-                .build());
-
-        JsonObject resultJson = Json.createReader(new StringReader(response)).readObject();
-        JsonArray content = resultJson.getJsonObject("result").getJsonArray("content");
-        assertThat(content.getJsonObject(0).getString("text")).as("Should report no-token").isEqualTo("no-token");
     }
 
     // ==================== CDI-Injected Progress in Prompts ====================
