@@ -17,8 +17,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import org.mcpjava.server.progress.Progress;
 import org.wildfly.extension.mcp.injection.WildFlyMCPRegistry;
 import org.wildfly.extension.mcp.injection.elicitation.ElicitationSenderBean;
+import org.wildfly.extension.mcp.injection.progress.ProgressBean;
 import org.wildfly.mcp.api.elicitation.ElicitationSender;
 
 import static org.wildfly.extension.mcp.injection.MCPLogger.ROOT_LOGGER;
@@ -114,6 +116,7 @@ public class MCPPortableExtension implements Extension {
             ROOT_LOGGER.debugf("%s should be discoverable by CDI", bean.getKey().getName());
         }
         atd.addAnnotatedType(ElicitationSenderBean.class, "elicitation-sender-bean");
+        atd.addAnnotatedType(ProgressBean.class, "progress-bean");
     }
 
     public <T extends ElicitationSender> void vetoUserElicitationSender(@Observes ProcessAnnotatedType<T> event) {
@@ -135,6 +138,27 @@ public class MCPPortableExtension implements Extension {
         ROOT_LOGGER.vetoedUserElicitationSender(name);
         event.addDefinitionError(new IllegalStateException(
                 "Deployment must not produce ElicitationSender — it is provided by the MCP subsystem: " + name));
+    }
+
+    public <T extends Progress> void vetoUserProgress(@Observes ProcessAnnotatedType<T> event) {
+        if (!ProgressBean.class.equals(event.getAnnotatedType().getJavaClass())) {
+            ROOT_LOGGER.vetoedUserProgress(event.getAnnotatedType().getJavaClass().getName());
+            event.veto();
+        }
+    }
+
+    public <X> void vetoUserProgressProducer(@Observes ProcessProducerMethod<Progress, X> event) {
+        String name = event.getAnnotatedProducerMethod().getJavaMember().toGenericString();
+        ROOT_LOGGER.vetoedUserProgress(name);
+        event.addDefinitionError(new IllegalStateException(
+                "Deployment must not produce Progress — it is provided by the MCP subsystem: " + name));
+    }
+
+    public <X> void vetoUserProgressField(@Observes ProcessProducerField<Progress, X> event) {
+        String name = event.getAnnotatedProducerField().getJavaMember().toGenericString();
+        ROOT_LOGGER.vetoedUserProgress(name);
+        event.addDefinitionError(new IllegalStateException(
+                "Deployment must not produce Progress — it is provided by the MCP subsystem: " + name));
     }
 
     private void updateAnnotations(Map<Class<?>, Set<AnnotationLiteral>> beanClasses, Class<?> clazz, AnnotationLiteral... annotations) {

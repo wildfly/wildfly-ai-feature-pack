@@ -32,4 +32,11 @@ public interface MCPLogger extends BasicLogger {
 
     @Message(id = 3, value = "ElicitationSender is not available outside of an MCP invocation context")
     IllegalStateException elicitationSenderNotAvailable();
+
+    @LogMessage(level = WARN)
+    @Message(id = 4, value = "Vetoing user-defined Progress bean %s — Progress is provided by the MCP subsystem and must not be overridden by deployments")
+    void vetoedUserProgress(String className);
+
+    @Message(id = 5, value = "Progress is not available outside of an MCP invocation context")
+    IllegalStateException progressNotAvailable();
 }

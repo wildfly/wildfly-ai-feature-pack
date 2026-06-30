@@ -28,9 +28,12 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.List;
 import java.util.Map;
+import org.mcpjava.server.progress.ProgressToken;
 import org.wildfly.extension.mcp.api.MCPConnection;
 import org.wildfly.extension.mcp.api.Responder;
+import org.wildfly.extension.mcp.injection.MCPFieldNames;
 import org.wildfly.extension.mcp.injection.elicitation.ElicitationSenderHolder;
+import org.wildfly.extension.mcp.injection.progress.ProgressHolder;
 import org.wildfly.extension.mcp.injection.tool.ArgumentMetadata;
 
 /**
@@ -110,7 +113,20 @@ final class MCPServerUtils {
         return ret;
     }
 
-    static void runWithCDIContext(MCPConnection connection, Responder responder, Runnable task) {
+    static ProgressToken extractProgressToken(JsonObject params) {
+        JsonObject meta = params != null ? params.getJsonObject(MCPFieldNames.META) : null;
+        if (meta != null && meta.containsKey(MCPFieldNames.PROGRESS_TOKEN)) {
+            JsonValue tokenVal = meta.get(MCPFieldNames.PROGRESS_TOKEN);
+            if (tokenVal.getValueType() == ValueType.STRING) {
+                return new ProgressTokenImpl(((JsonString) tokenVal).getString());
+            } else if (tokenVal.getValueType() == ValueType.NUMBER) {
+                return new ProgressTokenImpl(((jakarta.json.JsonNumber) tokenVal).longValue());
+            }
+        }
+        return null;
+    }
+
+    static void runWithCDIContext(MCPConnection connection, Responder responder, ProgressToken progressToken, Runnable task) {
         RequestContextController rcc = null;
         try {
             rcc = CDI.current().select(RequestContextController.class).get();
@@ -121,9 +137,11 @@ final class MCPServerUtils {
         try {
             ElicitationSenderHolder.set(new ElicitationSenderImpl(
                     connection.pendingRequests(), responder, connection.initializeRequest()));
+            ProgressHolder.set(new ProgressImpl(progressToken, responder));
             try {
                 task.run();
             } finally {
+                ProgressHolder.remove();
                 ElicitationSenderHolder.remove();
             }
         } finally {

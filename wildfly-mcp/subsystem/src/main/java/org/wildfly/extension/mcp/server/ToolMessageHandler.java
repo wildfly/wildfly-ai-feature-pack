@@ -14,13 +14,11 @@ import static org.wildfly.extension.mcp.injection.MCPFieldNames.DESCRIPTION;
 import static org.wildfly.extension.mcp.injection.MCPFieldNames.DESTRUCTIVE_HINT;
 import static org.wildfly.extension.mcp.injection.MCPFieldNames.IDEMPOTENT_HINT;
 import static org.wildfly.extension.mcp.injection.MCPFieldNames.INPUT_SCHEMA;
-import static org.wildfly.extension.mcp.injection.MCPFieldNames.META;
 import static org.wildfly.extension.mcp.injection.MCPFieldNames.NAME;
 import static org.wildfly.extension.mcp.injection.MCPFieldNames.NEXT_CURSOR;
 import static org.wildfly.extension.mcp.injection.MCPFieldNames.OPEN_WORLD_HINT;
 import static org.wildfly.extension.mcp.injection.MCPFieldNames.OUTPUT_SCHEMA;
 import static org.wildfly.extension.mcp.injection.MCPFieldNames.PARAMS;
-import static org.wildfly.extension.mcp.injection.MCPFieldNames.PROGRESS_TOKEN;
 import static org.wildfly.extension.mcp.injection.MCPFieldNames.READ_ONLY_HINT;
 import static org.wildfly.extension.mcp.injection.MCPFieldNames.STRUCTURED_CONTENT;
 import static org.wildfly.extension.mcp.injection.MCPFieldNames.TITLE;
@@ -47,9 +45,7 @@ import jakarta.json.Json;
 import jakarta.json.JsonArrayBuilder;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
-import jakarta.json.JsonString;
 import jakarta.json.JsonValue;
-import jakarta.json.JsonValue.ValueType;
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
@@ -78,6 +74,7 @@ import org.wildfly.extension.mcp.api.Responder;
 import org.wildfly.extension.mcp.injection.WildFlyMCPRegistry;
 import org.wildfly.mcp.api.elicitation.ElicitationSender;
 import org.wildfly.extension.mcp.injection.elicitation.ElicitationSenderHolder;
+import org.wildfly.extension.mcp.injection.progress.ProgressHolder;
 import org.wildfly.extension.mcp.injection.tool.ArgumentMetadata;
 import org.wildfly.extension.mcp.injection.tool.MCPFeatureMetadata;
 import org.wildfly.extension.mcp.injection.tool.MCPTool;
@@ -344,17 +341,7 @@ public class ToolMessageHandler {
                 args.put(key, arguments.get(key));
             }
         }
-        ProgressToken progressToken = null;
-        JsonObject meta = params.getJsonObject(META);
-        if (meta != null && meta.containsKey(PROGRESS_TOKEN)) {
-            JsonValue tokenVal = meta.get(PROGRESS_TOKEN);
-            if (tokenVal.getValueType() == ValueType.STRING) {
-                progressToken = new ProgressTokenImpl(((JsonString) tokenVal).getString());
-            } else if (tokenVal.getValueType() == ValueType.NUMBER) {
-                progressToken = new ProgressTokenImpl(((jakarta.json.JsonNumber) tokenVal).longValue());
-            }
-        }
-        final ProgressToken finalProgressToken = progressToken;
+        final ProgressToken finalProgressToken = MCPServerUtils.extractProgressToken(params);
         final MCPFeatureMetadata metadata = registry.getTool(toolName);
         if (metadata == null) {
             responder.sendError(id, INVALID_PARAMS, ROOT_LOGGER.invalidToolName(toolName));
@@ -363,14 +350,13 @@ public class ToolMessageHandler {
         final ClassLoader prevCL = WildFlySecurityManager.getCurrentContextClassLoaderPrivileged();
         try {
             WildFlySecurityManager.setCurrentContextClassLoaderPrivileged(classLoader);
-            connection.task(executorService.submit(() -> runWithCDIContext(connection, responder, () -> {
+            connection.task(executorService.submit(() -> runWithCDIContext(connection, responder, finalProgressToken, () -> {
                 try {
                     MethodMetadata methodMetadata = metadata.method();
                     Class<?> clazz = classLoader.loadClass(methodMetadata.declaringClassName());
                     Instance<?> beanInstance = CDI.current().select(clazz, MCPTool.MCPToolLiteral.INSTANCE);
                     Object result = null;
-                    ElicitationSender elicitationSender = ElicitationSenderHolder.get();
-                    Object[] builtArgs = buildArguments(metadata, args, mapper, elicitationSender, responder, finalProgressToken);
+                    Object[] builtArgs = buildArguments(metadata, args, mapper);
                     if (beanInstance.isResolvable()) {
                         ROOT_LOGGER.debugf("The Singleton instance of the tool %s has been found", toolName);
                         try {
@@ -441,15 +427,12 @@ public class ToolMessageHandler {
 
     /**
      * Like {@link #prepareArguments} but additionally injects framework-managed parameters
-     * such as {@link ElicitationSender} based on the declared argument type.
+     * such as {@link ElicitationSender} and {@link Progress} based on the declared argument type.
      */
     private Object[] buildArguments(
             MCPFeatureMetadata metadata,
             Map<String, JsonValue> jsonArgs,
-            ObjectMapper objectMapper,
-            ElicitationSender elicitationSender,
-            Responder responder,
-            ProgressToken progressToken) throws MCPException {
+            ObjectMapper objectMapper) throws MCPException {
         if (metadata.arguments().isEmpty()) {
             return new Object[0];
         }
@@ -457,9 +440,9 @@ public class ToolMessageHandler {
         int idx = 0;
         for (ArgumentMetadata arg : metadata.arguments()) {
             if (arg.type() instanceof Class<?> clazz && ElicitationSender.class.isAssignableFrom(clazz)) {
-                ret[idx] = elicitationSender;
+                ret[idx] = ElicitationSenderHolder.get();
             } else if (arg.type() instanceof Class<?> clazz && Progress.class.isAssignableFrom(clazz)) {
-                ret[idx] = new ProgressImpl(progressToken, responder);
+                ret[idx] = ProgressHolder.get();
             } else {
                 JsonValue val = jsonArgs.get(arg.name());
                 if (val == null && arg.required()) {
