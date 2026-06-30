@@ -14,7 +14,6 @@ import org.mcpjava.server.tools.ToolArg;
 import org.wildfly.mcp.api.elicitation.BooleanProperty;
 import org.wildfly.mcp.api.elicitation.Elicitation;
 import org.wildfly.mcp.api.elicitation.ElicitationSender;
-import org.wildfly.mcp.api.elicitation.StringProperty;
 
 public class TestMCPElicitationTool {
 

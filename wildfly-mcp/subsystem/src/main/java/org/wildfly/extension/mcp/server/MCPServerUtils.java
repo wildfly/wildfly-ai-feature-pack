@@ -15,6 +15,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.undertow.util.HttpString;
+import jakarta.enterprise.context.control.RequestContextController;
+import jakarta.enterprise.inject.spi.CDI;
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
@@ -26,7 +28,9 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.List;
 import java.util.Map;
+import org.wildfly.extension.mcp.api.MCPConnection;
 import org.wildfly.extension.mcp.api.Responder;
+import org.wildfly.extension.mcp.injection.elicitation.ElicitationSenderHolder;
 import org.wildfly.extension.mcp.injection.tool.ArgumentMetadata;
 
 /**
@@ -104,6 +108,29 @@ final class MCPServerUtils {
             idx++;
         }
         return ret;
+    }
+
+    static void runWithCDIContext(MCPConnection connection, Responder responder, Runnable task) {
+        RequestContextController rcc = null;
+        try {
+            rcc = CDI.current().select(RequestContextController.class).get();
+            rcc.activate();
+        } catch (IllegalStateException e) {
+            rcc = null;
+        }
+        try {
+            ElicitationSenderHolder.set(new ElicitationSenderImpl(
+                    connection.pendingRequests(), responder, connection.initializeRequest()));
+            try {
+                task.run();
+            } finally {
+                ElicitationSenderHolder.remove();
+            }
+        } finally {
+            if (rcc != null) {
+                rcc.deactivate();
+            }
+        }
     }
 
     /**
