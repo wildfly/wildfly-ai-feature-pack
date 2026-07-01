@@ -27,9 +27,15 @@ public interface MCPLogger extends BasicLogger {
     void unexpectedError(@Cause Throwable cause);
 
     @LogMessage(level = WARN)
-    @Message(id = 2, value = "Vetoing user-defined ElicitationSender bean %s — ElicitationSender is provided by the MCP subsystem and must not be overridden by deployments")
-    void vetoedUserElicitationSender(String className);
+    @Message(id = 2, value = "Vetoing user-defined %s bean %s as this bean is provided by the MCP subsystem and must not be overridden by deployments")
+    void vetoedCDIBean(String interfaceName, String className);
 
     @Message(id = 3, value = "ElicitationSender is not available outside of an MCP invocation context")
     IllegalStateException elicitationSenderNotAvailable();
+
+    @Message(id = 4, value = "Deployment must not produce %s bean — it is provided by the MCP subsystem")
+    IllegalStateException deploymentMustNotProduceBean(String className);
+
+    @Message(id = 5, value = "Progress is not available outside of an MCP invocation context")
+    IllegalStateException progressNotAvailable();
 }

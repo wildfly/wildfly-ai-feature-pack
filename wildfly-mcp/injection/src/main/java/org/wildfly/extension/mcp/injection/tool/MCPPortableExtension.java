@@ -17,8 +17,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import org.mcpjava.server.progress.Progress;
 import org.wildfly.extension.mcp.injection.WildFlyMCPRegistry;
 import org.wildfly.extension.mcp.injection.elicitation.ElicitationSenderBean;
+import org.wildfly.extension.mcp.injection.progress.ProgressBean;
 import org.wildfly.mcp.api.elicitation.ElicitationSender;
 
 import static org.wildfly.extension.mcp.injection.MCPLogger.ROOT_LOGGER;
@@ -114,27 +116,45 @@ public class MCPPortableExtension implements Extension {
             ROOT_LOGGER.debugf("%s should be discoverable by CDI", bean.getKey().getName());
         }
         atd.addAnnotatedType(ElicitationSenderBean.class, "elicitation-sender-bean");
+        atd.addAnnotatedType(ProgressBean.class, "progress-bean");
     }
 
     public <T extends ElicitationSender> void vetoUserElicitationSender(@Observes ProcessAnnotatedType<T> event) {
         if (!ElicitationSenderBean.class.equals(event.getAnnotatedType().getJavaClass())) {
-            ROOT_LOGGER.vetoedUserElicitationSender(event.getAnnotatedType().getJavaClass().getName());
+            ROOT_LOGGER.vetoedCDIBean(ElicitationSender.class.getName(), event.getAnnotatedType().getJavaClass().getName());
             event.veto();
         }
     }
 
     public <X> void vetoUserElicitationSenderProducer(@Observes ProcessProducerMethod<ElicitationSender, X> event) {
         String name = event.getAnnotatedProducerMethod().getJavaMember().toGenericString();
-        ROOT_LOGGER.vetoedUserElicitationSender(name);
-        event.addDefinitionError(new IllegalStateException(
-                "Deployment must not produce ElicitationSender — it is provided by the MCP subsystem: " + name));
+        ROOT_LOGGER.vetoedCDIBean(ElicitationSender.class.getName(), name);
+        event.addDefinitionError(ROOT_LOGGER.deploymentMustNotProduceBean(name));
     }
 
     public <X> void vetoUserElicitationSenderField(@Observes ProcessProducerField<ElicitationSender, X> event) {
         String name = event.getAnnotatedProducerField().getJavaMember().toGenericString();
-        ROOT_LOGGER.vetoedUserElicitationSender(name);
-        event.addDefinitionError(new IllegalStateException(
-                "Deployment must not produce ElicitationSender — it is provided by the MCP subsystem: " + name));
+        ROOT_LOGGER.vetoedCDIBean(ElicitationSender.class.getName(), name);
+        event.addDefinitionError(ROOT_LOGGER.deploymentMustNotProduceBean(name));
+    }
+
+    public <T extends Progress> void vetoUserProgress(@Observes ProcessAnnotatedType<T> event) {
+        if (!ProgressBean.class.equals(event.getAnnotatedType().getJavaClass())) {
+            ROOT_LOGGER.vetoedCDIBean(Progress.class.getName(), event.getAnnotatedType().getJavaClass().getName());
+            event.veto();
+        }
+    }
+
+    public <X> void vetoUserProgressProducer(@Observes ProcessProducerMethod<Progress, X> event) {
+        String name = event.getAnnotatedProducerMethod().getJavaMember().toGenericString();
+        ROOT_LOGGER.vetoedCDIBean(Progress.class.getName(), name);
+        event.addDefinitionError(ROOT_LOGGER.deploymentMustNotProduceBean(name));
+    }
+
+    public <X> void vetoUserProgressField(@Observes ProcessProducerField<Progress, X> event) {
+        String name = event.getAnnotatedProducerField().getJavaMember().toGenericString();
+        ROOT_LOGGER.vetoedCDIBean(Progress.class.getName(), name);
+        event.addDefinitionError(ROOT_LOGGER.deploymentMustNotProduceBean(name));
     }
 
     private void updateAnnotations(Map<Class<?>, Set<AnnotationLiteral>> beanClasses, Class<?> clazz, AnnotationLiteral... annotations) {
