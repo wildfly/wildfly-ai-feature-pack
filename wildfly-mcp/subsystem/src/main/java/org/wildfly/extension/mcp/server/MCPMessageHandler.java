@@ -221,7 +221,16 @@ public class MCPMessageHandler {
             return;
         }
         // TODO schema validation?
-        if (connection.initialize(decodeInitializeRequest(params))) {
+        InitializeRequest initializeRequest = decodeInitializeRequest(params);
+        if (!SUPPORTED_PROTOCOL_VERSIONS.contains(initializeRequest.protocolVersion())) {
+            ROOT_LOGGER.invalidProtocolVersion(PROTOCOL_VERSION, initializeRequest.protocolVersion());
+            String msg = ROOT_LOGGER.unsupportedProtocolVersion(initializeRequest.protocolVersion(), SUPPORTED_PROTOCOL_VERSIONS);
+            context.setErrorCode(JsonRPC.INVALID_PARAMS);
+            context.setErrorMessage(msg);
+            responder.sendError(id, JsonRPC.INVALID_PARAMS, msg);
+            return;
+        }
+        if (connection.initialize(initializeRequest)) {
             // The server MUST respond with its own capabilities and information
             responder.sendResult(id, JsonRPC.convertMap(serverInfo));
         } else {

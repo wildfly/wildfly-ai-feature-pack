@@ -9,6 +9,7 @@ import static org.wildfly.extension.mcp.MCPLogger.ROOT_LOGGER;
 import static org.wildfly.extension.mcp.api.ConnectionManager.MCP_PROTOCOL_VERSION_HEADER;
 import static org.wildfly.extension.mcp.api.ConnectionManager.MCP_SESSION_ID_HEADER;
 import static org.wildfly.extension.mcp.api.MCPMethods.PROTOCOL_VERSION;
+import static org.wildfly.extension.mcp.api.MCPMethods.SUPPORTED_PROTOCOL_VERSIONS;
 import static org.wildfly.extension.mcp.server.MCPStreamableConnectionCallBack.JSON_PAYLOAD;
 import static org.wildfly.extension.mcp.server.MCPStreamableConnectionCallBack.SESSION_ID;
 
@@ -91,7 +92,7 @@ public class StreamableHttpHandler implements HttpHandler {
             return;
         }
         String protocolVersion = exchange.getRequestHeaders().getFirst(MCP_PROTOCOL_VERSION_HEADER);
-        if (protocolVersion != null && !PROTOCOL_VERSION.equals(protocolVersion)) {
+        if (protocolVersion != null && !SUPPORTED_PROTOCOL_VERSIONS.contains(protocolVersion)) {
             ROOT_LOGGER.invalidProtocolVersion(PROTOCOL_VERSION, protocolVersion);
             exchange.setStatusCode(400);
             exchange.endExchange();

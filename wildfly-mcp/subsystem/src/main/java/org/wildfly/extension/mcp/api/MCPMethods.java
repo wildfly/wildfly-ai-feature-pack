@@ -4,12 +4,15 @@
  */
 package org.wildfly.extension.mcp.api;
 
+import java.util.Set;
+
 /**
  * MCP protocol method names and version constant.
  */
 public final class MCPMethods {
 
     public static final String PROTOCOL_VERSION = "2025-11-25";
+    public static final Set<String> SUPPORTED_PROTOCOL_VERSIONS = Set.of(PROTOCOL_VERSION, "2025-06-18", "2025-03-26");
     public static final String INITIALIZE = "initialize";
     public static final String NOTIFICATIONS_INITIALIZED = "notifications/initialized";
     public static final String NOTIFICATIONS_CANCEL = "notifications/cancelled";

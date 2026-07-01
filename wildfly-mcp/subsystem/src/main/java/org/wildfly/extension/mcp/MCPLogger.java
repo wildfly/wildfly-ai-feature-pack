@@ -10,6 +10,7 @@ import static org.jboss.logging.Logger.Level.INFO;
 import static org.jboss.logging.Logger.Level.WARN;
 
 import java.lang.invoke.MethodHandles;
+import java.util.Set;
 
 import org.jboss.as.server.deployment.DeploymentUnit;
 import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
@@ -182,4 +183,7 @@ public interface MCPLogger extends BasicLogger {
     @Message(id = 44, value = "Unhandled content block type: %s")
     @LogMessage(level = WARN)
     void warnUnhandledContentBlockType(String className);
+
+    @Message(id = 45, value = "Unsupported protocol version: %s (supported: %s)")
+    String unsupportedProtocolVersion(String actual, Set<String> supported);
 }
