@@ -217,7 +217,7 @@ public class ResourceMessageHandler {
                             }
                         } catch (Throwable ex) {
                             ROOT_LOGGER.errorInvokingResource(ex, resourceUri);
-                            responder.sendError(id, INTERNAL_ERROR, ex.getMessage());
+                            responder.sendError(id, INTERNAL_ERROR, "Internal error");
                             return;
                         }
                     } else {
@@ -253,7 +253,7 @@ public class ResourceMessageHandler {
                     MCPException.sendError(e, id, responder);
                 } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException | SecurityException | ClassNotFoundException | InstantiationException | IllegalArgumentException ex) {
                     ROOT_LOGGER.errorInvokingResource(ex, resourceUri);
-                    responder.sendError(id, INTERNAL_ERROR, ex.getMessage());
+                    responder.sendError(id, INTERNAL_ERROR, "Internal error");
                 }
             })));
         } finally {

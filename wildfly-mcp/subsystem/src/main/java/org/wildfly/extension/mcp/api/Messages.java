@@ -82,13 +82,6 @@ public class Messages {
                 .build();
     }
 
-    public static JsonObject newPing(String id) {
-        JsonObjectBuilder b = Json.createObjectBuilder()
-                .add("jsonrpc", JsonRPC.VERSION);
-        addId(b, id);
-        return b.add("method", "ping").build();
-    }
-
     public static JsonObject newRequest(long id, String method, JsonObjectBuilder params) {
         return Json.createObjectBuilder()
                 .add("jsonrpc", JsonRPC.VERSION)

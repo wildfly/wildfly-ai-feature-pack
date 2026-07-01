@@ -30,5 +30,5 @@ public interface MCPApiLogger extends BasicLogger {
     IllegalArgumentException parameterMustHaveSameSize(String parameter1, String parameter2);
 
     @Message(id = 5, value = "Parameter 'max' (%s) can not be less than 'min' (%s) ")
-    IllegalArgumentException maxCanNotBeLessThanMin(Integer max, Integer min);
+    IllegalArgumentException maxCanNotBeLessThanMin(Number max, Number min);
 }

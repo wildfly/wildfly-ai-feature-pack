@@ -27,7 +27,7 @@ public interface MCPConnection extends Closeable {
 
     boolean setInitialized();
 
-    void task(Future future);
+    void task(Future<?> future);
 
     void cancel();
 

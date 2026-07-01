@@ -4,10 +4,13 @@
  */
 package org.wildfly.mcp.api.elicitation;
 
+import static org.wildfly.mcp.api._private.MCPApiLogger.ROOT_LOGGER;
+
+import java.util.Objects;
+
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
-import org.wildfly.mcp.api._private.MCPApiLogger;
 
 /**
  * Schema for an integer elicitation property.
@@ -24,6 +27,7 @@ public final class IntegerProperty implements ElicitationProperty<Integer> {
     private Integer defaultValue;
 
     public IntegerProperty(String name) {
+        Objects.requireNonNull(name, ROOT_LOGGER.parameterMustNotBeNull("name"));
         this.name = name;
     }
 
@@ -49,17 +53,13 @@ public final class IntegerProperty implements ElicitationProperty<Integer> {
 
     public IntegerProperty min(int min) {
         this.min = min;
-        if (max != null && min > max) {
-          throw MCPApiLogger.ROOT_LOGGER.maxCanNotBeLessThanMin(max, min);
-        }
+        RangeValidation.validateMinMax(this.min, this.max);
         return this;
     }
 
     public IntegerProperty max(int max) {
         this.max = max;
-        if (min != null && min > max) {
-            throw MCPApiLogger.ROOT_LOGGER.maxCanNotBeLessThanMin(max, min);
-        }
+        RangeValidation.validateMinMax(this.min, this.max);
         return this;
     }
 

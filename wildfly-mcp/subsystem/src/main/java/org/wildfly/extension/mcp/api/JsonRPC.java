@@ -25,7 +25,7 @@ public class JsonRPC {
 
     public static boolean validate(JsonObject message, Responder responder) {
         String id = message.get("id") == null ? null : message.get("id").toString();
-        String jsonrpc = message.getString("jsonrpc");
+        String jsonrpc = message.containsKey("jsonrpc") ? message.getString("jsonrpc") : null;
         if (!VERSION.equals(jsonrpc)) {
             responder.sendError(id, INVALID_REQUEST, "Invalid jsonrpc version: " + jsonrpc);
             return false;

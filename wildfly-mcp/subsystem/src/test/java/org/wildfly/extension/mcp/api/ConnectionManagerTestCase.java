@@ -396,7 +396,7 @@ public class ConnectionManagerTestCase {
         private final List<JsonObject> messages = new ArrayList<>();
         private final List<JsonObject> syncMessages = new ArrayList<>();
         private boolean closed = false;
-        private int lastEventId = -1;
+        private int lastEventId = 0;
         private final PendingRequestRegistry pendingRequestRegistry = new PendingRequestRegistry();
 
         TestableResponderConnection(String id, Status status) {
