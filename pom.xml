@@ -83,7 +83,7 @@
         <version.org.jetbrains.kotlin>2.3.21</version.org.jetbrains.kotlin>
         <version.org.mcp-java>1.0.0-Beta3</version.org.mcp-java>
         <version.org.neo4j.cypher>2025.2.7</version.org.neo4j.cypher>
-        <version.org.neo4j.driver>6.0.5</version.org.neo4j.driver>
+        <version.org.neo4j.driver>6.2.0</version.org.neo4j.driver>
         <version.org.ow2.asm>9.10.1</version.org.ow2.asm>
         <version.org.reactivestreams.reactive-streams>1.0.4</version.org.reactivestreams.reactive-streams>
 
