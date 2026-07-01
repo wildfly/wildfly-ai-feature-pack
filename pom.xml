@@ -67,7 +67,7 @@
         <version.com.knuddels.jtokkit>1.1.0</version.com.knuddels.jtokkit>
         <version.com.microsoft.onnxruntime>1.22.0</version.com.microsoft.onnxruntime>
         <version.com.squareup.okhttp>5.1.0</version.com.squareup.okhttp>
-        <version.com.squareup.okio-jvm>3.6.0</version.com.squareup.okio-jvm>
+        <version.com.squareup.okio-jvm>3.17.0</version.com.squareup.okio-jvm>
         <version.com.squareup.retrofit2>2.11.0</version.com.squareup.retrofit2>
         <version.commons-compress>1.27.1</version.commons-compress>
         <version.dev.langchain4j>1.15.1-beta25</version.dev.langchain4j>
