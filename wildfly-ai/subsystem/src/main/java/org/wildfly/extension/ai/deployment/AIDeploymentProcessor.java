@@ -104,7 +104,7 @@ public class AIDeploymentProcessor implements DeploymentUnitProcessor {
             }
             List<WildFlyChatModelConfig> requiredChatModels = deploymentUnit.getAttachmentList(AIAttachments.CHAT_MODELS);
             if (!support.hasCapability(OPENTELEMETRY_CAPABILITY_NAME)) {
-                ROOT_LOGGER.info("No opentelemetry support available");
+                ROOT_LOGGER.openTelemetryNotAvailable();
             } else {
                 ROOT_LOGGER.debug("OpenTelemetry is active for AI");
             }
@@ -131,7 +131,7 @@ public class AIDeploymentProcessor implements DeploymentUnitProcessor {
                             deploymentResourceSupport.getDeploymentSubModel("ai", PathElement.pathElement(AIModelDeploymentRegistrar.NAME, chatLanguageModelNames.get(i)))
                                     .get(STREAMING.getName()).set(requiredChatModels.get(i).isStreaming());
                         } catch (Exception e) {
-                            ROOT_LOGGER.error(e);
+                            ROOT_LOGGER.errorRegisteringChatModelDeploymentResource(e, chatLanguageModelNames.get(i));
                         }
                     }
                 }

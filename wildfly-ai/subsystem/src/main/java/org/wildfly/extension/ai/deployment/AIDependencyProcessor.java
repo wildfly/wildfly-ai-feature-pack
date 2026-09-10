@@ -416,7 +416,7 @@ public class AIDependencyProcessor implements DeploymentUnitProcessor {
                 }
             }
         } catch (ClassNotFoundException ex) {
-            ROOT_LOGGER.errorf(ex, "Couldn't get the class type for %s to be able to check what to inject", className);
+            ROOT_LOGGER.errorResolvingInjectionType(ex, className);
         }
     }
 

@@ -122,7 +122,7 @@ class RequestStateCodec {
             byte[] hash = mac.doFinal(data.getBytes(StandardCharsets.UTF_8));
             return Base64.getUrlEncoder().withoutPadding().encodeToString(hash);
         } catch (NoSuchAlgorithmException | InvalidKeyException e) {
-            throw new IllegalStateException("HMAC computation failed", e);
+            throw ROOT_LOGGER.hmacComputationFailed(e);
         }
     }
 

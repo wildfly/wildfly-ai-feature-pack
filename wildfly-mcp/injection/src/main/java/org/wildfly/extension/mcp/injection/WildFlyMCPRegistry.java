@@ -53,8 +53,7 @@ public class WildFlyMCPRegistry {
 
     public void addTool(String name, MCPFeatureMetadata metadata) {
         if (!TOOL_NAME_PATTERN.matcher(name).matches()) {
-            throw new IllegalArgumentException(
-                    "Tool name [" + name + "] does not match the required pattern: " + TOOL_NAME_PATTERN.pattern());
+            throw ROOT_LOGGER.invalidToolName(name, TOOL_NAME_PATTERN.pattern());
         }
         tools.put(name, metadata);
     }

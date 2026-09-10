@@ -201,7 +201,7 @@ public interface MCPLogger extends BasicLogger {
 
     @Message(id = 49, value = "The 'request-state-secret' attribute must be a valid Base64-encoded value")
     IllegalArgumentException invalidRequestStateSecret(@Cause Throwable cause);
-    
+
     // RequestMetadata validation
     @Message(id = 51, value = "Missing required field '%s' in _meta")
     RequestMetadata.MCPMetadataValidationException missingMetadataField(String fieldName);
@@ -256,7 +256,24 @@ public interface MCPLogger extends BasicLogger {
             + "configure a request-state-secret to enable HMAC verification")
     void unsignedRequestStateAccepted();
 
-    // StreamableHttpHandler JSON-RPC error responses (no message ID to avoid WFMCP prefix in client-facing messages)
+    @Message(id = 67, value = "Failed to send synchronous notification")
+    RuntimeException failedToSendSyncNotification(@Cause Throwable cause);
+
+    @LogMessage(level = WARN)
+    @Message(id = 68, value = "Managed scheduled executor service not available, using default scheduled executor service")
+    void managedScheduledExecutorServiceNotAvailable();
+
+    @Message(id = 69, value = "HMAC computation failed")
+    IllegalStateException hmacComputationFailed(@Cause Throwable cause);
+
+    @Message(id = 70, value = "Missing required header argument: %s")
+    String missingRequiredHeaderArgument(String headerName);
+
+    @Message(id = 71, value = "Unsigned requestState rejected — configure a request-state-secret "
+            + "or set system property %s=true to accept unsigned tokens")
+    IllegalArgumentException unsignedRequestStateRejectedInvocation(String propertyName);
+
+    // JSON-RPC error responses (no message ID to avoid WFMCP prefix in client-facing messages)
     @Message(id = Message.NONE, value = "Unknown session: %s")
     String unknownSessionError(String sessionId);
 
@@ -316,4 +333,61 @@ public interface MCPLogger extends BasicLogger {
 
     @Message(id = Message.NONE, value = "No response generated")
     String noResponseGenerated();
+
+    @Message(id = Message.NONE, value = "Invalid jsonrpc version: %s")
+    String invalidJsonRpcVersion(String version);
+
+    @Message(id = Message.NONE, value = "Method not set")
+    String methodNotSet();
+
+    @Message(id = Message.NONE, value = "Missing connection ID")
+    String missingConnectionId();
+
+    @Message(id = Message.NONE, value = "Reference not found")
+    String completionReferenceNotFound();
+
+    @Message(id = Message.NONE, value = "Reference type not found")
+    String completionReferenceTypeNotFound();
+
+    @Message(id = Message.NONE, value = "Argument not found")
+    String completionArgumentNotFound();
+
+    @Message(id = Message.NONE, value = "Unsupported reference found: %s")
+    String unsupportedCompletionReference(String referenceType);
+
+    @Message(id = Message.NONE, value = "Invalid requestState: %s")
+    String invalidRequestState(String reason);
+
+    @Message(id = Message.NONE, value = "The first message from the client must be \"initialize\": %s")
+    String firstMessageMustBeInitialize(String method);
+
+    @Message(id = Message.NONE, value = "Initialization params not found")
+    String initializationParamsNotFound();
+
+    @Message(id = Message.NONE, value = "Unable to initialize connection [connectionId: %s]")
+    String unableToInitializeConnection(String connectionId);
+
+    @Message(id = Message.NONE, value = "Client not initialized yet [%s]")
+    String clientNotInitialized(String connectionId);
+
+    @Message(id = Message.NONE, value = "Missing params")
+    String missingParams();
+
+    @Message(id = Message.NONE, value = "'%s' must be an object")
+    String fieldMustBeAnObject(String fieldName);
+
+    @Message(id = Message.NONE, value = "'%s' must be an array")
+    String fieldMustBeAnArray(String fieldName);
+
+    @Message(id = Message.NONE, value = "Each subscription must be an object")
+    String eachSubscriptionMustBeAnObject();
+
+    @Message(id = Message.NONE, value = "Missing 'notifications' or 'subscriptions' field")
+    String missingNotificationsOrSubscriptions();
+
+    @Message(id = Message.NONE, value = "Client does not support required capability: %s")
+    String missingRequiredClientCapability(String capability);
+
+    @Message(id = Message.NONE, value = "Invocation failed")
+    String invocationFailed();
 }

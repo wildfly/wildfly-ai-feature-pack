@@ -51,17 +51,17 @@ public class CompletionHandler {
         JsonObject params = message.getJsonObject("params");
         JsonObject ref = params.getJsonObject("ref");
         if (ref == null) {
-            responder.sendError(id, INVALID_REQUEST, "Reference not found");
+            responder.sendError(id, INVALID_REQUEST, ROOT_LOGGER.completionReferenceNotFound());
             return;
         }
         String referenceType = ref.getString("type");
         if (referenceType == null) {
-            responder.sendError(id, INVALID_REQUEST, "Reference type not found");
+            responder.sendError(id, INVALID_REQUEST, ROOT_LOGGER.completionReferenceTypeNotFound());
             return;
         }
         JsonObject argument = params.getJsonObject("argument");
         if (argument == null) {
-            responder.sendError(id, INVALID_REQUEST, "Argument not found");
+            responder.sendError(id, INVALID_REQUEST, ROOT_LOGGER.completionArgumentNotFound());
             return;
         }
         String referenceName = ref.getString("name");
@@ -88,7 +88,7 @@ public class CompletionHandler {
             MethodHandle invoker = registry.getResourceTemplateCompletionInvoker(completionKey);
             invokeCompletion(id, metadata, invoker, argumentValue, contextArguments, responder, MCPResource.MCPResourceLiteral.INSTANCE);
         } else {
-            responder.sendError(id, INVALID_REQUEST, "Unsupported reference found: " + referenceType);
+            responder.sendError(id, INVALID_REQUEST, ROOT_LOGGER.unsupportedCompletionReference(referenceType));
         }
     }
 

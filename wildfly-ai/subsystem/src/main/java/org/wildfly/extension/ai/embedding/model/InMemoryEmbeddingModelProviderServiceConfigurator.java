@@ -39,7 +39,7 @@ public class InMemoryEmbeddingModelProviderServiceConfigurator implements Resour
                     Thread.currentThread().setContextClassLoader(moduleCL);
                     return (EmbeddingModel) moduleCL.loadClass(embeddingModelClassName).getConstructor().newInstance();
                 } catch (Exception e) {
-                    AILogger.ROOT_LOGGER.errorf(e, "Couldn't load EmbeddingModel %s", e.getMessage());
+                    AILogger.ROOT_LOGGER.errorLoadingEmbeddingModel(e, embeddingModelClassName, moduleName);
                     throw new RuntimeException(e);
                 } finally {
                     Thread.currentThread().setContextClassLoader(tccl);

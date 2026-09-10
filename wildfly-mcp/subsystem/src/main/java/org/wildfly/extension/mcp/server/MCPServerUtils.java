@@ -281,7 +281,7 @@ final class MCPServerUtils {
      * for reporting invocation errors back to the model.
      */
     static void sendInvocationFailureResult(String id, Throwable cause, Responder responder) {
-        String message = "Invocation failed";
+        String message = ROOT_LOGGER.invocationFailed();
         JsonObjectBuilder builder = Json.createObjectBuilder();
         builder.add(CONTENT, Json.createArrayBuilder()
                 .add(Json.createObjectBuilder()

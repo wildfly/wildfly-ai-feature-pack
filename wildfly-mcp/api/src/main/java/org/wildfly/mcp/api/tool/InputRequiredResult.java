@@ -4,6 +4,8 @@
  */
 package org.wildfly.mcp.api.tool;
 
+import static org.wildfly.mcp.api._private.MCPApiLogger.ROOT_LOGGER;
+
 import jakarta.json.Json;
 import jakarta.json.JsonArrayBuilder;
 import jakarta.json.JsonObject;
@@ -128,7 +130,7 @@ public final class InputRequiredResult {
 
         public InputRequiredResult build() {
             if (inputRequests.isEmpty()) {
-                throw new IllegalStateException("InputRequiredResult must have at least one inputRequest");
+                throw ROOT_LOGGER.mustHaveAtLeastOneInputRequest();
             }
             return new InputRequiredResult(inputRequests, requestState);
         }

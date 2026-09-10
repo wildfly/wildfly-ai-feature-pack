@@ -56,7 +56,7 @@ public class MessagesHttpHandler implements HttpHandler {
             exchange.getResponseHeaders().put(CONTENT_TYPE, JSON_CONTENT_TYPE);
             exchange.getResponseSender().send(
                     org.wildfly.extension.mcp.api.Messages.newError(null, JsonRPC.INVALID_REQUEST,
-                            "Missing connection ID").toString());
+                            ROOT_LOGGER.missingConnectionId()).toString());
             return;
         }
         ServerSentEventResponder connection = (ServerSentEventResponder)connectionManager.get(connectionId);
@@ -66,7 +66,7 @@ public class MessagesHttpHandler implements HttpHandler {
             exchange.getResponseHeaders().put(CONTENT_TYPE, JSON_CONTENT_TYPE);
             exchange.getResponseSender().send(
                     org.wildfly.extension.mcp.api.Messages.newError(null, JsonRPC.INVALID_REQUEST,
-                            "Unknown session: " + connectionId).toString());
+                            ROOT_LOGGER.unknownSessionError(connectionId)).toString());
             return;
         }
         exchange.startBlocking();
@@ -79,7 +79,7 @@ public class MessagesHttpHandler implements HttpHandler {
             exchange.getResponseHeaders().put(CONTENT_TYPE, JSON_CONTENT_TYPE);
             exchange.getResponseSender().send(
                     org.wildfly.extension.mcp.api.Messages.newError(null, JsonRPC.INVALID_REQUEST,
-                            "Invalid JSON").toString());
+                            ROOT_LOGGER.invalidJson()).toString());
             return;
         }
         JsonObject content = asJsonObject(parsed);
@@ -88,7 +88,7 @@ public class MessagesHttpHandler implements HttpHandler {
             exchange.getResponseHeaders().put(CONTENT_TYPE, JSON_CONTENT_TYPE);
             exchange.getResponseSender().send(
                     org.wildfly.extension.mcp.api.Messages.newError(null, JsonRPC.INVALID_REQUEST,
-                            "Expected a JSON object").toString());
+                            ROOT_LOGGER.expectedJsonObject()).toString());
             return;
         }
         ROOT_LOGGER.debugf("Received message from client: %s", content);

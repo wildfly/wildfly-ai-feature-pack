@@ -42,7 +42,7 @@ public class WasmCDIProcessor implements DeploymentUnitProcessor {
                     Annotation mcpToolQualifier = Annotation.class.cast(Class.forName("org.wildfly.extension.mcp.injection.tool.MCPTool$MCPToolLiteral").getDeclaredField("INSTANCE").get(null));
                     weldCapability.get().registerExtensionInstance(new WasmServicePortableExtension(mcpToolQualifier), deploymentUnit);
                 } catch (ClassNotFoundException | NoSuchFieldException | SecurityException | IllegalAccessException | IllegalArgumentException ex) {
-                    WasmLogger.ROOT_LOGGER.error(ex);
+                    WasmLogger.ROOT_LOGGER.errorResolvingMCPToolQualifier(ex);
                     weldCapability.get().registerExtensionInstance(new WasmServicePortableExtension(), deploymentUnit);
                 }
             } else {
@@ -56,7 +56,7 @@ public class WasmCDIProcessor implements DeploymentUnitProcessor {
                                  deploymentResourceSupport.getDeploymentSubModel("wasm", PathElement.pathElement(WasmModuleRegistrar.NAME, c.name()));
                                      });
         } catch (Exception e) {
-            WasmLogger.ROOT_LOGGER.error(e);
+            WasmLogger.ROOT_LOGGER.errorRegisteringWasmToolDeploymentResources(e);
         }
     }
 }

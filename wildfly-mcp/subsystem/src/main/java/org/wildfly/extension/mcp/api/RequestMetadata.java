@@ -109,7 +109,7 @@ public record RequestMetadata(
         private final String requestedVersion;
 
         public UnsupportedProtocolVersionException(String requestedVersion) {
-            super("Unsupported protocol version: " + requestedVersion);
+            super(ROOT_LOGGER.unsupportedProtocolVersion(requestedVersion));
             this.requestedVersion = requestedVersion;
         }
 

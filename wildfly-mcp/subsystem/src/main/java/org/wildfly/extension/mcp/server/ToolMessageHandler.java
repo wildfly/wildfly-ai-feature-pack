@@ -487,7 +487,7 @@ public class ToolMessageHandler {
                                         .add("requiredCapabilities", reqCaps);
                                 responder.send(Messages.newErrorWithData(id,
                                         MISSING_REQUIRED_CLIENT_CAPABILITY,
-                                        "Client does not support required capability: " + requiredCapability, capData));
+                                        ROOT_LOGGER.missingRequiredClientCapability(requiredCapability), capData));
                                 return;
                             }
                         }
@@ -593,7 +593,7 @@ public class ToolMessageHandler {
                     }
                 }
                 if (headerValue == null && arg.required()) {
-                    throw new IllegalArgumentException(ROOT_LOGGER.missingRequiredArgument("header: " + arg.headerName()));
+                    throw new IllegalArgumentException(ROOT_LOGGER.missingRequiredHeaderArgument(arg.headerName()));
                 }
                 ret[idx] = headerValue;
             } else {
@@ -701,10 +701,7 @@ public class ToolMessageHandler {
                         ROOT_LOGGER.unsignedRequestStateAccepted();
                     } else {
                         ROOT_LOGGER.unsignedRequestStateRejected();
-                        throw new IllegalArgumentException(
-                                "Unsigned requestState rejected — configure a request-state-secret "
-                                        + "or set system property " + ALLOW_UNSIGNED_REQUEST_STATE_PROPERTY
-                                        + "=true to accept unsigned tokens");
+                        throw ROOT_LOGGER.unsignedRequestStateRejectedInvocation(ALLOW_UNSIGNED_REQUEST_STATE_PROPERTY);
                     }
                 }
                 requestState = ((JsonString) rsValue).getString();

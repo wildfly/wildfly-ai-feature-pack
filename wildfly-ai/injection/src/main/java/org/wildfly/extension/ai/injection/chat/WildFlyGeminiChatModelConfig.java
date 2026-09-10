@@ -220,7 +220,7 @@ public class WildFlyGeminiChatModelConfig implements WildFlyChatModelConfig {
                 GeminiHarmBlockThreshold threshold = GeminiHarmBlockThreshold.valueOf(safetySetting.getValue());
                 this.safetySettings.add(new GeminiSafetySetting(category, threshold));
             } catch (IllegalArgumentException ex) {
-                AILogger.ROOT_LOGGER.warn("Invalid value ", ex);
+                AILogger.ROOT_LOGGER.invalidGeminiSafetySetting(ex, safetySetting.getKey(), safetySetting.getValue());
             }
         }
         return this;

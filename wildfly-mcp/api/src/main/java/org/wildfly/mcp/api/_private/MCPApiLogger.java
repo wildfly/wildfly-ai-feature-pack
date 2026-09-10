@@ -34,4 +34,10 @@ public interface MCPApiLogger extends BasicLogger {
 
     @Message(id = 6, value = "Client missing required capability: %s.")
     String missingClientCapability(String capability);
+
+    @Message(id = 7, value = "At least one property must be added to the elicitation form")
+    IllegalStateException mustHaveAtLeastOneSchemaProperty();
+
+    @Message(id = 8, value = "InputRequiredResult must have at least one inputRequest")
+    IllegalStateException mustHaveAtLeastOneInputRequest();
 }

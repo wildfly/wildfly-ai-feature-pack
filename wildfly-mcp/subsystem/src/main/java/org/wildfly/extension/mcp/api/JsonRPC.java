@@ -4,6 +4,7 @@
  */
 package org.wildfly.extension.mcp.api;
 
+import static org.wildfly.extension.mcp.MCPLogger.ROOT_LOGGER;
 import static org.wildfly.extension.mcp.api.Messages.isResponse;
 
 import jakarta.json.Json;
@@ -27,12 +28,12 @@ public class JsonRPC {
         String id = message.get("id") == null ? null : message.get("id").toString();
         String jsonrpc = message.containsKey("jsonrpc") ? message.getString("jsonrpc") : null;
         if (!VERSION.equals(jsonrpc)) {
-            responder.sendError(id, INVALID_REQUEST, "Invalid jsonrpc version: " + jsonrpc);
+            responder.sendError(id, INVALID_REQUEST, ROOT_LOGGER.invalidJsonRpcVersion(jsonrpc));
             return false;
         }
         if (!isResponse(message)) {
             if (message.get("method") == null) {
-                responder.sendError(id, METHOD_NOT_FOUND, "Method not set");
+                responder.sendError(id, METHOD_NOT_FOUND, ROOT_LOGGER.methodNotSet());
                 return false;
             }
         }

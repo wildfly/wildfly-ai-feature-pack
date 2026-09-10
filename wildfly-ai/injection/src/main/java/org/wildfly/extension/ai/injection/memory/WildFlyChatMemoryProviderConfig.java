@@ -40,7 +40,7 @@ public class WildFlyChatMemoryProviderConfig {
 
     public ChatMemoryProvider createChatMemory(Instance<Object> lookup) {
         if (shouldUseHttpSession(lookup)) {
-            AILogger.ROOT_LOGGER.warn("We are using HTTP Session");
+            AILogger.ROOT_LOGGER.debug("Using the HTTP session to store the chat memory");
             HttpSession session = lookup.select(jakarta.servlet.http.HttpSession.class).get();
             switch (this.type) {
                 case TOKEN:

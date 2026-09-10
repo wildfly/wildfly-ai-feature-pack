@@ -237,7 +237,7 @@ public class MCPSseHandlerServiceInstaller implements DeploymentServiceInstaller
             context = new InitialContext();
             return (ScheduledExecutorService) context.lookup("java:comp/DefaultManagedScheduledExecutorService");
         } catch (NamingException ex) {
-            ROOT_LOGGER.warn("Managed scheduled executor service not available, using default scheduled executor service");
+            ROOT_LOGGER.managedScheduledExecutorServiceNotAvailable();
             return Executors.newSingleThreadScheduledExecutor(r -> {
                 Thread t = new Thread(r, "mcp-connection-cleanup");
                 t.setDaemon(true);

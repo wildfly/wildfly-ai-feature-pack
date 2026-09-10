@@ -38,6 +38,10 @@ public interface MCPLogger extends BasicLogger {
 
     @Message(id = 5, value = "Progress is not available outside of an MCP invocation context")
     IllegalStateException progressNotAvailable();
+
     @Message(id = 6, value = "ResourceNotifier is not available outside of an MCP invocation context")
     IllegalStateException resourceNotifierNotAvailable();
+
+    @Message(id = 7, value = "Tool name [%s] does not match the required pattern: %s")
+    IllegalArgumentException invalidToolName(String name, String pattern);
 }

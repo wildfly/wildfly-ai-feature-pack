@@ -280,7 +280,7 @@ public class MCPMessageHandler {
             } catch (RequestStateCodec.RequestStateException e) {
                 ROOT_LOGGER.debugf("requestState validation failed: %s", e.getMessage());
                 context.setErrorCode(JsonRPC.INVALID_PARAMS);
-                context.setErrorMessage("Invalid requestState: " + e.getMessage());
+                context.setErrorMessage(ROOT_LOGGER.invalidRequestState(e.getMessage()));
             }
         }
     }
@@ -340,7 +340,7 @@ public class MCPMessageHandler {
         }
         // The first message must be "initialize"
         if (!INITIALIZE.equals(method)) {
-            String msg = "The first message from the client must be \"initialize\": " + method;
+            String msg = ROOT_LOGGER.firstMessageMustBeInitialize(method);
             context.setErrorCode(JsonRPC.METHOD_NOT_FOUND);
             context.setErrorMessage(msg);
             responder.sendError(id, JsonRPC.METHOD_NOT_FOUND, msg);
@@ -348,7 +348,7 @@ public class MCPMessageHandler {
         }
         JsonObject params = message.getJsonObject(FIELD_PARAMS);
         if (params == null) {
-            String msg = "Initialization params not found";
+            String msg = ROOT_LOGGER.initializationParamsNotFound();
             context.setErrorCode(JsonRPC.INVALID_PARAMS);
             context.setErrorMessage(msg);
             responder.sendError(id, JsonRPC.INVALID_PARAMS, msg);
@@ -358,7 +358,7 @@ public class MCPMessageHandler {
         String clientVersion = initRequest.protocolVersion();
         java.util.Optional<ProtocolVersion> negotiated = ProtocolVersion.negotiate(clientVersion);
         if (negotiated.isEmpty()) {
-            String errorMsg = "Unsupported protocol version: " + clientVersion;
+            String errorMsg = ROOT_LOGGER.unsupportedProtocolVersion(clientVersion);
             context.setErrorCode(UNSUPPORTED_PROTOCOL_VERSION);
             context.setErrorMessage(errorMsg);
             sendUnsupportedVersionError(id, clientVersion, errorMsg, responder);
@@ -371,7 +371,7 @@ public class MCPMessageHandler {
             response.put(FIELD_PROTOCOL_VERSION, negotiated.get().wireValue());
             responder.sendResult(id, JsonRPC.convertMap(response));
         } else {
-            String msg = "Unable to initialize connection [connectionId: " + connection.id() + "]";
+            String msg = ROOT_LOGGER.unableToInitializeConnection(connection.id());
             context.setErrorCode(JsonRPC.INTERNAL_ERROR);
             context.setErrorMessage(msg);
             responder.sendError(id, JsonRPC.INTERNAL_ERROR, msg);
@@ -390,7 +390,7 @@ public class MCPMessageHandler {
         } else if (SERVER_DISCOVER.equals(method)) {
             discover(message, responder);
         } else {
-            String msg = "Client not initialized yet [" + connection.id() + "]";
+            String msg = ROOT_LOGGER.clientNotInitialized(connection.id());
             context.setErrorCode(JsonRPC.INTERNAL_ERROR);
             context.setErrorMessage(msg);
             responder.send(Messages.newError(context.requestId(), JsonRPC.INTERNAL_ERROR, msg));
@@ -511,8 +511,9 @@ public class MCPMessageHandler {
         JsonObject params = message.getJsonObject(FIELD_PARAMS);
         if (params == null) {
             context.setErrorCode(JsonRPC.INVALID_PARAMS);
-            context.setErrorMessage("Missing params");
-            responder.sendError(id, JsonRPC.INVALID_PARAMS, "Missing params");
+            String msg = ROOT_LOGGER.missingParams();
+            context.setErrorMessage(msg);
+            responder.sendError(id, JsonRPC.INVALID_PARAMS, msg);
             return;
         }
 
@@ -522,8 +523,9 @@ public class MCPMessageHandler {
             JsonObject notifications = asJsonObject(params.get("notifications"));
             if (notifications == null) {
                 context.setErrorCode(JsonRPC.INVALID_PARAMS);
-                context.setErrorMessage("'notifications' must be an object");
-                responder.sendError(id, JsonRPC.INVALID_PARAMS, "'notifications' must be an object");
+                String msg = ROOT_LOGGER.fieldMustBeAnObject("notifications");
+                context.setErrorMessage(msg);
+                responder.sendError(id, JsonRPC.INVALID_PARAMS, msg);
                 return;
             }
             if (notifications.getBoolean("resourcesListChanged", false)) {
@@ -548,8 +550,9 @@ public class MCPMessageHandler {
             JsonValue subsValue = params.get("subscriptions");
             if (subsValue == null || subsValue.getValueType() != JsonValue.ValueType.ARRAY) {
                 context.setErrorCode(JsonRPC.INVALID_PARAMS);
-                context.setErrorMessage("'subscriptions' must be an array");
-                responder.sendError(id, JsonRPC.INVALID_PARAMS, "'subscriptions' must be an array");
+                String msg = ROOT_LOGGER.fieldMustBeAnArray("subscriptions");
+                context.setErrorMessage(msg);
+                responder.sendError(id, JsonRPC.INVALID_PARAMS, msg);
                 return;
             }
             JsonArray subs = subsValue.asJsonArray();
@@ -557,8 +560,9 @@ public class MCPMessageHandler {
                 JsonValue element = subs.get(i);
                 if (element.getValueType() != JsonValue.ValueType.OBJECT) {
                     context.setErrorCode(JsonRPC.INVALID_PARAMS);
-                    context.setErrorMessage("Each subscription must be an object");
-                    responder.sendError(id, JsonRPC.INVALID_PARAMS, "Each subscription must be an object");
+                    String msg = ROOT_LOGGER.eachSubscriptionMustBeAnObject();
+                    context.setErrorMessage(msg);
+                    responder.sendError(id, JsonRPC.INVALID_PARAMS, msg);
                     return;
                 }
                 JsonObject sub = element.asJsonObject();
@@ -568,8 +572,9 @@ public class MCPMessageHandler {
             }
         } else {
             context.setErrorCode(JsonRPC.INVALID_PARAMS);
-            context.setErrorMessage("Missing 'notifications' or 'subscriptions' field");
-            responder.sendError(id, JsonRPC.INVALID_PARAMS, "Missing 'notifications' or 'subscriptions' field");
+            String msg = ROOT_LOGGER.missingNotificationsOrSubscriptions();
+            context.setErrorMessage(msg);
+            responder.sendError(id, JsonRPC.INVALID_PARAMS, msg);
             return;
         }
 

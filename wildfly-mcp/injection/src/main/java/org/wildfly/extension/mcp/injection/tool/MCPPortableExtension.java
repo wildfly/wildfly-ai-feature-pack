@@ -170,15 +170,13 @@ public class MCPPortableExtension implements Extension {
     public <X> void vetoUserResourceNotifierProducer(@Observes ProcessProducerMethod<ResourceNotifier, X> event) {
         String name = event.getAnnotatedProducerMethod().getJavaMember().toGenericString();
         ROOT_LOGGER.vetoedCDIBean(ResourceNotifier.class.getName(), name);
-        event.addDefinitionError(new IllegalStateException(
-                "Deployment must not produce ResourceNotifier — it is provided by the MCP subsystem: " + name));
+        event.addDefinitionError(ROOT_LOGGER.deploymentMustNotProduceBean(name));
     }
 
     public <X> void vetoUserResourceNotifierField(@Observes ProcessProducerField<ResourceNotifier, X> event) {
         String name = event.getAnnotatedProducerField().getJavaMember().toGenericString();
         ROOT_LOGGER.vetoedCDIBean(ResourceNotifier.class.getName(), name);
-        event.addDefinitionError(new IllegalStateException(
-                "Deployment must not produce ResourceNotifier — it is provided by the MCP subsystem: " + name));
+        event.addDefinitionError(ROOT_LOGGER.deploymentMustNotProduceBean(name));
     }
 
     private void updateAnnotations(Map<Class<?>, Set<AnnotationLiteral>> beanClasses, Class<?> clazz, AnnotationLiteral... annotations) {
