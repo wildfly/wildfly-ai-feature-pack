@@ -76,7 +76,7 @@
         <version.dev.langchain4j.core>1.19.0</version.dev.langchain4j.core>
         <version.dev.langchain4j.embeddings>1.19.0-beta29</version.dev.langchain4j.embeddings>
         <version.io.projectreactor.netty>1.2.16</version.io.projectreactor.netty>
-        <version.io.projectreactor.reactor-core>3.7.17</version.io.projectreactor.reactor-core>
+        <version.io.projectreactor.reactor-core>3.8.7</version.io.projectreactor.reactor-core>
         <version.io.weaviate.client>5.3.0</version.io.weaviate.client>
         <version.net.java.dev.jna>5.13.0</version.net.java.dev.jna>
         <version.org.extism.sdk.chicory-sdk>0.3.0</version.org.extism.sdk.chicory-sdk>
