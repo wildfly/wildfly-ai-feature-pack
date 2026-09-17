@@ -75,6 +75,8 @@ import org.wildfly.extension.mcp.injection.WildFlyMCPRegistry;
 import org.wildfly.mcp.api.elicitation.ElicitationSender;
 import org.wildfly.extension.mcp.injection.elicitation.ElicitationSenderHolder;
 import org.wildfly.extension.mcp.injection.progress.ProgressHolder;
+import org.wildfly.extension.mcp.injection.resources.ResourceNotifier;
+import org.wildfly.extension.mcp.injection.resources.ResourceNotifierHolder;
 import org.wildfly.extension.mcp.injection.tool.ArgumentMetadata;
 import org.wildfly.extension.mcp.injection.tool.MCPFeatureMetadata;
 import org.wildfly.extension.mcp.injection.tool.MCPTool;
@@ -95,9 +97,11 @@ public class ToolMessageHandler {
     private final Map<String, JsonObject> toolJsonCache = new ConcurrentHashMap<>();
     // Tools whose schema generation failed permanently for this deployment — skipped on every tools/list.
     private final Set<String> failedToolNames = ConcurrentHashMap.newKeySet();
+    private final ResourceMessageHandler resourceHandler;
 
 
-    ToolMessageHandler(WildFlyMCPRegistry registry, ClassLoader classLoader, ExecutorService executorService, int pageSize) {
+    ToolMessageHandler(WildFlyMCPRegistry registry, ClassLoader classLoader, ExecutorService executorService, int pageSize,
+            ResourceMessageHandler resourceHandler) {
         if (pageSize < 0) {
             throw ROOT_LOGGER.invalidPageSize(pageSize);
         }
@@ -108,6 +112,7 @@ public class ToolMessageHandler {
         this.classLoader = classLoader;
         this.executorService = executorService;
         this.pageSize = pageSize;
+        this.resourceHandler = resourceHandler;
     }
 
     /**
@@ -165,7 +170,8 @@ public class ToolMessageHandler {
         for (ArgumentMetadata a : toolMetadata.arguments()) {
             if (a.type() instanceof Class<?> clazz
                     && (ElicitationSender.class.isAssignableFrom(clazz)
-                            || Progress.class.isAssignableFrom(clazz))) {
+                            || Progress.class.isAssignableFrom(clazz)
+                            || ResourceNotifier.class.isAssignableFrom(clazz))) {
                 continue; // injected by the framework, not a client-supplied argument
             }
             properties.add(a.name(), generateInputSchema(a.type(), a));
@@ -350,7 +356,7 @@ public class ToolMessageHandler {
         final ClassLoader prevCL = WildFlySecurityManager.getCurrentContextClassLoaderPrivileged();
         try {
             WildFlySecurityManager.setCurrentContextClassLoaderPrivileged(classLoader);
-            connection.task(executorService.submit(() -> runWithCDIContext(connection, responder, finalProgressToken, () -> {
+            connection.task(executorService.submit(() -> runWithCDIContext(connection, responder, finalProgressToken, resourceHandler, () -> {
                 try {
                     MethodMetadata methodMetadata = metadata.method();
                     Class<?> clazz = classLoader.loadClass(methodMetadata.declaringClassName());
@@ -443,6 +449,8 @@ public class ToolMessageHandler {
                 ret[idx] = ElicitationSenderHolder.get();
             } else if (arg.type() instanceof Class<?> clazz && Progress.class.isAssignableFrom(clazz)) {
                 ret[idx] = ProgressHolder.get();
+            } else if (arg.type() instanceof Class<?> clazz && ResourceNotifier.class.isAssignableFrom(clazz)) {
+                ret[idx] = ResourceNotifierHolder.get();
             } else {
                 JsonValue val = jsonArgs.get(arg.name());
                 if (val == null && arg.required()) {

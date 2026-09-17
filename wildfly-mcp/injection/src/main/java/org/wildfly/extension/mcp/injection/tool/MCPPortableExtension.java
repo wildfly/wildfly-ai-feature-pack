@@ -21,6 +21,8 @@ import org.mcpjava.server.progress.Progress;
 import org.wildfly.extension.mcp.injection.WildFlyMCPRegistry;
 import org.wildfly.extension.mcp.injection.elicitation.ElicitationSenderBean;
 import org.wildfly.extension.mcp.injection.progress.ProgressBean;
+import org.wildfly.extension.mcp.injection.resources.ResourceNotifier;
+import org.wildfly.extension.mcp.injection.resources.ResourceNotifierBean;
 import org.wildfly.mcp.api.elicitation.ElicitationSender;
 
 import static org.wildfly.extension.mcp.injection.MCPLogger.ROOT_LOGGER;
@@ -117,6 +119,7 @@ public class MCPPortableExtension implements Extension {
         }
         atd.addAnnotatedType(ElicitationSenderBean.class, "elicitation-sender-bean");
         atd.addAnnotatedType(ProgressBean.class, "progress-bean");
+        atd.addAnnotatedType(ResourceNotifierBean.class, "resource-notifier-bean");
     }
 
     public <T extends ElicitationSender> void vetoUserElicitationSender(@Observes ProcessAnnotatedType<T> event) {
@@ -155,6 +158,27 @@ public class MCPPortableExtension implements Extension {
         String name = event.getAnnotatedProducerField().getJavaMember().toGenericString();
         ROOT_LOGGER.vetoedCDIBean(Progress.class.getName(), name);
         event.addDefinitionError(ROOT_LOGGER.deploymentMustNotProduceBean(name));
+    }
+
+    public <T extends ResourceNotifier> void vetoUserResourceNotifier(@Observes ProcessAnnotatedType<T> event) {
+        if (!ResourceNotifierBean.class.equals(event.getAnnotatedType().getJavaClass())) {
+            ROOT_LOGGER.vetoedCDIBean(ResourceNotifier.class.getName(), event.getAnnotatedType().getJavaClass().getName());
+            event.veto();
+        }
+    }
+
+    public <X> void vetoUserResourceNotifierProducer(@Observes ProcessProducerMethod<ResourceNotifier, X> event) {
+        String name = event.getAnnotatedProducerMethod().getJavaMember().toGenericString();
+        ROOT_LOGGER.vetoedCDIBean(ResourceNotifier.class.getName(), name);
+        event.addDefinitionError(new IllegalStateException(
+                "Deployment must not produce ResourceNotifier — it is provided by the MCP subsystem: " + name));
+    }
+
+    public <X> void vetoUserResourceNotifierField(@Observes ProcessProducerField<ResourceNotifier, X> event) {
+        String name = event.getAnnotatedProducerField().getJavaMember().toGenericString();
+        ROOT_LOGGER.vetoedCDIBean(ResourceNotifier.class.getName(), name);
+        event.addDefinitionError(new IllegalStateException(
+                "Deployment must not produce ResourceNotifier — it is provided by the MCP subsystem: " + name));
     }
 
     private void updateAnnotations(Map<Class<?>, Set<AnnotationLiteral>> beanClasses, Class<?> clazz, AnnotationLiteral... annotations) {

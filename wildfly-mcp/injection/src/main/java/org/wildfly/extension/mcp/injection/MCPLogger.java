@@ -38,4 +38,6 @@ public interface MCPLogger extends BasicLogger {
 
     @Message(id = 5, value = "Progress is not available outside of an MCP invocation context")
     IllegalStateException progressNotAvailable();
+    @Message(id = 6, value = "ResourceNotifier is not available outside of an MCP invocation context")
+    IllegalStateException resourceNotifierNotAvailable();
 }

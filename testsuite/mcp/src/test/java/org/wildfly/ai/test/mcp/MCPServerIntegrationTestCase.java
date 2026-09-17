@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test;
  *
  * <p>Elicitation tests are in {@link ElicitationIntegrationTestCase}.</p>
  * <p>Progress tests are in {@link ProgressIntegrationTestCase}.</p>
+ * <p>ResourceNotifier tests are in {@link ResourceNotifierIntegrationTestCase}.</p>
  */
 public class MCPServerIntegrationTestCase extends AbstractMCPIntegrationTestCase {
 

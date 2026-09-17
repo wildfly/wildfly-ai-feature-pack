@@ -155,7 +155,6 @@ public class ResourceMessageHandler {
         }
     }
 
-    //TODO expose this somehow to the user to be actually used.
     void notifyResourceUpdated(String uri) {
         Set<MCPConnection> subscribers = subscriptions.get(uri);
         if (subscribers == null || subscribers.isEmpty()) {
@@ -199,7 +198,7 @@ public class ResourceMessageHandler {
         final ClassLoader prevCL = WildFlySecurityManager.getCurrentContextClassLoaderPrivileged();
         try {
             WildFlySecurityManager.setCurrentContextClassLoaderPrivileged(classLoader);
-            connection.task(executorService.submit(() -> runWithCDIContext(connection, responder, MCPServerUtils.extractProgressToken(params), () -> {
+            connection.task(executorService.submit(() -> runWithCDIContext(connection, responder, MCPServerUtils.extractProgressToken(params), this, () -> {
                 try {
                     MethodMetadata methodMetadata = metadata.method();
                     Class<?> clazz = classLoader.loadClass(methodMetadata.declaringClassName());

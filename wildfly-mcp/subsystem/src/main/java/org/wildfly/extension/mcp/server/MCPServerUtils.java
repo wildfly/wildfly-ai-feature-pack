@@ -34,6 +34,7 @@ import org.wildfly.extension.mcp.api.Responder;
 import org.wildfly.extension.mcp.injection.MCPFieldNames;
 import org.wildfly.extension.mcp.injection.elicitation.ElicitationSenderHolder;
 import org.wildfly.extension.mcp.injection.progress.ProgressHolder;
+import org.wildfly.extension.mcp.injection.resources.ResourceNotifierHolder;
 import org.wildfly.extension.mcp.injection.tool.ArgumentMetadata;
 
 /**
@@ -126,7 +127,8 @@ final class MCPServerUtils {
         return null;
     }
 
-    static void runWithCDIContext(MCPConnection connection, Responder responder, ProgressToken progressToken, Runnable task) {
+    static void runWithCDIContext(MCPConnection connection, Responder responder, ProgressToken progressToken,
+            ResourceMessageHandler resourceHandler, Runnable task) {
         RequestContextController rcc = null;
         try {
             rcc = CDI.current().select(RequestContextController.class).get();
@@ -138,11 +140,13 @@ final class MCPServerUtils {
             ElicitationSenderHolder.set(new ElicitationSenderImpl(
                     connection.pendingRequests(), responder, connection.initializeRequest()));
             ProgressHolder.set(new ProgressImpl(progressToken, responder));
+            ResourceNotifierHolder.set(new ResourceNotifierImpl(resourceHandler));
             try {
                 task.run();
             } finally {
                 ProgressHolder.remove();
                 ElicitationSenderHolder.remove();
+                ResourceNotifierHolder.remove();
             }
         } finally {
             if (rcc != null) {
