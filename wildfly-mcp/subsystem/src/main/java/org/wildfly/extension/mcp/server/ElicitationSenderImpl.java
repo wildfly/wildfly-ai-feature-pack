@@ -166,7 +166,7 @@ class ElicitationSenderImpl implements ElicitationSender {
     private static JsonObject parseResult(JsonObject responseMessage) {
         JsonObject result = responseMessage.getJsonObject("result");
         if (result == null) {
-            throw new IllegalStateException("Invalid elicitation response (no result): " + responseMessage);
+            throw ROOT_LOGGER.invalidElicitationResponseNoResult(responseMessage);
         }
         return result;
     }
@@ -174,7 +174,7 @@ class ElicitationSenderImpl implements ElicitationSender {
     private static Elicitation.Response.Action parseAction(JsonObject result, JsonObject responseMessage) {
         String actionStr = result.getString("action", null);
         if (actionStr == null) {
-            throw new IllegalStateException("Invalid elicitation response (no action): " + responseMessage);
+            throw ROOT_LOGGER.invalidElicitationResponseNoAction(responseMessage);
         }
         return Elicitation.Response.Action.valueOf(actionStr.toUpperCase());
     }

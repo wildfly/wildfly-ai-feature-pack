@@ -182,4 +182,25 @@ public interface MCPLogger extends BasicLogger {
     @Message(id = 44, value = "Unhandled content block type: %s")
     @LogMessage(level = WARN)
     void warnUnhandledContentBlockType(String className);
+
+    @Message(id = 45, value = "Progress token is not an integer")
+    IllegalStateException progressTokenIsNotAnInteger();
+
+    @Message(id = 46, value = "Total must be positive")
+    IllegalArgumentException progressTotalMustBePositive();
+
+    @Message(id = 47, value = "Amount must be positive")
+    IllegalArgumentException progressAmountMustBePositive();
+
+    @Message(id = 48, value = "Progress %s exceeds total %s")
+    IllegalArgumentException progressExceedsTotal(Object progress, Object total);
+
+    @Message(id = 49, value = "Failed to send synchronous notification")
+    RuntimeException failedToSendSyncNotification(@Cause Throwable cause);
+
+    @Message(id = 50, value = "Invalid elicitation response (no result): %s")
+    IllegalStateException invalidElicitationResponseNoResult(Object responseMessage);
+
+    @Message(id = 51, value = "Invalid elicitation response (no action): %s")
+    IllegalStateException invalidElicitationResponseNoAction(Object responseMessage);
 }

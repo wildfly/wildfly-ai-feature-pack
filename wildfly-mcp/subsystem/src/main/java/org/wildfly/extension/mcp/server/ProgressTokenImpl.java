@@ -4,6 +4,8 @@
  */
 package org.wildfly.extension.mcp.server;
 
+import static org.wildfly.extension.mcp.MCPLogger.ROOT_LOGGER;
+
 import java.util.Objects;
 
 import org.mcpjava.server.progress.ProgressToken;
@@ -36,7 +38,7 @@ class ProgressTokenImpl implements ProgressToken {
     @Override
     public Number asInteger() {
         if (type != Type.INTEGER) {
-            throw new IllegalStateException("Token is not an integer");
+            throw ROOT_LOGGER.progressTokenIsNotAnInteger();
         }
         return integerValue;
     }

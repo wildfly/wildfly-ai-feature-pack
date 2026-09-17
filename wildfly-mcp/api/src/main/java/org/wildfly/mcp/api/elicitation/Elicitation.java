@@ -196,7 +196,7 @@ public final class Elicitation {
 
         public Elicitation build() {
             if (properties.isEmpty()) {
-                throw new IllegalStateException("At least one property must be added");
+                throw ROOT_LOGGER.mustHaveAtLeastOneSchemaProperty();
             }
             return new Elicitation(Mode.FORM, message, timeoutMillis,
                     List.copyOf(properties), null, null);

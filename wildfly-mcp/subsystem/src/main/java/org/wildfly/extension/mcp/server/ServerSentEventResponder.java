@@ -109,7 +109,7 @@ public class ServerSentEventResponder implements Responder, MCPConnection {
             });
             latch.await(5, TimeUnit.SECONDS);
         } catch (IOException ex) {
-            throw new RuntimeException("Failed to send sync notification", ex);
+            throw ROOT_LOGGER.failedToSendSyncNotification(ex);
         }
     }
 

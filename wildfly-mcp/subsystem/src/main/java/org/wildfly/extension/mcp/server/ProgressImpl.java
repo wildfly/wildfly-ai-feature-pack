@@ -4,6 +4,8 @@
  */
 package org.wildfly.extension.mcp.server;
 
+import static org.wildfly.extension.mcp.MCPLogger.ROOT_LOGGER;
+
 import jakarta.json.Json;
 import jakarta.json.JsonObjectBuilder;
 import java.math.BigDecimal;
@@ -203,7 +205,7 @@ class ProgressImpl implements Progress {
         @Override
         public ProgressTracker.Builder setTotal(long total) {
             if (total <= 0) {
-                throw new IllegalArgumentException("Total must be positive");
+                throw ROOT_LOGGER.progressTotalMustBePositive();
             }
             this.total = BigDecimal.valueOf(total);
             return this;
@@ -212,7 +214,7 @@ class ProgressImpl implements Progress {
         @Override
         public ProgressTracker.Builder setTotal(double total) {
             if (total <= 0) {
-                throw new IllegalArgumentException("Total must be positive");
+                throw ROOT_LOGGER.progressTotalMustBePositive();
             }
             this.total = BigDecimal.valueOf(total);
             return this;
@@ -268,12 +270,12 @@ class ProgressImpl implements Progress {
         @Override
         public void advanceAndForget(BigDecimal amount) {
             if (amount.compareTo(BigDecimal.ZERO) <= 0) {
-                throw new IllegalArgumentException("Amount must be positive");
+                throw ROOT_LOGGER.progressAmountMustBePositive();
             }
             BigDecimal current = progress.accumulateAndGet(amount, (prev, add) -> {
                 BigDecimal result = prev.add(add);
                 if (total != null && result.compareTo(total) > 0) {
-                    throw new IllegalArgumentException("Progress " + result + " exceeds total " + total);
+                    throw ROOT_LOGGER.progressExceedsTotal(result, total);
                 }
                 return result;
             });

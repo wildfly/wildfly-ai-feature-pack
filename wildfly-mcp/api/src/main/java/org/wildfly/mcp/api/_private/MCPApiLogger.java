@@ -31,4 +31,7 @@ public interface MCPApiLogger extends BasicLogger {
 
     @Message(id = 5, value = "Parameter 'max' (%s) can not be less than 'min' (%s) ")
     IllegalArgumentException maxCanNotBeLessThanMin(Number max, Number min);
+
+    @Message(id = 6, value = "At least one property must be added to the elicitation form")
+    IllegalStateException mustHaveAtLeastOneSchemaProperty();
 }
