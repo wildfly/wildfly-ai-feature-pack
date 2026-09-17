@@ -10,7 +10,8 @@ The project is at **experimental** stability level. It targets **WildFly** and u
 ## Build
 
 ```bash
-./mvnw clean install                    # full build + tests
+./mvnw clean install                    # build + unit tests
+./mvnw clean install -Pintegration-test # full build + integration tests
 ./mvnw clean install -DskipTests=true   # skip tests
 ./mvnw clean install -Dtest=TestClass   # run a single test class
 ```
@@ -33,11 +34,12 @@ wildfly-wasm/         WebAssembly support (proof of concept)
   injection/            WASM CDI injection
   subsystem/            WASM subsystem extension
 bom/                  Bill of Materials POM
-provision/            Provisioning resources and feature pack specs
+ai-feature-pack/      Provisioning resources, Galleon layers, and feature pack specs
 testsuite/
   integration/          Arquillian integration tests (deploys to managed WildFly)
   mcp/                  MCP-specific tests
-doc/                  Documentation (Glow layer docs)
+doc/
+  glow-layer-doc/       Per-layer documentation for Glow (one file per Galleon layer)
 ```
 
 ## Code conventions
@@ -68,7 +70,8 @@ XML files use the comment equivalent.
 - `org.wildfly.extension.ai.deployment` — deployment processors
 - `org.wildfly.extension.mcp` — MCP subsystem classes
 - `org.wildfly.extension.mcp.injection` — MCP injection
-- `org.wildfly.wasm` — WASM subsystem and API
+- `org.wildfly.extension.wasm` — WASM subsystem and CDI injection
+- `org.wildfly.wasm.api` — public WASM API
 
 ### WildFly subsystem patterns
 
@@ -79,11 +82,11 @@ Each subsystem follows the standard WildFly subsystem pattern:
 - `*SubsystemTransformation` — model transformers between versions
 - Resource definitions under the subsystem for each configurable element (e.g., `OllamaChatModelResource`, `OpenAIChatModelResource`)
 
-When adding a new AI provider or resource type, follow the existing pattern in `wildfly-mcp/subsystem/`.
+When adding a new AI provider or resource type, follow the existing pattern in `wildfly-ai/subsystem/`.
 
 ### Logging
 
-- verify that new logging messages at or above `INFO` are using a `@Message` method from a `Logger` instead of hard-coding the message.
+- Verify that new logging messages at or above `INFO` are using a `@Message` method from a jboss-logging `Logger` instead of hard-coding the message.
 - **never** change the `id` of an `@Message` annotation in a `Logger`.
 
 ### Code generation
@@ -131,8 +134,28 @@ When adding a new AI provider or resource type, follow the existing pattern in `
 
 - **Unit tests**: JUnit 5 subsystem parse/marshal tests (e.g., `AISubsystemTestCase`).
 - **Integration tests**: Arquillian-based, deploy to a managed WildFly server provisioned with specific Galleon layers. Located in `testsuite/integration/`.
-- **Container dependencies**: Integration tests use Testcontainers to manage Ollama (for LLM) and LGTM (for OpenTelemetry). These start automatically if Docker/Podman is available.
-- Run a specific test: `./mvnw clean install -Dtest=OllamaChatModelTestCase`
+- **Container dependencies**: Integration tests use Testcontainers to manage Ollama (for LLM) and LGTM (for OpenTelemetry). Ollama is started automatically and downloads `llama3.2:1b` on first use. LGTM-dependent OpenTelemetry tests are skipped when Docker/Podman and a local LGTM instance are unavailable.
+- **Integration-test profile**: `testsuite/integration` is excluded from the default reactor; use `-Pintegration-test` to include it. CI intentionally runs only the default build.
+- Run a specific integration test: `./mvnw clean install -Pintegration-test -Dtest=OllamaChatModelTestCase`
+
+## Change checklists
+
+### Subsystem and provider changes
+
+For a new provider, resource, or configurable capability:
+
+- Update the subsystem resource/model definitions, registration, and CDI/deployment integration as applicable.
+- When the XML model changes, add a new schema version and its parser/marshaller behavior; never change an existing schema version.
+- Add or update the matching Galleon layer spec under `ai-feature-pack/src/main/resources/layers/standalone/`, including required packages and feature specifications.
+- Keep module descriptors, feature-pack dependencies, and experimental-stability declarations consistent with the new capability.
+- Add parse/marshal coverage and, where user-facing behavior changes, focused Arquillian integration coverage.
+- Update the corresponding Glow-layer documentation under `doc/glow-layer-doc/`. This applies to MCP subsystem changes as well as AI/WASM provider changes.
+
+### Validation
+
+- Run the smallest Maven command that covers the affected module and its dependents; use `-am` to also build the modules the changed module depends on.
+- Run `./mvnw clean install -Pintegration-test` for changes to integration tests, provisioning, deployment behavior, or runtime subsystem behavior.
+- Before committing a change intended for CI, run `./mvnw clean install`, matching the CI command. Do not assume this runs the integration-test profile.
 
 ## CI
 
@@ -168,7 +191,7 @@ Follow [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/#sum
 
 Common types: `feat`, `fix`, `chore`, `docs`, `refactor`, `test`. Use a scope when it clarifies which module or area is affected (e.g., `feat(mcp): add streamable transport support`).
 
-Always ask if the commit is related to a GitHub issue. If that's the case, add `This fixes #<issue>` at the end of the commit message.
+Follow `CONTRIBUTING.md`: include the GitHub issue in the commit message and pull request title, and link the issue in the pull request description. Always confirm the upstream is `wildfly-extras/wildfly-ai-feature-pack` before creating issue or pull request links.
 
 ## Contributing
 
