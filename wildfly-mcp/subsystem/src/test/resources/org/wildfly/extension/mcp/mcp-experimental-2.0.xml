@@ -4,4 +4,5 @@
 -->
 
 <subsystem xmlns="urn:jboss:domain:mcp:experimental:2.0"
-           sse-path="sse" messages-path="messages" streamable-path="stream"/>
+           sse-path="sse" messages-path="messages" streamable-path="stream"
+           request-state-secret="dGVzdC1zZWNyZXQta2V5IQ==" allowed-origins="example.com other.example.com"/>

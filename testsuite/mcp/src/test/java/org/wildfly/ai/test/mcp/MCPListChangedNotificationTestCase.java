@@ -311,11 +311,15 @@ public class MCPListChangedNotificationTestCase {
             builder.add("params", params);
         }
 
-        postToStreamable(capture.sessionId, builder.build().toString());
+        postToStreamable(capture.sessionId, builder.build().toString(), capture);
         return future.get(RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
     }
 
     private void postToStreamable(String sessionId, String jsonBody) throws Exception {
+        postToStreamable(sessionId, jsonBody, null);
+    }
+
+    private void postToStreamable(String sessionId, String jsonBody, NotificationCapture capture) throws Exception {
         URL streamUrl = new URL("http://127.0.0.1:8080/" + DEPLOYMENT_NAME + "/stream");
         HttpURLConnection conn = (HttpURLConnection) streamUrl.openConnection();
         conn.setRequestMethod("POST");
@@ -324,13 +328,54 @@ public class MCPListChangedNotificationTestCase {
         conn.setRequestProperty("mcp-session-id", sessionId);
         conn.setDoOutput(true);
         conn.setConnectTimeout(5000);
-        conn.setReadTimeout(10000);
+        conn.setReadTimeout((int) (RESPONSE_TIMEOUT_SECONDS * 1000 * 3));
 
         try (OutputStream os = conn.getOutputStream()) {
             os.write(jsonBody.getBytes(StandardCharsets.UTF_8));
         }
-        assertThat(conn.getResponseCode()).as("POST should succeed").isEqualTo(200);
-        conn.disconnect();
+
+        int statusCode = conn.getResponseCode();
+
+        String contentType = conn.getContentType();
+        if (contentType != null && contentType.contains("text/event-stream") && capture != null) {
+            Thread reader = new Thread(() -> {
+                try (BufferedReader br = new BufferedReader(
+                        new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
+                    String line;
+                    while ((line = br.readLine()) != null) {
+                        if (line.startsWith("data:")) {
+                            String data = line.substring(5).trim();
+                            if (data.isEmpty()) continue;
+                            try {
+                                JsonObject json = Json.createReader(new StringReader(data)).readObject();
+                                boolean isResponse = json.containsKey("result") || json.containsKey("error");
+                                if (isResponse && json.containsKey("id")) {
+                                    long id = json.getJsonNumber("id").longValue();
+                                    CompletableFuture<String> future = capture.pendingResponses.remove(id);
+                                    if (future != null) {
+                                        future.complete(data);
+                                        continue;
+                                    }
+                                }
+                            } catch (Exception e) {
+                                // treat as server-initiated
+                            }
+                            capture.serverInitiatedMessages.offer(data);
+                        }
+                    }
+                } catch (Exception e) {
+                    // Connection closed or timeout
+                } finally {
+                    conn.disconnect();
+                }
+            }, "sse-post-reader");
+            reader.setDaemon(true);
+            reader.start();
+        } else {
+            conn.disconnect();
+        }
+
+        assertThat(statusCode).as("POST notification: 200 if SSE stream still open, 202 if accepted without body").isIn(200, 202);
     }
 
     private record NotificationCapture(

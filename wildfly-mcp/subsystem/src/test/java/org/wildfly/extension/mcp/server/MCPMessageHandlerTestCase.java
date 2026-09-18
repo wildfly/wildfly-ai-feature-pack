@@ -39,44 +39,42 @@ public class MCPMessageHandlerTestCase {
         WildFlyMCPRegistry registry = new WildFlyMCPRegistry();
 
         // Register a test tool
-        registry.addTool("echo", new MCPFeatureMetadata(
+        registry.addTool("echo", MCPFeatureMetadata.builder(
                 MCPFeatureMetadata.Kind.TOOL, "echo",
                 new MethodMetadata("echo", "Echoes the input", null, null,
                         List.of(new ArgumentMetadata("message", "The message to echo", true, String.class)),
-                        "org.test.EchoTool", "java.lang.String")));
+                        "org.test.EchoTool", "java.lang.String")).build());
 
         // Register a test tool with optional param
-        registry.addTool("greet", new MCPFeatureMetadata(
+        registry.addTool("greet", MCPFeatureMetadata.builder(
                 MCPFeatureMetadata.Kind.TOOL, "greet",
                 new MethodMetadata("greet", "Greets someone", null, null,
                         List.of(
                                 new ArgumentMetadata("name", "Person's name", true, String.class),
                                 new ArgumentMetadata("title", "Optional title", false, String.class)),
-                        "org.test.GreetTool", "java.lang.String")));
+                        "org.test.GreetTool", "java.lang.String")).build());
 
-        // Register a test prompt with a title
-        registry.addPrompt("code-review", new MCPFeatureMetadata(
+        // Register a test prompt
+        registry.addPrompt("code-review", MCPFeatureMetadata.builder(
                 MCPFeatureMetadata.Kind.PROMPT, "code-review",
                 new MethodMetadata("codeReview", "Code review prompt", null, null,
                         List.of(new ArgumentMetadata("code", "The code to review", true, String.class)),
-                        "org.test.CodeReviewPrompt", "java.lang.String"),
-                "Request Code Review", -1, java.util.Optional.empty(), java.util.OptionalDouble.empty()));
-
+                        "org.test.CodeReviewPrompt", "java.lang.String")).title("Request Code Review").build());
         // Register a test resource
-        registry.addResource("file:///logs/server.log", new MCPFeatureMetadata(
+        registry.addResource("file:///logs/server.log", MCPFeatureMetadata.builder(
                 MCPFeatureMetadata.Kind.RESOURCE, "server-log",
                 new MethodMetadata("serverLog", "Server log file", "file:///logs/server.log", "text/plain",
                         List.of(),
-                        "org.test.ServerLogResource", "java.lang.String")));
+                        "org.test.ServerLogResource", "java.lang.String")).build());
 
         // Register a test resource template
-        registry.addResourceTemplate("db:///{database}/tables/{table}", new MCPFeatureMetadata(
+        registry.addResourceTemplate("db:///{database}/tables/{table}", MCPFeatureMetadata.builder(
                 MCPFeatureMetadata.Kind.RESOURCE_TEMPLATE, "db-table",
                 new MethodMetadata("readTable", "Read a database table", "db:///{database}/tables/{table}", "application/json",
                         List.of(
                                 new ArgumentMetadata("database", "Database name", true, String.class),
                                 new ArgumentMetadata("table", "Table name", true, String.class)),
-                        "org.test.DbResource", "java.lang.String")));
+                        "org.test.DbResource", "java.lang.String")).build());
 
         connectionManager = new ConnectionManager();
         handler = new MCPMessageHandler(connectionManager, registry, getClass().getClassLoader(), "test-server", "1.0.0");
@@ -97,7 +95,7 @@ public class MCPMessageHandlerTestCase {
         assertEquals(MCPConnection.Status.INITIALIZING, connection.status());
         assertTrue(responder.hasResult());
         JsonObject result = responder.lastResult();
-        assertEquals("2025-11-25", result.getString("protocolVersion"));
+        assertEquals("2025-03-26", result.getString("protocolVersion"));
         assertNotNull(result.getJsonObject("serverInfo"));
         assertEquals("test-server", result.getJsonObject("serverInfo").getString("name"));
         assertNotNull(result.getJsonObject("capabilities"));

@@ -130,7 +130,7 @@ public class CompletionHandler {
             sendCompletionResponse(id, result, responder);
         } catch (Throwable ex) {
             ROOT_LOGGER.errorInvokingCompletion(ex, metadata.name());
-            responder.sendError(id, INTERNAL_ERROR, "Internal error");
+            responder.sendError(id, INTERNAL_ERROR, ROOT_LOGGER.internalError());
         } finally {
             WildFlySecurityManager.setCurrentContextClassLoaderPrivileged(prevCL);
         }

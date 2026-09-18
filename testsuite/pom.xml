@@ -116,5 +116,15 @@
                 <module>integration</module>
             </modules>
         </profile>
+        <!-- Profile to run MCP conformance tests using @modelcontextprotocol/conformance.
+             Requires npm/npx (Node.js) to be available on the PATH.
+             Usage: mvn verify -Pmcp-conformance
+        -->
+        <profile>
+            <id>mcp-conformance</id>
+            <modules>
+                <module>mcp-conformance</module>
+            </modules>
+        </profile>
     </profiles>
 </project>

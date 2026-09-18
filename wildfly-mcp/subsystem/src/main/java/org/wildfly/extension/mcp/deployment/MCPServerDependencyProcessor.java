@@ -51,8 +51,10 @@ import org.wildfly.extension.mcp.injection.tool.MCPFeatureMetadata;
 import org.wildfly.extension.mcp.injection.tool.MethodMetadata;
 import org.mcpjava.server.Role;
 import org.wildfly.extension.mcp.injection.tool.ToolAnnotations;
+import org.wildfly.mcp.api.McpHeader;
 import org.wildfly.mcp.api.tool.InputSchema;
 import org.wildfly.mcp.api.tool.OutputSchema;
+import org.wildfly.mcp.api.ListChangeNotifier;
 import org.wildfly.mcp.api.elicitation.ElicitationSender;
 import org.mcpjava.server.progress.Progress;
 import org.mcpjava.server.tools.Tool;
@@ -109,9 +111,21 @@ public class MCPServerDependencyProcessor implements DeploymentUnitProcessor {
             String description = annotation.value(DESCRIPTION) != null ? annotation.value(DESCRIPTION).asString() : "";
             String title = annotation.value(TITLE) != null ? annotation.value(TITLE).asString() : "";
             MethodInfo info = annotation.target().asMethod();
-            List<ArgumentMetadata> arguments = buildArguments(info, promptArg);
+            List<ArgumentMetadata> arguments = new ArrayList<>();
+            for (MethodParameterInfo param : info.parameters()) {
+                DotName paramTypeName = param.type().name();
+                if (INPUT_RESPONSES.equals(paramTypeName)) {
+                    arguments.add(new ArgumentMetadata(param.name(), "", false,
+                            org.wildfly.mcp.api.tool.InputResponses.class));
+                } else {
+                    AnnotationInstance promptArgAnnotation = param.annotation(promptArg);
+                    if (promptArgAnnotation != null) {
+                        arguments.add(buildArgument(promptArgAnnotation));
+                    }
+                }
+            }
             ROOT_LOGGER.debugf("Prompt detected on class %s with method %s with the following annotated parameters %s", info.declaringClass(), info.name(), arguments);
-            MCPFeatureMetadata metadata = new MCPFeatureMetadata(MCPFeatureMetadata.Kind.PROMPT,
+            MCPFeatureMetadata.Builder builder = MCPFeatureMetadata.builder(MCPFeatureMetadata.Kind.PROMPT,
                     name,
                     new MethodMetadata(
                             annotation.target().asMethod().name(),
@@ -120,10 +134,9 @@ public class MCPServerDependencyProcessor implements DeploymentUnitProcessor {
                             null,
                             arguments,
                             info.declaringClass().toString(),
-                            annotation.target().asMethod().returnType().name().toString()),
-                    title, -1, Optional.empty(), OptionalDouble.empty()
-            );
-            registry.addPrompt(name, metadata);
+                            annotation.target().asMethod().returnType().name().toString()))
+                    .title(title);
+            registry.addPrompt(name, builder.build());
         }
     }
 
@@ -132,10 +145,14 @@ public class MCPServerDependencyProcessor implements DeploymentUnitProcessor {
     private static final DotName COMPLETE_CONTEXT = DotName.createSimple(CompletionContext.class);
     private static final DotName INPUT_SCHEMA = DotName.createSimple(InputSchema.class);
     private static final DotName OUTPUT_SCHEMA = DotName.createSimple(OutputSchema.class);
+    private static final DotName MCP_HEADER = DotName.createSimple(McpHeader.class);
+    private static final DotName CLIENT_CAPABILITIES = DotName.createSimple("org.wildfly.mcp.api.ClientCapabilities");
+    private static final DotName LIST_CHANGE_NOTIFIER = DotName.createSimple(ListChangeNotifier.class);
+    private static final DotName INPUT_RESPONSES = DotName.createSimple("org.wildfly.mcp.api.tool.InputResponses");
     private static final String GENERATOR = "generator";
     private static final String FROM = "from";
 
-    private void processTools(WildFlyMCPRegistry registry, List<AnnotationInstance> annotations) {
+    void processTools(WildFlyMCPRegistry registry, List<AnnotationInstance> annotations) {
         if (annotations == null || annotations.isEmpty()) {
             return;
         }
@@ -155,14 +172,26 @@ public class MCPServerDependencyProcessor implements DeploymentUnitProcessor {
                     arguments.add(new ArgumentMetadata(param.name(), "", false, ElicitationSender.class));
                 } else if (PROGRESS.equals(paramTypeName)) {
                     arguments.add(new ArgumentMetadata(param.name(), "", false, Progress.class));
+                } else if (CLIENT_CAPABILITIES.equals(paramTypeName)) {
+                    arguments.add(new ArgumentMetadata(param.name(), "", false,
+                            org.wildfly.mcp.api.ClientCapabilities.class));
+                } else if (LIST_CHANGE_NOTIFIER.equals(paramTypeName)) {
+                    arguments.add(new ArgumentMetadata(param.name(), "", false, ListChangeNotifier.class));
+                } else if (INPUT_RESPONSES.equals(paramTypeName)) {
+                    arguments.add(new ArgumentMetadata(param.name(), "", false,
+                            org.wildfly.mcp.api.tool.InputResponses.class));
                 } else {
-                    AnnotationInstance toolArgAnnotation = param.annotation(toolArg);
-                    if (toolArgAnnotation != null) {
-                        String paramName = toolArgAnnotation.value(NAME) != null ? toolArgAnnotation.value(NAME).asString() : param.name();
-                        boolean required = toolArgAnnotation.value(REQUIRED) == null ? true : toolArgAnnotation.value(REQUIRED).asBoolean();
-                        String paramDescription = toolArgAnnotation.value(DESCRIPTION) != null ? toolArgAnnotation.value(DESCRIPTION).asString() : "";
+                    AnnotationInstance headerAnnotation = param.annotation(MCP_HEADER);
+                    if (headerAnnotation != null) {
+                        String headerName = headerAnnotation.value().asString();
+                        boolean required = headerAnnotation.value(REQUIRED) != null && headerAnnotation.value(REQUIRED).asBoolean();
                         Type type = JandexReflection.loadType(param.type());
-                        arguments.add(new ArgumentMetadata(paramName, paramDescription, required, type));
+                        arguments.add(new ArgumentMetadata(param.name(), "", required, type, headerName));
+                    } else {
+                        AnnotationInstance toolArgAnnotation = param.annotation(toolArg);
+                        if (toolArgAnnotation != null) {
+                            arguments.add(buildArgument(toolArgAnnotation));
+                        }
                     }
                 }
             }
@@ -204,7 +233,7 @@ public class MCPServerDependencyProcessor implements DeploymentUnitProcessor {
                 toolAnnotations = new ToolAnnotations(title, null, null, null, null);
             }
             ROOT_LOGGER.debugf("Tool detected on class %s with method %s with the following annotated parameters %s", info.declaringClass(), info.name(), arguments);
-            MCPFeatureMetadata metadata = new MCPFeatureMetadata(MCPFeatureMetadata.Kind.TOOL,
+            MCPFeatureMetadata.Builder builder = MCPFeatureMetadata.builder(MCPFeatureMetadata.Kind.TOOL,
                     name,
                     new MethodMetadata(
                             annotation.target().asMethod().name(),
@@ -213,12 +242,14 @@ public class MCPServerDependencyProcessor implements DeploymentUnitProcessor {
                             null,
                             arguments,
                             info.declaringClass().toString(),
-                            annotation.target().asMethod().returnType().name().toString()),
-                    toolAnnotations, structuredContent,
-                    Optional.ofNullable(inputSchemaGenerator).filter(s -> !s.isEmpty()),
-                    Optional.ofNullable(outputSchemaGenerator).filter(s -> !s.isEmpty()),
-                    Optional.ofNullable(outputSchemaFrom).filter(s -> !s.isEmpty())
-            );
+                            annotation.target().asMethod().returnType().name().toString()))
+                    .toolAnnotations(toolAnnotations)
+                    .structuredContent(structuredContent)
+                    .inputSchemaGenerator(inputSchemaGenerator.isEmpty() ? null : inputSchemaGenerator)
+                    .outputSchemaGenerator(outputSchemaGenerator.isEmpty() ? null : outputSchemaGenerator)
+                    .outputSchemaFrom(outputSchemaFrom.isEmpty() ? null : outputSchemaFrom);
+
+            MCPFeatureMetadata metadata = builder.build();
             registry.addTool(name, metadata);
         }
     }
@@ -240,7 +271,7 @@ public class MCPServerDependencyProcessor implements DeploymentUnitProcessor {
             MethodInfo info = annotation.target().asMethod();
             ResourceAnnotationValues resourceAnnotations = extractResourceAnnotations(annotation);
             ROOT_LOGGER.debugf("Resource detected on class %s with method %s", info.declaringClass(), info.name());
-            MCPFeatureMetadata metadata = new MCPFeatureMetadata(MCPFeatureMetadata.Kind.RESOURCE,
+            MCPFeatureMetadata.Builder builder = MCPFeatureMetadata.builder(MCPFeatureMetadata.Kind.RESOURCE,
                     name,
                     new MethodMetadata(
                             annotation.target().asMethod().name(),
@@ -249,10 +280,13 @@ public class MCPServerDependencyProcessor implements DeploymentUnitProcessor {
                             mimeType,
                             List.of(),
                             info.declaringClass().toString(),
-                            annotation.target().asMethod().returnType().name().toString()),
-                    title, size, resourceAnnotations.audience(), resourceAnnotations.priority()
-            );
-            registry.addResource(uri, metadata);
+                            annotation.target().asMethod().returnType().name().toString()))
+                    .title(title)
+                    .size(size);
+            resourceAnnotations.audience().ifPresent(builder::audience);
+            resourceAnnotations.priority().ifPresent(builder::priority);
+
+            registry.addResource(uri, builder.build());
         }
     }
 
@@ -274,7 +308,7 @@ public class MCPServerDependencyProcessor implements DeploymentUnitProcessor {
             List<ArgumentMetadata> arguments = buildArguments(info, resourceTemplateArg);
             ResourceAnnotationValues resourceAnnotations = extractResourceAnnotations(annotation);
             ROOT_LOGGER.debugf("ResourceTemplate detected on class %s with method %s with the following annotated parameters %s", info.declaringClass(), info.name(), arguments);
-            MCPFeatureMetadata metadata = new MCPFeatureMetadata(MCPFeatureMetadata.Kind.RESOURCE_TEMPLATE,
+            MCPFeatureMetadata.Builder builder = MCPFeatureMetadata.builder(MCPFeatureMetadata.Kind.RESOURCE_TEMPLATE,
                     name,
                     new MethodMetadata(
                             annotation.target().asMethod().name(),
@@ -283,10 +317,12 @@ public class MCPServerDependencyProcessor implements DeploymentUnitProcessor {
                             mimeType,
                             arguments,
                             info.declaringClass().toString(),
-                            annotation.target().asMethod().returnType().name().toString()),
-                    title, -1, resourceAnnotations.audience(), resourceAnnotations.priority()
-            );
-            registry.addResourceTemplate(uriTemplate, metadata);
+                            annotation.target().asMethod().returnType().name().toString()))
+                    .title(title);
+            resourceAnnotations.audience().ifPresent(builder::audience);
+            resourceAnnotations.priority().ifPresent(builder::priority);
+
+            registry.addResourceTemplate(uriTemplate, builder.build());
         }
     }
 
@@ -330,7 +366,7 @@ public class MCPServerDependencyProcessor implements DeploymentUnitProcessor {
             }
             String completionKey = refName + "_" + argName;
             ROOT_LOGGER.debugf("%s detected on class %s with method %s for %s %s arg %s", logPrefix, info.declaringClass(), info.name(), logLabel, refName, argName);
-            MCPFeatureMetadata metadata = new MCPFeatureMetadata(kind,
+            MCPFeatureMetadata metadata = MCPFeatureMetadata.builder(kind,
                     completionKey,
                     new MethodMetadata(
                             info.name(),
@@ -339,8 +375,8 @@ public class MCPServerDependencyProcessor implements DeploymentUnitProcessor {
                             null,
                             arguments,
                             info.declaringClass().toString(),
-                            info.returnType().name().toString())
-            );
+                            info.returnType().name().toString()))
+                    .build();
             registrar.accept(completionKey, metadata);
         }
     }
@@ -350,6 +386,7 @@ public class MCPServerDependencyProcessor implements DeploymentUnitProcessor {
     }
 
     private record ResourceAnnotationValues(Optional<Set<Role>> audience, OptionalDouble priority) {
+
         static final ResourceAnnotationValues EMPTY = new ResourceAnnotationValues(Optional.empty(), OptionalDouble.empty());
     }
 
@@ -378,12 +415,16 @@ public class MCPServerDependencyProcessor implements DeploymentUnitProcessor {
         List<AnnotationInstance> params = info.annotations(argAnnotation);
         List<ArgumentMetadata> arguments = new ArrayList<>();
         for (AnnotationInstance param : params) {
-            String paramName = param.value(NAME) != null ? param.value(NAME).asString() : param.target().asMethodParameter().name();
-            boolean required = param.value(REQUIRED) == null || param.value(REQUIRED).asBoolean();
-            String paramDescription = param.value(DESCRIPTION) != null ? param.value(DESCRIPTION).asString() : "";
-            Type type = JandexReflection.loadType(param.target().asMethodParameter().type());
-            arguments.add(new ArgumentMetadata(paramName, paramDescription, required, type));
+            arguments.add(buildArgument(param));
         }
         return arguments;
+    }
+
+    private ArgumentMetadata buildArgument(AnnotationInstance param) {
+        String paramName = param.value(NAME) != null ? param.value(NAME).asString() : param.target().asMethodParameter().name();
+        boolean required = param.value(REQUIRED) == null || param.value(REQUIRED).asBoolean();
+        String paramDescription = param.value(DESCRIPTION) != null ? param.value(DESCRIPTION).asString() : "";
+        Type type = JandexReflection.loadType(param.target().asMethodParameter().type());
+        return new ArgumentMetadata(paramName, paramDescription, required, type);
     }
 }

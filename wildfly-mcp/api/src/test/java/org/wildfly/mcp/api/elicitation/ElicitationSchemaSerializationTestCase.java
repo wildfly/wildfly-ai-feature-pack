@@ -452,6 +452,37 @@ public class ElicitationSchemaSerializationTestCase {
         assertThrows(NullPointerException.class, () -> new EnumProperty("foo", List.of("a")).enumTitles(null));
     }
 
+    @Test
+    public void testEnumPropertyLegacyFormat() {
+        EnumProperty property = new EnumProperty("foo", List.of("opt1", "opt2", "opt3"))
+                .enumTitles(List.of("Option One", "Option Two", "Option Three"))
+                .legacyFormat();
+        JsonObject json = property.jsonSchema();
+        assertEquals("string", json.getString("type"));
+        assertFalse(json.containsKey("oneOf"));
+        JsonArray enumArr = json.getJsonArray("enum");
+        assertNotNull(enumArr);
+        assertEquals(3, enumArr.size());
+        assertEquals("opt1", enumArr.getString(0));
+        JsonArray enumNames = json.getJsonArray("enumNames");
+        assertNotNull(enumNames);
+        assertEquals(3, enumNames.size());
+        assertEquals("Option One", enumNames.getString(0));
+        assertEquals("Option Two", enumNames.getString(1));
+        assertEquals("Option Three", enumNames.getString(2));
+    }
+
+    @Test
+    public void testEnumPropertyLegacyFormatWithoutTitles() {
+        EnumProperty property = new EnumProperty("foo", List.of("a", "b"))
+                .legacyFormat();
+        JsonObject json = property.jsonSchema();
+        assertEquals("string", json.getString("type"));
+        assertNotNull(json.getJsonArray("enum"));
+        assertFalse(json.containsKey("enumNames"));
+        assertFalse(json.containsKey("oneOf"));
+    }
+
     // ==================== MultiStringProperty (multi-select) ====================
 
     @Test

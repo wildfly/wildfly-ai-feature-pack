@@ -7,13 +7,18 @@ package org.wildfly.extension.mcp.server;
 import static org.wildfly.extension.mcp.injection.MCPFieldNames.CONTENT;
 import static org.wildfly.extension.mcp.injection.MCPFieldNames.IS_ERROR;
 import static org.wildfly.extension.mcp.injection.MCPFieldNames.TEXT;
+import static org.wildfly.extension.mcp.injection.MCPFieldNames.TOOL_STATE;
 import static org.wildfly.extension.mcp.injection.MCPFieldNames.TYPE;
-
 import static org.wildfly.extension.mcp.MCPLogger.ROOT_LOGGER;
+
+import static io.undertow.util.Headers.CONTENT_TYPE;
+import static io.undertow.util.Headers.HOST;
+import static io.undertow.util.Headers.ORIGIN;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
 import jakarta.enterprise.context.control.RequestContextController;
 import jakarta.enterprise.inject.spi.CDI;
@@ -24,27 +29,48 @@ import jakarta.json.JsonString;
 import jakarta.json.JsonValue;
 import jakarta.json.JsonValue.ValueType;
 import java.lang.reflect.InvocationTargetException;
+import org.wildfly.security.auth.server.SecurityDomain;
+import org.wildfly.security.auth.server.SecurityIdentity;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.net.InetSocketAddress;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.mcpjava.server.progress.ProgressToken;
+import org.wildfly.extension.mcp.api.JsonRPC;
 import org.wildfly.extension.mcp.api.MCPConnection;
 import org.wildfly.extension.mcp.api.Responder;
 import org.wildfly.extension.mcp.injection.MCPFieldNames;
+import org.wildfly.extension.mcp.api.RequestMetadata;
+import org.wildfly.extension.mcp.injection.capabilities.ClientCapabilitiesHolder;
 import org.wildfly.extension.mcp.injection.elicitation.ElicitationSenderHolder;
+import org.wildfly.extension.mcp.injection.input.InputResponsesHolder;
+import org.wildfly.extension.mcp.injection.listchange.ListChangeNotifierHolder;
 import org.wildfly.extension.mcp.injection.progress.ProgressHolder;
+import org.wildfly.mcp.api.ListChangeNotifier;
+import org.wildfly.mcp.api.tool.InputResponses;
 import org.wildfly.extension.mcp.injection.tool.ArgumentMetadata;
+import org.wildfly.mcp.api.ClientCapabilities;
+import org.wildfly.mcp.api.MissingCapabilityException;
 
 /**
  * Package-private utilities shared across MCP message handler classes.
  */
 final class MCPServerUtils {
 
+    static final String JSON_CONTENT_TYPE = "application/json";
+
     /** Shared, thread-safe Jackson mapper used by all message handlers in this package. */
     static final ObjectMapper SHARED_MAPPER = new ObjectMapper();
 
     private MCPServerUtils() {
+    }
+
+    static JsonObject asJsonObject(JsonValue value) {
+        return (value != null && value.getValueType() == JsonValue.ValueType.OBJECT) ? value.asJsonObject() : null;
     }
 
     /**
@@ -70,7 +96,7 @@ final class MCPServerUtils {
     }
 
     @SuppressWarnings("unchecked")
-    static Object[] prepareArguments(List<ArgumentMetadata> arguments, Map<String, JsonValue> args, ObjectMapper mapper) throws MCPException {
+    static Object[] prepareArguments(List<ArgumentMetadata> arguments, Map<String, JsonValue> args, ObjectMapper mapper) {
         if (arguments.isEmpty()) {
             return new Object[0];
         }
@@ -79,7 +105,7 @@ final class MCPServerUtils {
         for (ArgumentMetadata arg : arguments) {
             JsonValue val = args.get(arg.name());
             if (val == null && arg.required()) {
-                throw MCPException.missingRequiredArgument(arg.name());
+                throw new IllegalArgumentException(ROOT_LOGGER.missingRequiredArgument(arg.name()));
             }
             if (val == null) {
                 ret[idx] = null;
@@ -127,6 +153,22 @@ final class MCPServerUtils {
     }
 
     static void runWithCDIContext(MCPConnection connection, Responder responder, ProgressToken progressToken, Runnable task) {
+        runWithCDIContext(connection, responder, progressToken, null, null, null, task);
+    }
+
+    static void runWithCDIContext(MCPConnection connection, Responder responder, ProgressToken progressToken,
+            RequestMetadata requestMetadata, Runnable task) {
+        runWithCDIContext(connection, responder, progressToken, requestMetadata, null, null, task);
+    }
+
+    static void runWithCDIContext(MCPConnection connection, Responder responder, ProgressToken progressToken,
+            RequestMetadata requestMetadata, ListChangeNotifier listChangeNotifier, Runnable task) {
+        runWithCDIContext(connection, responder, progressToken, requestMetadata, listChangeNotifier, null, task);
+    }
+
+    static void runWithCDIContext(MCPConnection connection, Responder responder, ProgressToken progressToken,
+            RequestMetadata requestMetadata, ListChangeNotifier listChangeNotifier,
+            InputResponses inputResponses, Runnable task) {
         RequestContextController rcc = null;
         try {
             rcc = CDI.current().select(RequestContextController.class).get();
@@ -138,17 +180,64 @@ final class MCPServerUtils {
             ElicitationSenderHolder.set(new ElicitationSenderImpl(
                     connection.pendingRequests(), responder, connection.initializeRequest()));
             ProgressHolder.set(new ProgressImpl(progressToken, responder));
+            if (listChangeNotifier != null) {
+                ListChangeNotifierHolder.set(listChangeNotifier);
+            }
+            if (inputResponses != null) {
+                InputResponsesHolder.set(inputResponses);
+            }
+            if (requestMetadata != null) {
+                ClientCapabilitiesHolder.set(new ClientCapabilities() {
+                    @Override
+                    public boolean hasCapability(String capability) {
+                        return requestMetadata.hasCapability(capability);
+                    }
+
+                    @Override
+                    public void requireCapability(String capability) throws MissingCapabilityException {
+                        if (!hasCapability(capability)) {
+                            throw new MissingCapabilityException(capability);
+                        }
+                    }
+                });
+            }
             try {
                 task.run();
             } finally {
                 ProgressHolder.remove();
                 ElicitationSenderHolder.remove();
+                ClientCapabilitiesHolder.remove();
+                ListChangeNotifierHolder.remove();
+                InputResponsesHolder.remove();
             }
         } finally {
             if (rcc != null) {
                 rcc.deactivate();
             }
         }
+    }
+
+    static String currentPrincipalName() {
+        SecurityDomain domain = SecurityDomain.getCurrent();
+        if (domain == null) {
+            return null;
+        }
+        SecurityIdentity identity = domain.getCurrentSecurityIdentity();
+        if (identity == null || identity.isAnonymous()) {
+            return null;
+        }
+        return identity.getPrincipal().getName();
+    }
+
+    static String encodeMrtrRequestState(String state, String requestId, String featureName,
+            RequestStateCodec requestStateCodec) {
+        if (requestStateCodec != null) {
+            JsonObject stateJson = Json.createObjectBuilder()
+                    .add(TOOL_STATE, state)
+                    .build();
+            return requestStateCodec.encode(stateJson, currentPrincipalName(), requestId, featureName);
+        }
+        return state;
     }
 
     /**
@@ -182,7 +271,7 @@ final class MCPServerUtils {
      * for reporting invocation errors back to the model.
      */
     static void sendInvocationFailureResult(String id, Throwable cause, Responder responder) {
-        String message = cause instanceof MCPException ? cause.getMessage() : "Invocation failed";
+        String message = "Invocation failed";
         JsonObjectBuilder builder = Json.createObjectBuilder();
         builder.add(CONTENT, Json.createArrayBuilder()
                 .add(Json.createObjectBuilder()
@@ -190,5 +279,177 @@ final class MCPServerUtils {
                         .add(TEXT, message)));
         builder.add(IS_ERROR, true);
         responder.sendResult(id, builder);
+    }
+
+    static void sendInvalidParamsError(IllegalArgumentException exception, String id, Responder responder) {
+        ROOT_LOGGER.errorProcessingRequest(exception);
+        responder.sendError(id, JsonRPC.INVALID_PARAMS, exception.getMessage());
+    }
+
+    // ---- DNS rebinding / Origin validation ----
+
+    /**
+     * Validates the Host and Origin headers against the server's destination address to prevent
+     * DNS rebinding attacks (see GHSA-w48q-cv73-mx4w). Returns {@code true} if the request is
+     * allowed, {@code false} if it was rejected (403 already sent).
+     */
+    static boolean validateOrigin(HttpServerExchange exchange) {
+        return validateOrigin(exchange, Collections.emptySet());
+    }
+
+    static boolean validateOrigin(HttpServerExchange exchange, Set<String> allowedOrigins) {
+        String host = exchange.getRequestHeaders().getFirst(HOST);
+        if (host != null && !host.isEmpty()) {
+            String hostName = extractHostName(host);
+            InetSocketAddress destAddr = exchange.getDestinationAddress();
+            if (destAddr != null && !isAllowedHost(hostName, destAddr, allowedOrigins)) {
+                ROOT_LOGGER.originValidationFailed("(dns-rebinding)", host);
+                sendForbidden(exchange, "Forbidden: Host header validation failed");
+                return false;
+            }
+        }
+
+        String origin = exchange.getRequestHeaders().getFirst(ORIGIN);
+        if (origin == null || origin.isEmpty()) {
+            return true;
+        }
+        if ("null".equals(origin)) {
+            ROOT_LOGGER.originValidationFailed(origin, "(null origin)");
+            sendForbidden(exchange, "Forbidden: Origin validation failed");
+            return false;
+        }
+        if (host == null || host.isEmpty()) {
+            ROOT_LOGGER.originValidationFailed(origin, "(missing Host header)");
+            sendForbidden(exchange, "Forbidden: Origin without Host header");
+            return false;
+        }
+        try {
+            java.net.URI originUri = java.net.URI.create(origin);
+            String originHost = originUri.getHost();
+            if (originHost == null) {
+                ROOT_LOGGER.originValidationFailed(origin, host);
+                sendForbidden(exchange, "Forbidden: Origin validation failed");
+                return false;
+            }
+            String hostName = extractHostName(host);
+            if (!originHost.equalsIgnoreCase(hostName)) {
+                ROOT_LOGGER.originValidationFailed(origin, host);
+                sendForbidden(exchange, "Forbidden: Origin validation failed");
+                return false;
+            }
+            String originScheme = originUri.getScheme();
+            String requestScheme = exchange.getRequestScheme();
+            if (originScheme != null && requestScheme != null
+                    && !originScheme.equalsIgnoreCase(requestScheme)) {
+                ROOT_LOGGER.originValidationFailed(origin, host);
+                sendForbidden(exchange, "Forbidden: Origin validation failed");
+                return false;
+            }
+            int originPort = effectivePort(originUri.getPort(), originScheme);
+            int requestPort = effectivePort(extractHostPort(host), requestScheme);
+            if (originPort != requestPort) {
+                ROOT_LOGGER.originValidationFailed(origin, host);
+                sendForbidden(exchange, "Forbidden: Origin validation failed");
+                return false;
+            }
+        } catch (IllegalArgumentException e) {
+            ROOT_LOGGER.originValidationFailed(origin, host);
+            sendForbidden(exchange, "Forbidden: Origin validation failed");
+            return false;
+        }
+        return true;
+    }
+
+    private static void sendForbidden(HttpServerExchange exchange, String message) {
+        exchange.setStatusCode(403);
+        exchange.getResponseHeaders().put(CONTENT_TYPE, JSON_CONTENT_TYPE);
+        exchange.getResponseSender().send(
+                "{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32600,\"message\":\"" + message + "\"}}");
+    }
+
+    static String extractHostName(String host) {
+        try {
+            java.net.URI uri = java.net.URI.create("http://" + host);
+            String parsed = uri.getHost();
+            if (parsed != null) {
+                if (parsed.startsWith("[") && parsed.endsWith("]")) {
+                    parsed = parsed.substring(1, parsed.length() - 1);
+                }
+                return parsed;
+            }
+        } catch (IllegalArgumentException ignored) {
+        }
+        if (host.startsWith("[")) {
+            int closeBracket = host.indexOf(']');
+            if (closeBracket > 0) {
+                return host.substring(1, closeBracket);
+            }
+        }
+        int colon = host.lastIndexOf(':');
+        return colon > 0 ? host.substring(0, colon) : host;
+    }
+
+    static int extractHostPort(String host) {
+        try {
+            java.net.URI uri = java.net.URI.create("http://" + host);
+            return uri.getPort();
+        } catch (IllegalArgumentException ignored) {
+        }
+        return -1;
+    }
+
+    static int effectivePort(int port, String scheme) {
+        if (port != -1) {
+            return port;
+        }
+        if ("https".equalsIgnoreCase(scheme)) {
+            return 443;
+        }
+        return 80;
+    }
+
+    static boolean isAllowedHost(String hostName, InetSocketAddress destAddr) {
+        return isAllowedHost(hostName, destAddr, Collections.emptySet());
+    }
+
+    static boolean isAllowedHost(String hostName, InetSocketAddress destAddr, Set<String> allowedOrigins) {
+        if (isLocalhostAddress(hostName)) {
+            return true;
+        }
+        if (allowedOrigins.stream().anyMatch(o -> o.equalsIgnoreCase(hostName))) {
+            return true;
+        }
+        if (destAddr.getAddress() != null) {
+            String destIp = destAddr.getAddress().getHostAddress();
+            if (hostName.equalsIgnoreCase(destIp)) {
+                return true;
+            }
+        }
+        String destHostName = destAddr.getHostString();
+        return destHostName != null && hostName.equalsIgnoreCase(destHostName);
+    }
+
+    static boolean isLocalhostAddress(String host) {
+        return "localhost".equalsIgnoreCase(host)
+                || "127.0.0.1".equals(host)
+                || "::1".equals(host)
+                || "[::1]".equals(host)
+                || "0:0:0:0:0:0:0:1".equals(host);
+    }
+
+    // ---- x-mcp-header extraction ----
+
+    private static final String MCP_HEADER_PREFIX = "x-mcp-header-";
+
+    static Map<String, String> extractMcpHeaders(HttpServerExchange exchange) {
+        Map<String, String> headers = new HashMap<>();
+        for (var headerName : exchange.getRequestHeaders().getHeaderNames()) {
+            String name = headerName.toString().toLowerCase();
+            if (name.startsWith(MCP_HEADER_PREFIX)) {
+                String key = name.substring(MCP_HEADER_PREFIX.length());
+                headers.put(key, exchange.getRequestHeaders().getFirst(headerName));
+            }
+        }
+        return headers;
     }
 }

@@ -22,6 +22,7 @@
         <module name="com.github.victools.jsonschema-generator"/>
         <module name="io.smallrye.jandex"/>
         <module name="io.undertow.core" services="import"/>
+        <module name="org.jboss.xnio"/>
         <module name="jakarta.enterprise.api"/>
         <module name="jakarta.enterprise.concurrent.api"/>
         <module name="jakarta.json.api"/>

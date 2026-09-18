@@ -94,7 +94,7 @@ public class ElicitationIntegrationTestCase extends AbstractMCPIntegrationTestCa
                 {"jsonrpc":"2.0","id":%d,"result":{"action":"accept","content":{"name":"WildFly"}}}"""
                 .formatted(elicitationId);
         int statusCode = postToStreamable(clientResponse);
-        assertThat(statusCode).as("Client response POST should succeed").isEqualTo(200);
+        assertThat(statusCode).as("Client response POST: 200 if SSE stream still open, 202 if accepted without body").isIn(200, 202);
 
         String toolResult = toolResultFuture.get(RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
         assertThat(toolResult).as("Should receive tool result after elicitation").isNotNull();
@@ -206,7 +206,7 @@ public class ElicitationIntegrationTestCase extends AbstractMCPIntegrationTestCa
                 {"jsonrpc":"2.0","id":%d,"result":{"action":"accept"}}"""
                 .formatted(elicitationId);
         int statusCode = postToStreamable(clientResponse);
-        assertThat(statusCode).as("Client response POST should succeed").isEqualTo(200);
+        assertThat(statusCode).as("Client response POST: 200 if SSE stream still open, 202 if accepted without body").isIn(200, 202);
 
         String relativePath = elicitationUrl.startsWith("/") ? elicitationUrl.substring(1) : elicitationUrl;
         URL callbackUrl = deploymentUrl.toURI().resolve("%s/%s".formatted(relativePath, toolElicitationId)).toURL();

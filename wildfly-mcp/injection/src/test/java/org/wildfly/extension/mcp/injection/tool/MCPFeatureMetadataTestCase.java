@@ -10,8 +10,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
-import java.util.Optional;
-import java.util.OptionalDouble;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
@@ -25,8 +23,8 @@ class MCPFeatureMetadataTestCase {
     }
 
     @Test
-    void minimalConstructorSetsDefaults() {
-        MCPFeatureMetadata meta = new MCPFeatureMetadata(Kind.TOOL, "myTool", method("run", "desc", List.of()));
+    void minimalBuilderSetsDefaults() {
+        MCPFeatureMetadata meta = MCPFeatureMetadata.builder(Kind.TOOL, "myTool", method("run", "desc", List.of())).build();
         assertEquals(Kind.TOOL, meta.kind());
         assertEquals("myTool", meta.name());
         assertNull(meta.toolAnnotations());
@@ -41,11 +39,14 @@ class MCPFeatureMetadataTestCase {
     }
 
     @Test
-    void toolConstructorSetsDefaults() {
-        MCPFeatureMetadata meta = new MCPFeatureMetadata(Kind.TOOL, "myTool",
-                method("run", "desc", List.of()),
-                new ToolAnnotations("Tool Title", null, true, null, null),
-                true, Optional.of("gen.Input"), Optional.of("gen.Output"), Optional.empty());
+    void toolBuilderSetsFields() {
+        MCPFeatureMetadata meta = MCPFeatureMetadata.builder(Kind.TOOL, "myTool",
+                method("run", "desc", List.of()))
+                .toolAnnotations(new ToolAnnotations("Tool Title", null, true, null, null))
+                .structuredContent(true)
+                .inputSchemaGenerator("gen.Input")
+                .outputSchemaGenerator("gen.Output")
+                .build();
         assertEquals("Tool Title", meta.toolAnnotations().title());
         assertTrue(meta.structuredContent());
         assertEquals("gen.Input", meta.inputSchemaGenerator().get());
@@ -55,10 +56,14 @@ class MCPFeatureMetadataTestCase {
     }
 
     @Test
-    void resourceConstructorSetsDefaults() {
-        MCPFeatureMetadata meta = new MCPFeatureMetadata(Kind.RESOURCE, "config",
-                method("getConfig", "desc", List.of()),
-                "Config Resource", 1024, Optional.of(Set.of(Role.ASSISTANT)), OptionalDouble.of(0.5));
+    void resourceBuilderSetsFields() {
+        MCPFeatureMetadata meta = MCPFeatureMetadata.builder(Kind.RESOURCE, "config",
+                method("getConfig", "desc", List.of()))
+                .title("Config Resource")
+                .size(1024)
+                .audience(Set.of(Role.ASSISTANT))
+                .priority(0.5)
+                .build();
         assertEquals("Config Resource", meta.title());
         assertEquals(1024, meta.size());
         assertTrue(meta.audience().isPresent());
@@ -69,7 +74,7 @@ class MCPFeatureMetadataTestCase {
 
     @Test
     void descriptionDelegatesToMethod() {
-        MCPFeatureMetadata meta = new MCPFeatureMetadata(Kind.PROMPT, "greet", method("greet", "Says hello", List.of()));
+        MCPFeatureMetadata meta = MCPFeatureMetadata.builder(Kind.PROMPT, "greet", method("greet", "Says hello", List.of())).build();
         assertEquals("Says hello", meta.description());
     }
 
@@ -78,7 +83,7 @@ class MCPFeatureMetadataTestCase {
         List<ArgumentMetadata> args = List.of(
                 new ArgumentMetadata("name", "The name", true, String.class),
                 new ArgumentMetadata("age", "The age", false, int.class));
-        MCPFeatureMetadata meta = new MCPFeatureMetadata(Kind.TOOL, "greet", method("greet", "desc", args));
+        MCPFeatureMetadata meta = MCPFeatureMetadata.builder(Kind.TOOL, "greet", method("greet", "desc", args)).build();
         assertEquals(2, meta.arguments().size());
         assertEquals("name", meta.arguments().get(0).name());
         assertEquals("age", meta.arguments().get(1).name());

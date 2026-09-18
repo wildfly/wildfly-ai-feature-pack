@@ -376,12 +376,22 @@ public class MCPServerIntegrationTestCase extends AbstractMCPIntegrationTestCase
         String pingMessage = """
                 {"jsonrpc":"2.0","id":%d,"method":"ping"}""".formatted(id);
 
-        int statusCode = postToStreamableWithProtocolVersion(pingMessage, "2025-11-25");
+        int statusCode = postToStreamableWithProtocolVersion(pingMessage, "2025-03-26");
         assertThat(statusCode).as("Matching MCP-Protocol-Version should succeed").isEqualTo(200);
 
         String response = future.get(RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
         assertThat(response).as("Ping should return a result").isNotNull();
         assertThat(response).as("Ping should contain result").contains("\"result\"");
+    }
+
+    @Test
+    public void testMismatchedProtocolVersionHeaderReturns400() throws Exception {
+        long id = nextId.getAndIncrement();
+        String pingMessage = """
+                {"jsonrpc":"2.0","id":%d,"method":"ping"}""".formatted(id);
+
+        int statusCode = postToStreamableWithProtocolVersion(pingMessage, "2025-11-25");
+        assertThat(statusCode).as("Mismatched MCP-Protocol-Version should return 400").isEqualTo(400);
     }
 
     @Test

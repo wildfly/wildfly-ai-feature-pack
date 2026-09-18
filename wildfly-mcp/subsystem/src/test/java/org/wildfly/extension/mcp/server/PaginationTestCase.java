@@ -22,9 +22,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.wildfly.extension.mcp.api.ConnectionManager;
 import org.wildfly.extension.mcp.api.Cursor;
-import org.wildfly.extension.mcp.api.MCPConnection;
 import org.wildfly.extension.mcp.injection.WildFlyMCPRegistry;
-import org.wildfly.extension.mcp.injection.tool.ArgumentMetadata;
 import org.wildfly.extension.mcp.injection.tool.MCPFeatureMetadata;
 import org.wildfly.extension.mcp.injection.tool.MethodMetadata;
 
@@ -47,37 +45,37 @@ public class PaginationTestCase {
     public void setUp() {
         registry = new WildFlyMCPRegistry();
 
-        registry.addTool("alpha", new MCPFeatureMetadata(
+        registry.addTool("alpha", MCPFeatureMetadata.builder(
                 MCPFeatureMetadata.Kind.TOOL, "alpha",
-                new MethodMetadata("alpha", "Alpha tool", null, null, List.of(), "org.test.T", "java.lang.String")));
-        registry.addTool("beta", new MCPFeatureMetadata(
+                new MethodMetadata("alpha", "Alpha tool", null, null, List.of(), "org.test.T", "java.lang.String")).build());
+        registry.addTool("beta", MCPFeatureMetadata.builder(
                 MCPFeatureMetadata.Kind.TOOL, "beta",
-                new MethodMetadata("beta", "Beta tool", null, null, List.of(), "org.test.T", "java.lang.String")));
+                new MethodMetadata("beta", "Beta tool", null, null, List.of(), "org.test.T", "java.lang.String")).build());
 
-        registry.addPrompt("a-prompt", new MCPFeatureMetadata(
+        registry.addPrompt("a-prompt", MCPFeatureMetadata.builder(
                 MCPFeatureMetadata.Kind.PROMPT, "a-prompt",
-                new MethodMetadata("aPrompt", "A prompt", null, null, List.of(), "org.test.P", "java.lang.String")));
-        registry.addPrompt("b-prompt", new MCPFeatureMetadata(
+                new MethodMetadata("aPrompt", "A prompt", null, null, List.of(), "org.test.P", "java.lang.String")).build());
+        registry.addPrompt("b-prompt", MCPFeatureMetadata.builder(
                 MCPFeatureMetadata.Kind.PROMPT, "b-prompt",
-                new MethodMetadata("bPrompt", "B prompt", null, null, List.of(), "org.test.P", "java.lang.String")));
+                new MethodMetadata("bPrompt", "B prompt", null, null, List.of(), "org.test.P", "java.lang.String")).build());
 
-        registry.addResource("file:///a.log", new MCPFeatureMetadata(
+        registry.addResource("file:///a.log", MCPFeatureMetadata.builder(
                 MCPFeatureMetadata.Kind.RESOURCE, "a-resource",
-                new MethodMetadata("aRes", "A resource", "file:///a.log", "text/plain", List.of(), "org.test.R", "java.lang.String")));
-        registry.addResource("file:///b.log", new MCPFeatureMetadata(
+                new MethodMetadata("aRes", "A resource", "file:///a.log", "text/plain", List.of(), "org.test.R", "java.lang.String")).build());
+        registry.addResource("file:///b.log", MCPFeatureMetadata.builder(
                 MCPFeatureMetadata.Kind.RESOURCE, "b-resource",
-                new MethodMetadata("bRes", "B resource", "file:///b.log", "text/plain", List.of(), "org.test.R", "java.lang.String")));
+                new MethodMetadata("bRes", "B resource", "file:///b.log", "text/plain", List.of(), "org.test.R", "java.lang.String")).build());
 
-        registry.addResourceTemplate("tmpl:///{a}", new MCPFeatureMetadata(
+        registry.addResourceTemplate("tmpl:///{a}", MCPFeatureMetadata.builder(
                 MCPFeatureMetadata.Kind.RESOURCE_TEMPLATE, "a-template",
-                new MethodMetadata("aTmpl", "A template", "tmpl:///{a}", "application/json", List.of(), "org.test.RT", "java.lang.String")));
-        registry.addResourceTemplate("tmpl:///{b}", new MCPFeatureMetadata(
+                new MethodMetadata("aTmpl", "A template", "tmpl:///{a}", "application/json", List.of(), "org.test.RT", "java.lang.String")).build());
+        registry.addResourceTemplate("tmpl:///{b}", MCPFeatureMetadata.builder(
                 MCPFeatureMetadata.Kind.RESOURCE_TEMPLATE, "b-template",
-                new MethodMetadata("bTmpl", "B template", "tmpl:///{b}", "application/json", List.of(), "org.test.RT", "java.lang.String")));
+                new MethodMetadata("bTmpl", "B template", "tmpl:///{b}", "application/json", List.of(), "org.test.RT", "java.lang.String")).build());
 
         ConnectionManager connectionManager = new ConnectionManager();
         handler = new MCPMessageHandler(connectionManager, registry, getClass().getClassLoader(),
-                "test-server", "1.0.0", PAGE_SIZE);
+                "test-server", "1.0.0", new MCPHandlerConfig(PAGE_SIZE, List.of(), null, 3_600_000L, "public"));
 
         responder = new TestResponder();
         connection = new TestMCPConnection("test-connection-1");
@@ -119,7 +117,7 @@ public class PaginationTestCase {
     public void testToolsListNoPaginationWhenDisabled() {
         ConnectionManager cm = new ConnectionManager();
         MCPMessageHandler noPagingHandler = new MCPMessageHandler(cm, registry,
-                getClass().getClassLoader(), "test-server", "1.0.0", 0);
+                getClass().getClassLoader(), "test-server", "1.0.0");
         TestMCPConnection conn = new TestMCPConnection("no-page-conn");
         cm.add(conn);
         TestResponder resp = new TestResponder();

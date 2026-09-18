@@ -20,6 +20,7 @@ import static org.wildfly.extension.mcp.injection.MCPFieldNames.TEXT;
 import static org.wildfly.extension.mcp.injection.MCPFieldNames.URI;
 import static org.wildfly.extension.mcp.injection.MCPFieldNames.URI_TEMPLATE;
 import static org.wildfly.extension.mcp.server.MCPServerUtils.SHARED_MAPPER;
+import static org.wildfly.extension.mcp.server.MCPServerUtils.asJsonObject;
 import static org.wildfly.extension.mcp.server.MCPServerUtils.getRequestId;
 import static org.wildfly.extension.mcp.server.MCPServerUtils.invokeViaReflection;
 import static org.wildfly.extension.mcp.server.MCPServerUtils.prepareArguments;
@@ -54,6 +55,7 @@ import org.mcpjava.server.resources.TextResourceContents;
 import org.wildfly.extension.mcp.api.ContentMapper;
 import org.wildfly.extension.mcp.api.Cursor;
 import org.wildfly.extension.mcp.api.MCPConnection;
+import org.wildfly.extension.mcp.api.Messages;
 import org.wildfly.extension.mcp.api.Responder;
 import org.wildfly.extension.mcp.injection.WildFlyMCPRegistry;
 import org.wildfly.extension.mcp.injection.tool.MCPFeatureMetadata;
@@ -113,18 +115,19 @@ public class ResourceTemplateMessageHandler {
 
     void resourceTemplateRead(JsonObject message, Responder responder, MCPConnection connection) {
         String id = getRequestId(message);
-        JsonValue paramsValue = message.get(PARAMS);
-        if (paramsValue == null || paramsValue.getValueType() != JsonValue.ValueType.OBJECT) {
+        JsonObject params = asJsonObject(message.get(PARAMS));
+        if (params == null) {
             responder.sendError(id, INVALID_PARAMS, ROOT_LOGGER.missingRequiredMessage());
             return;
         }
-        JsonObject params = paramsValue.asJsonObject();
         String resourceUri = params.getString(URI);
         ROOT_LOGGER.debugf("Read resource template %s [id: %s]", resourceUri, id);
 
         final MCPFeatureMetadata metadata = registry.findResourceTemplateByUri(resourceUri);
         if (metadata == null) {
-            responder.sendError(id, INVALID_PARAMS, ROOT_LOGGER.noMatchingResourceTemplate(resourceUri));
+            responder.send(Messages.newErrorWithData(id, INVALID_PARAMS,
+                    ROOT_LOGGER.noMatchingResourceTemplate(resourceUri),
+                    Json.createObjectBuilder().add(URI, resourceUri)));
             return;
         }
         Map<String, JsonValue> args = extractTemplateArguments(metadata.method().uri(), resourceUri);
@@ -150,7 +153,7 @@ public class ResourceTemplateMessageHandler {
                             }
                         } catch (Throwable ex) {
                             ROOT_LOGGER.errorInvokingResourceTemplate(ex, resourceUri);
-                            responder.sendError(id, INTERNAL_ERROR, "Internal error");
+                            responder.sendError(id, INTERNAL_ERROR, ROOT_LOGGER.internalError());
                             return;
                         }
                     } else {
@@ -182,11 +185,11 @@ public class ResourceTemplateMessageHandler {
                     JsonObjectBuilder builder = Json.createObjectBuilder();
                     builder.add(CONTENTS, jsonContent);
                     responder.sendResult(id, builder);
-                } catch (MCPException e) {
-                    MCPException.sendError(e, id, responder);
-                } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException | SecurityException | ClassNotFoundException | InstantiationException | IllegalArgumentException ex) {
+                } catch (IllegalArgumentException e) {
+                    MCPServerUtils.sendInvalidParamsError(e, id, responder);
+                } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException | SecurityException | ClassNotFoundException | InstantiationException ex) {
                     ROOT_LOGGER.errorInvokingResourceTemplate(ex, resourceUri);
-                    responder.sendError(id, INTERNAL_ERROR, "Internal error");
+                    responder.sendError(id, INTERNAL_ERROR, ROOT_LOGGER.internalError());
                 }
             })));
         } finally {

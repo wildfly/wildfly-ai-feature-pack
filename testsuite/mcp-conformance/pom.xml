@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright The WildFly Authors
+  ~ SPDX-License-Identifier: Apache-2.0
+  -->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.wildfly.generative-ai</groupId>
+        <artifactId>wildfly-ai-testsuite</artifactId>
+        <version>0.20.2-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>wildfly-ai-testsuite-mcp-conformance</artifactId>
+    <packaging>war</packaging>
+
+    <name>WildFly AI Feature Pack - MCP Conformance Tests</name>
+    <description>Runs the @modelcontextprotocol/conformance suite against the WildFly MCP Server</description>
+
+    <properties>
+        <jboss.home>${project.build.directory}/server</jboss.home>
+        <mcp.server.url>http://localhost:8080/mcp/stream</mcp.server.url>
+        <conformance.baseline.dir>${project.basedir}/src/test/resources</conformance.baseline.dir>
+        <version.mcp.conformance>0.2.0-alpha.11</version.mcp.conformance>
+    </properties>
+
+    <dependencies>
+        <!-- MCP Server API for @Tool, @Prompt, @Resource annotations -->
+        <dependency>
+            <groupId>org.mcpjava</groupId>
+            <artifactId>mcp-server-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- WildFly MCP API for ElicitationSender, Progress injection -->
+        <dependency>
+            <groupId>org.wildfly.generative-ai</groupId>
+            <artifactId>wildfly-mcp-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- WildFly MCP Injection for ToolSchemaGenerator -->
+        <dependency>
+            <groupId>org.wildfly.generative-ai</groupId>
+            <artifactId>wildfly-mcp-injection</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- Jakarta CDI API -->
+        <dependency>
+            <groupId>jakarta.enterprise</groupId>
+            <artifactId>jakarta.enterprise.cdi-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>jakarta.inject</groupId>
+            <artifactId>jakarta.inject-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>jakarta.json</groupId>
+            <artifactId>jakarta.json-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- JUnit 5 for integration tests -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <finalName>mcp</finalName>
+        <testResources>
+            <testResource>
+                <directory>src/test/resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>provisioning.xml</include>
+                </includes>
+            </testResource>
+            <testResource>
+                <directory>src/test/resources</directory>
+                <filtering>false</filtering>
+                <excludes>
+                    <exclude>provisioning.xml</exclude>
+                </excludes>
+            </testResource>
+        </testResources>
+        <plugins>
+            <!-- WildFly Maven Plugin -->
+            <plugin>
+                <groupId>org.wildfly.plugins</groupId>
+                <artifactId>wildfly-maven-plugin</artifactId>
+                <executions>
+                    <!-- Provision the WildFly server with MCP feature pack -->
+                    <execution>
+                        <id>provision-server</id>
+                        <phase>process-test-resources</phase>
+                        <goals>
+                            <goal>provision</goal>
+                        </goals>
+                        <configuration>
+                            <stability>experimental</stability>
+                            <provisioning-file>${project.build.testOutputDirectory}/provisioning.xml</provisioning-file>
+                            <galleon-options>
+                                <jboss-fork-embedded>true</jboss-fork-embedded>
+                            </galleon-options>
+                        </configuration>
+                    </execution>
+                    <!-- Start the server before integration tests -->
+                    <execution>
+                        <id>start-server</id>
+                        <phase>pre-integration-test</phase>
+                        <goals>
+                            <goal>start</goal>
+                        </goals>
+                        <configuration>
+                            <jboss-home>${jboss.home}</jboss-home>
+                            <startup-timeout>120</startup-timeout>
+                            <server-args>
+                                <arg>--stability=experimental</arg>
+                            </server-args>
+                        </configuration>
+                    </execution>
+                    <!-- Set HMAC secret for MRTR requestState (SEP-2322) -->
+                    <execution>
+                        <id>configure-request-state-secret</id>
+                        <phase>pre-integration-test</phase>
+                        <goals>
+                            <goal>execute-commands</goal>
+                        </goals>
+                        <configuration>
+                            <jboss-home>${jboss.home}</jboss-home>
+                            <commands>
+                                <command>/subsystem=mcp:write-attribute(name=request-state-secret, value="dGVzdC1obWFjLXNlY3JldC0xMjM0NTY=")</command>
+                                <command>:reload</command>
+                            </commands>
+                        </configuration>
+                    </execution>
+                    <!-- Deploy the WAR with MCP beans -->
+                    <execution>
+                        <id>deploy-app</id>
+                        <phase>pre-integration-test</phase>
+                        <goals>
+                            <goal>deploy</goal>
+                        </goals>
+                    </execution>
+                    <!-- Shutdown after integration tests -->
+                    <execution>
+                        <id>shutdown-server</id>
+                        <phase>post-integration-test</phase>
+                        <goals>
+                            <goal>shutdown</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Failsafe Plugin for integration tests -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <version>${version.maven.surefire}</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
+                        </goals>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <mcp.server.url>${mcp.server.url}</mcp.server.url>
+                                <conformance.baseline.dir>${conformance.baseline.dir}</conformance.baseline.dir>
+                                <conformance.scenario>${conformance.scenario}</conformance.scenario>
+                                <project.basedir>${project.basedir}</project.basedir>
+                                <project.build.directory>${project.build.directory}</project.build.directory>
+                                <conformance.package.version>${version.mcp.conformance}</conformance.package.version>
+                            </systemPropertyVariables>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

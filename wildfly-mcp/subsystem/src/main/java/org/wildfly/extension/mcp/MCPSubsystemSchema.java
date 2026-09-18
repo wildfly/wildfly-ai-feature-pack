@@ -8,6 +8,10 @@ import static org.wildfly.extension.mcp.MCPSubsystemRegistrar.MESSAGES_PATH;
 import static org.wildfly.extension.mcp.MCPSubsystemRegistrar.PAGE_SIZE;
 import static org.wildfly.extension.mcp.MCPSubsystemRegistrar.SSE_PATH;
 import static org.wildfly.extension.mcp.MCPSubsystemRegistrar.STREAMABLE_PATH;
+import static org.wildfly.extension.mcp.MCPSubsystemRegistrar.ALLOWED_ORIGINS;
+import static org.wildfly.extension.mcp.MCPSubsystemRegistrar.CACHE_SCOPE;
+import static org.wildfly.extension.mcp.MCPSubsystemRegistrar.CACHE_TTL;
+import static org.wildfly.extension.mcp.MCPSubsystemRegistrar.REQUEST_STATE_SECRET;
 import static org.wildfly.extension.mcp.MCPSubsystemRegistrar.TIMEOUT;
 
 import java.util.List;
@@ -49,7 +53,11 @@ enum MCPSubsystemSchema implements SubsystemResourceXMLSchema<MCPSubsystemSchema
                    .addAttribute(SSE_PATH)
                    .addAttribute(STREAMABLE_PATH)
                    .addAttribute(PAGE_SIZE)
-                   .addAttribute(TIMEOUT);
+                   .addAttribute(TIMEOUT)
+                   .addAttribute(REQUEST_STATE_SECRET)
+                   .addAttribute(ALLOWED_ORIGINS)
+                   .addAttribute(CACHE_TTL)
+                   .addAttribute(CACHE_SCOPE);
         } else {
             builder.withContent(this.factory.sequence()
                     .withCardinality(XMLCardinality.Single.OPTIONAL)

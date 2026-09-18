@@ -35,8 +35,8 @@ public class PrepareArgumentsTest {
     }
 
     private MCPFeatureMetadata makeMetadata(List<ArgumentMetadata> args) {
-        return new MCPFeatureMetadata(MCPFeatureMetadata.Kind.TOOL, "test",
-                new MethodMetadata("test", "test", null, null, args, "TestClass", "void"));
+        return MCPFeatureMetadata.builder(MCPFeatureMetadata.Kind.TOOL, "test",
+                new MethodMetadata("test", "test", null, null, args, "TestClass", "void")).build();
     }
 
     @Test
@@ -116,7 +116,7 @@ public class PrepareArgumentsTest {
     public void testMissingRequiredArgument() {
         MCPFeatureMetadata metadata = makeMetadata(List.of(
                 new ArgumentMetadata("required", "", true, String.class)));
-        assertThrows(MCPException.class, () ->
+        assertThrows(IllegalArgumentException.class, () ->
                 MCPServerUtils.prepareArguments(metadata.arguments(), Map.of(), MAPPER));
     }
 

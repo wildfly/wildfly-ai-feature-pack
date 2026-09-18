@@ -19,7 +19,7 @@ import org.jboss.logging.annotations.Cause;
 import org.jboss.logging.annotations.LogMessage;
 import org.jboss.logging.annotations.Message;
 import org.jboss.logging.annotations.MessageLogger;
-import org.wildfly.mcp.api.elicitation.Elicitation;
+import org.wildfly.extension.mcp.api.RequestMetadata;
 
 @MessageLogger(projectCode = "WFMCP", length = 5)
 public interface MCPLogger extends BasicLogger {
@@ -160,8 +160,8 @@ public interface MCPLogger extends BasicLogger {
     @Message(id = 37, value = "Failed to resolve schema generator '%s'")
     void warnFailedToResolveSchemaGenerator(@Cause Throwable cause, String className);
 
-    @Message(id = 38, value = "Client does not support %s mode elicitation")
-    IllegalStateException elicitationModeNotSupported(Elicitation.Mode mode);
+    @Message(id = 38, value = "Invalid elicitation response (no %s): %s")
+    IllegalStateException elicitationInvalidResponse(String type, String responseMessage);
 
     @Message(id = 39, value = "Invalid endpoint path '%s' for parameter '%s': only alphanumeric characters (a-z, A-Z, 0-9), hyphens (-), and underscores (_) are allowed")
     String invalidEndpointPath(String value, String parameterName);
@@ -182,4 +182,77 @@ public interface MCPLogger extends BasicLogger {
     @Message(id = 44, value = "Unhandled content block type: %s")
     @LogMessage(level = WARN)
     void warnUnhandledContentBlockType(String className);
+
+    @LogMessage(level = WARN)
+    @Message(id = 45, value = "Origin header '%s' does not match host '%s'")
+    void originValidationFailed(String origin, String host);
+
+    @LogMessage(level = WARN)
+    @Message(id = 46, value = "JSON-RPC batch requests are not supported on Streamable HTTP")
+    void batchRequestRejected();
+
+    @LogMessage(level = WARN)
+    @Message(id = 47, value = "%s header '%s' does not match JSON-RPC %s '%s'")
+    void headerMismatch(String headerName, String headerValue, String fieldName, String fieldValue);
+
+    @LogMessage(level = WARN)
+    @Message(id = 48, value = "Unknown session: %s")
+    void unknownSession(String sessionId);
+
+    @Message(id = 49, value = "The 'request-state-secret' attribute must be a valid Base64-encoded value")
+    IllegalArgumentException invalidRequestStateSecret(@Cause Throwable cause);
+    
+    // RequestMetadata validation
+    @Message(id = 51, value = "Missing required field '%s' in _meta")
+    RequestMetadata.MCPMetadataValidationException missingMetadataField(String fieldName);
+
+    // RequestStateCodec
+    @Message(id = 53, value = "Invalid requestState encoding")
+    String invalidRequestStateEncoding();
+
+    @Message(id = 54, value = "Invalid requestState format")
+    String invalidRequestStateFormat();
+
+    @Message(id = 55, value = "requestState signature verification failed")
+    String requestStateSignatureVerificationFailed();
+
+    @Message(id = 56, value = "Invalid requestState payload")
+    String invalidRequestStatePayload();
+
+    @Message(id = 57, value = "requestState has expired")
+    String requestStateExpired();
+
+    @Message(id = 58, value = "Secret must be at least 16 bytes")
+    IllegalArgumentException secretTooShort();
+
+    // Progress validation
+    @Message(id = 59, value = "Total must be positive")
+    IllegalArgumentException totalMustBePositive();
+
+    @Message(id = 60, value = "Amount must be positive")
+    IllegalArgumentException amountMustBePositive();
+
+    @Message(id = 61, value = "Progress %s exceeds total %s")
+    IllegalArgumentException progressExceedsTotal(Object progress, Object total);
+
+    // StreamableHttpHandler
+    @Message(id = 62, value = "Invalid Base64 padding: length %d is not a multiple of 4")
+    IllegalArgumentException invalidBase64Padding(int length);
+
+    // ProgressTokenImpl
+    @Message(id = 63, value = "Token is not an integer")
+    IllegalStateException tokenNotInteger();
+
+    @Message(id = 64, value = "Internal error")
+    String internalError();
+
+    @LogMessage(level = WARN)
+    @Message(id = 65, value = "Unsigned requestState rejected — configure a request-state-secret in the MCP subsystem to enable HMAC verification")
+    void unsignedRequestStateRejected();
+
+    @LogMessage(level = WARN)
+    @Message(id = 66, value = "Accepting unsigned requestState because system property "
+            + "org.wildfly.extension.mcp.allow-unsigned-request-state is set to true — "
+            + "configure a request-state-secret to enable HMAC verification")
+    void unsignedRequestStateAccepted();
 }

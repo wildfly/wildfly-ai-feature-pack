@@ -37,22 +37,38 @@ public class TestResponder implements Responder {
     }
 
     public boolean hasResult() {
-        JsonObject last = lastMessage();
-        return last != null && last.containsKey("result");
+        return messages.stream().anyMatch(m -> m.containsKey("result"));
     }
 
     public boolean hasError() {
-        JsonObject last = lastMessage();
-        return last != null && last.containsKey("error");
+        return messages.stream().anyMatch(m -> m.containsKey("error"));
     }
 
     public JsonObject lastResult() {
-        JsonObject last = lastMessage();
-        return last != null ? last.getJsonObject("result") : null;
+        for (int i = messages.size() - 1; i >= 0; i--) {
+            JsonObject m = messages.get(i);
+            if (m.containsKey("result")) {
+                return m.getJsonObject("result");
+            }
+        }
+        return null;
+    }
+
+    public JsonObject firstResult() {
+        return messages.stream()
+                .filter(m -> m.containsKey("result"))
+                .findFirst()
+                .map(m -> m.getJsonObject("result"))
+                .orElse(null);
     }
 
     public JsonObject lastError() {
-        JsonObject last = lastMessage();
-        return last != null ? last.getJsonObject("error") : null;
+        for (int i = messages.size() - 1; i >= 0; i--) {
+            JsonObject m = messages.get(i);
+            if (m.containsKey("error")) {
+                return m.getJsonObject("error");
+            }
+        }
+        return null;
     }
 }

@@ -5,7 +5,6 @@
 package org.wildfly.extension.mcp.server;
 
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.fail;
 
 import java.util.List;
 import org.junit.Test;
@@ -16,9 +15,9 @@ import org.wildfly.extension.mcp.injection.tool.MethodMetadata;
 public class ToolNameValidationTestCase {
 
     private static MCPFeatureMetadata dummyTool(String name) {
-        return new MCPFeatureMetadata(
+        return MCPFeatureMetadata.builder(
                 MCPFeatureMetadata.Kind.TOOL, name,
-                new MethodMetadata(name, "A tool", null, null, List.of(), "org.test.Tool", "java.lang.String"));
+                new MethodMetadata(name, "A tool", null, null, List.of(), "org.test.Tool", "java.lang.String")).build();
     }
 
     // ==================== Valid Names ====================

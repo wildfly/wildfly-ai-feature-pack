@@ -13,9 +13,11 @@ import java.io.StringReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -25,10 +27,14 @@ import java.util.logging.Logger;
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
+import jakarta.json.JsonReader;
 
 import org.jboss.arquillian.container.test.api.RunAsClient;
 import org.jboss.arquillian.junit5.ArquillianExtension;
 import org.jboss.arquillian.test.api.ArquillianResource;
+import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.asset.EmptyAsset;
+import org.jboss.shrinkwrap.api.spec.WebArchive;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -52,6 +58,7 @@ abstract class AbstractMCPIntegrationTestCase {
     private String sessionId;
     private Thread sseReaderThread;
     private HttpURLConnection sseConnection;
+    private final List<Thread> perPostSseReaders = new CopyOnWriteArrayList<>();
 
     protected final AtomicLong nextId = new AtomicLong(1);
     protected final ConcurrentHashMap<Long, CompletableFuture<String>> pendingResponses = new ConcurrentHashMap<>();
@@ -59,6 +66,16 @@ abstract class AbstractMCPIntegrationTestCase {
 
     @ArquillianResource
     protected URL deploymentUrl;
+
+    protected static WebArchive createStandardMCPDeployment(String warName) {
+        return ShrinkWrap.create(WebArchive.class, warName)
+                .addClass(TestMCPTool.class)
+                .addClass(TestMCPTool.AddResult.class)
+                .addClass(TestMCPPrompt.class)
+                .addClass(TestMCPResource.class)
+                .addClass(TestMCPCompletion.class)
+                .addAsWebInfResource(EmptyAsset.INSTANCE, "beans.xml");
+    }
 
     @AfterEach
     public void cleanUpState() throws Exception {
@@ -73,6 +90,10 @@ abstract class AbstractMCPIntegrationTestCase {
 
     @AfterAll
     public void tearDown() {
+        for (Thread t : perPostSseReaders) {
+            t.interrupt();
+        }
+        perPostSseReaders.clear();
         if (sseReaderThread != null) {
             sseReaderThread.interrupt();
         }
@@ -142,12 +163,12 @@ abstract class AbstractMCPIntegrationTestCase {
                 {"jsonrpc":"2.0","method":"notifications/initialized"}""";
 
         int notifStatusCode = postToStreamable(initializedMessage);
-        assertThat(notifStatusCode).as("Initialized notification should succeed").isEqualTo(200);
+        assertThat(notifStatusCode).as("Initialized notification should return 202 Accepted").isEqualTo(202);
     }
 
     private void dispatchSseEvent(String data) {
         try {
-            JsonObject json = Json.createReader(new StringReader(data)).readObject();
+            JsonObject json = parseResponse(data);
             boolean isResponse = json.containsKey("result") || json.containsKey("error");
             if (isResponse && json.containsKey("id")) {
                 long id = json.getJsonNumber("id").longValue();
@@ -185,6 +206,10 @@ abstract class AbstractMCPIntegrationTestCase {
     }
 
     protected int postToStreamableWithProtocolVersion(String jsonBody, String protocolVersion) throws Exception {
+        return postToStreamableWithProtocolVersion(jsonBody, protocolVersion, null);
+    }
+
+    protected int postToStreamableWithProtocolVersion(String jsonBody, String protocolVersion, java.util.Map<String, String> extraHeaders) throws Exception {
         URL streamUrl = new URL(deploymentUrl, "stream");
         HttpURLConnection conn = (HttpURLConnection) streamUrl.openConnection();
         conn.setRequestMethod("POST");
@@ -194,20 +219,56 @@ abstract class AbstractMCPIntegrationTestCase {
         if (protocolVersion != null) {
             conn.setRequestProperty("mcp-protocol-version", protocolVersion);
         }
+        if (extraHeaders != null) {
+            extraHeaders.forEach(conn::setRequestProperty);
+        }
         configureRequestHeaders(conn);
         conn.setDoOutput(true);
         conn.setConnectTimeout(5000);
-        conn.setReadTimeout(10000);
+        conn.setReadTimeout((int) (RESPONSE_TIMEOUT_SECONDS * 1000 * 3));
 
         try (OutputStream os = conn.getOutputStream()) {
             os.write(jsonBody.getBytes(StandardCharsets.UTF_8));
         }
 
         int statusCode = conn.getResponseCode();
-        conn.disconnect();
+
+        String contentType = conn.getContentType();
+        if (contentType != null && contentType.contains("text/event-stream")) {
+            Thread reader = new Thread(() -> {
+                try (BufferedReader br = new BufferedReader(
+                        new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
+                    String line;
+                    while ((line = br.readLine()) != null) {
+                        if (line.startsWith("data:")) {
+                            String data = line.substring(5).trim();
+                            if (!data.isEmpty()) {
+                                dispatchSseEvent(data);
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    // Connection closed or timeout
+                } finally {
+                    conn.disconnect();
+                }
+            }, "sse-post-reader");
+            reader.setDaemon(true);
+            reader.start();
+            perPostSseReaders.add(reader);
+        } else {
+            conn.disconnect();
+        }
+
         return statusCode;
     }
 
     protected void configureRequestHeaders(HttpURLConnection conn) {
+    }
+
+    protected static JsonObject parseResponse(String json) {
+        try (JsonReader reader = Json.createReader(new StringReader(json))) {
+            return reader.readObject();
+        }
     }
 }

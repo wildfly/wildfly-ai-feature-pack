@@ -24,10 +24,9 @@ import org.wildfly.extension.mcp.api.Responder;
 import org.wildfly.mcp.api.elicitation.Elicitation;
 import org.wildfly.mcp.api.elicitation.ElicitationSender;
 import org.wildfly.mcp.api.elicitation.ElicitationProperty;
+import org.wildfly.mcp.api.MissingCapabilityException;
 
 import static org.wildfly.extension.mcp.MCPLogger.ROOT_LOGGER;
-import static org.wildfly.mcp.api.elicitation.Elicitation.Mode.FORM;
-import static org.wildfly.mcp.api.elicitation.Elicitation.Mode.URL;
 
 /**
  * Subsystem-side implementation of {@link ElicitationSender}.
@@ -71,9 +70,21 @@ class ElicitationSenderImpl implements ElicitationSender {
     @Override
     public Elicitation.Response send(Elicitation request) throws Exception {
         return switch (request.mode()) {
-            case FORM -> sendForm(request);
-            case URL -> sendUrl(request);
+            case FORM -> {
+                requireCapability(isFormSupported(), "form");
+                yield sendForm(request);
+            }
+            case URL -> {
+                requireCapability(isUrlSupported(), "url");
+                yield sendUrl(request);
+            }
         };
+    }
+
+    private static void requireCapability(boolean supported, String modeName) throws MissingCapabilityException {
+        if (!supported) {
+            throw new MissingCapabilityException("elicitation (" + modeName + ")");
+        }
     }
 
     @Override
@@ -85,10 +96,6 @@ class ElicitationSenderImpl implements ElicitationSender {
     }
 
     private Elicitation.Response sendForm(Elicitation request) throws Exception {
-        if (!isFormSupported()) {
-            throw ROOT_LOGGER.elicitationModeNotSupported(FORM);
-        }
-
         CompletableFuture<JsonObject> future = new CompletableFuture<>();
         long requestId = registry.register(future);
 
@@ -119,10 +126,6 @@ class ElicitationSenderImpl implements ElicitationSender {
     }
 
     private Elicitation.Response sendUrl(Elicitation request) throws Exception {
-        if (!isUrlSupported()) {
-            throw ROOT_LOGGER.elicitationModeNotSupported(URL);
-        }
-
         CompletableFuture<JsonObject> future = new CompletableFuture<>();
         long requestId = registry.register(future);
 
@@ -166,7 +169,7 @@ class ElicitationSenderImpl implements ElicitationSender {
     private static JsonObject parseResult(JsonObject responseMessage) {
         JsonObject result = responseMessage.getJsonObject("result");
         if (result == null) {
-            throw new IllegalStateException("Invalid elicitation response (no result): " + responseMessage);
+            throw ROOT_LOGGER.elicitationInvalidResponse("result", responseMessage.toString());
         }
         return result;
     }
@@ -174,7 +177,7 @@ class ElicitationSenderImpl implements ElicitationSender {
     private static Elicitation.Response.Action parseAction(JsonObject result, JsonObject responseMessage) {
         String actionStr = result.getString("action", null);
         if (actionStr == null) {
-            throw new IllegalStateException("Invalid elicitation response (no action): " + responseMessage);
+            throw ROOT_LOGGER.elicitationInvalidResponse("action", responseMessage.toString());
         }
         return Elicitation.Response.Action.valueOf(actionStr.toUpperCase());
     }

@@ -15,6 +15,8 @@ import jakarta.json.JsonWriterFactory;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -33,6 +35,7 @@ public class ServerSentEventResponder implements Responder, MCPConnection {
     private final AtomicReference<Status> status;
     private final AtomicReference<InitializeRequest> initializeRequest;
     private final PendingRequestRegistry pendingRequestRegistry = new PendingRequestRegistry();
+    private final List<ServerSentEventConnection> notificationStreams = new CopyOnWriteArrayList<>();
     private volatile long lastActivity;
     private final AtomicReference<Future<?>> future = new AtomicReference<>();
 
@@ -77,7 +80,7 @@ public class ServerSentEventResponder implements Responder, MCPConnection {
     public void send(JsonObject message) {
         try (StringWriter writer = new StringWriter(); JsonWriter jsonWriter = jsonWriterFactory.createWriter(writer)) {
             jsonWriter.writeObject(message);
-            send("message", writer.toString());
+            sendInternal("message", writer.toString(), message.containsKey("method"));
         } catch (IOException ex) {
             ROOT_LOGGER.failureSendingMessage(ex);
         }
@@ -113,11 +116,16 @@ public class ServerSentEventResponder implements Responder, MCPConnection {
         }
     }
 
-    public void send(String name, String message) {
+    void send(String name, String message) {
+        sendInternal(name, message, true);
+    }
+
+    private void sendInternal(String name, String message, boolean broadcastToStreams) {
         this.lastActivity = System.currentTimeMillis();
         ROOT_LOGGER.debugf("Sending message of type %s with content %s", name, message);
+        String eventId = "" + lastEventId();
         connection.getResponseHeaders().add(MCP_SESSION_ID_HEADER, id);
-        connection.send(message, name, "" + lastEventId(), new ServerSentEventConnection.EventCallback() {
+        connection.send(message, name, eventId, new ServerSentEventConnection.EventCallback() {
             @Override
             public void done(ServerSentEventConnection connection, String data, String event, String id) {
                 ROOT_LOGGER.debugf("Message sent: %s", data);
@@ -129,10 +137,40 @@ public class ServerSentEventResponder implements Responder, MCPConnection {
                 close();
             }
         });
+        if (broadcastToStreams) {
+            for (ServerSentEventConnection stream : notificationStreams) {
+                if (stream.isOpen()) {
+                    stream.send(message, name, eventId, new ServerSentEventConnection.EventCallback() {
+                        @Override
+                        public void done(ServerSentEventConnection c, String data, String event, String id) {
+                        }
+
+                        @Override
+                        public void failed(ServerSentEventConnection c, String data, String event, String id, IOException e) {
+                            ROOT_LOGGER.debugf("Failed to send to notification stream, removing");
+                            notificationStreams.remove(stream);
+                        }
+                    });
+                }
+            }
+        }
+    }
+
+    void addNotificationStream(ServerSentEventConnection stream) {
+        notificationStreams.add(stream);
+        stream.addCloseTask(channel -> notificationStreams.remove(stream));
     }
 
     @Override
     public void close() {
+        for (ServerSentEventConnection stream : notificationStreams) {
+            try {
+                stream.close();
+            } catch (IOException ex) {
+                ROOT_LOGGER.debug("Error closing notification stream", ex);
+            }
+        }
+        notificationStreams.clear();
         try {
             this.connection.close();
         } catch (IOException ex) {

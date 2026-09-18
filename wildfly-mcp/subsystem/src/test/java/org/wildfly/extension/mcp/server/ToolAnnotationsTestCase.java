@@ -15,11 +15,9 @@ import jakarta.json.Json;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
 import java.util.List;
-import java.util.Optional;
 import org.junit.Test;
 import org.wildfly.extension.mcp.injection.tool.ToolAnnotations;
 import org.wildfly.extension.mcp.api.ConnectionManager;
-import org.wildfly.extension.mcp.api.MCPConnection;
 import org.wildfly.extension.mcp.injection.WildFlyMCPRegistry;
 import org.wildfly.extension.mcp.injection.tool.ArgumentMetadata;
 import org.wildfly.extension.mcp.injection.tool.MCPFeatureMetadata;
@@ -140,11 +138,11 @@ public class ToolAnnotationsTestCase {
 
     @Test
     public void testToolsCallSetsIsErrorOnException() throws Exception {
-        ToolTestContext ctx = setupToolTest("broken-tool", new MCPFeatureMetadata(
+        ToolTestContext ctx = setupToolTest("broken-tool", MCPFeatureMetadata.builder(
                 MCPFeatureMetadata.Kind.TOOL, "broken-tool",
                 new MethodMetadata("brokenMethod", "A broken tool", null, null,
                         List.of(),
-                        "org.nonexistent.DoesNotExist", "void")));
+                        "org.nonexistent.DoesNotExist", "void")).build());
 
         JsonObject callMessage = Json.createObjectBuilder()
                 .add("jsonrpc", "2.0")
@@ -168,11 +166,11 @@ public class ToolAnnotationsTestCase {
 
     @Test
     public void testToolsCallIsErrorContentContainsGenericMessage() throws Exception {
-        ToolTestContext ctx = setupToolTest("missing-class-tool", new MCPFeatureMetadata(
+        ToolTestContext ctx = setupToolTest("missing-class-tool", MCPFeatureMetadata.builder(
                 MCPFeatureMetadata.Kind.TOOL, "missing-class-tool",
                 new MethodMetadata("someMethod", "Tool with missing class", null, null,
                         List.of(),
-                        "org.nonexistent.SomeClass", "void")));
+                        "org.nonexistent.SomeClass", "void")).build());
 
         JsonObject callMessage = Json.createObjectBuilder()
                 .add("jsonrpc", "2.0")
@@ -192,12 +190,12 @@ public class ToolAnnotationsTestCase {
 
     @Test
     public void testOutputSchemaOmittedWhenReturnTypeUnloadable() {
-        ToolTestContext ctx = setupToolTest("unloadable-tool", new MCPFeatureMetadata(
+        ToolTestContext ctx = setupToolTest("unloadable-tool", MCPFeatureMetadata.builder(
                 MCPFeatureMetadata.Kind.TOOL, "unloadable-tool",
                 new MethodMetadata("method", "Tool with unloadable return type", null, null,
                         List.of(),
-                        "org.test.TestTool", "org.nonexistent.NoSuchType"),
-                null, true, Optional.empty(), Optional.empty(), Optional.empty()));
+                        "org.test.TestTool", "org.nonexistent.NoSuchType"))
+                .structuredContent(true).build());
 
         ctx.handler().handle(jsonRpcRequest(3, "tools/list"), ctx.connection(), ctx.responder());
         assertTrue(ctx.responder().hasResult());
@@ -226,13 +224,12 @@ public class ToolAnnotationsTestCase {
 
     @Test
     public void testInputSchemaFromGenerator() {
-        ToolTestContext ctx = setupToolTest("gen-tool", new MCPFeatureMetadata(
+        ToolTestContext ctx = setupToolTest("gen-tool", MCPFeatureMetadata.builder(
                 MCPFeatureMetadata.Kind.TOOL, "gen-tool",
                 new MethodMetadata("genTool", "Tool with generator", null, null,
                         List.of(new ArgumentMetadata("ignored", "This is ignored", true, String.class)),
-                        "org.test.TestTool", "java.lang.String"),
-                null, false,
-                Optional.of(TestInputSchemaGenerator.class.getName()), Optional.empty(), Optional.empty()));
+                        "org.test.TestTool", "java.lang.String"))
+                .inputSchemaGenerator(TestInputSchemaGenerator.class.getName()).build());
 
         ctx.handler().handle(jsonRpcRequest(3, "tools/list"), ctx.connection(), ctx.responder());
         assertTrue(ctx.responder().hasResult());
@@ -249,12 +246,12 @@ public class ToolAnnotationsTestCase {
 
     @Test
     public void testOutputSchemaFromGenerator() {
-        ToolTestContext ctx = setupToolTest("gen-out-tool", new MCPFeatureMetadata(
+        ToolTestContext ctx = setupToolTest("gen-out-tool", MCPFeatureMetadata.builder(
                 MCPFeatureMetadata.Kind.TOOL, "gen-out-tool",
                 new MethodMetadata("genOutTool", "Tool with output generator", null, null,
-                        List.of(), "org.test.TestTool", "java.lang.String"),
-                null, true, Optional.empty(),
-                Optional.of(TestOutputSchemaGenerator.class.getName()), Optional.empty()));
+                        List.of(), "org.test.TestTool", "java.lang.String"))
+                .structuredContent(true)
+                .outputSchemaGenerator(TestOutputSchemaGenerator.class.getName()).build());
 
         ctx.handler().handle(jsonRpcRequest(3, "tools/list"), ctx.connection(), ctx.responder());
         assertTrue(ctx.responder().hasResult());
@@ -270,13 +267,12 @@ public class ToolAnnotationsTestCase {
 
     @Test
     public void testInputSchemaFallsBackWhenGeneratorInvalid() {
-        ToolTestContext ctx = setupToolTest("bad-gen-tool", new MCPFeatureMetadata(
+        ToolTestContext ctx = setupToolTest("bad-gen-tool", MCPFeatureMetadata.builder(
                 MCPFeatureMetadata.Kind.TOOL, "bad-gen-tool",
                 new MethodMetadata("badGenTool", "Tool with invalid generator", null, null,
                         List.of(new ArgumentMetadata("name", "A name", true, String.class)),
-                        "org.test.TestTool", "java.lang.String"),
-                null, false,
-                Optional.of("org.nonexistent.NoSuchGenerator"), Optional.empty(), Optional.empty()));
+                        "org.test.TestTool", "java.lang.String"))
+                .inputSchemaGenerator("org.nonexistent.NoSuchGenerator").build());
 
         ctx.handler().handle(jsonRpcRequest(3, "tools/list"), ctx.connection(), ctx.responder());
         assertTrue(ctx.responder().hasResult());
@@ -292,13 +288,12 @@ public class ToolAnnotationsTestCase {
 
     @Test
     public void testInputSchemaFallsBackWhenGeneratorDoesNotImplementInterface() {
-        ToolTestContext ctx = setupToolTest("wrong-type-gen-tool", new MCPFeatureMetadata(
+        ToolTestContext ctx = setupToolTest("wrong-type-gen-tool", MCPFeatureMetadata.builder(
                 MCPFeatureMetadata.Kind.TOOL, "wrong-type-gen-tool",
                 new MethodMetadata("wrongTypeGenTool", "Tool with non-conforming generator", null, null,
                         List.of(new ArgumentMetadata("name", "A name", true, String.class)),
-                        "org.test.TestTool", "java.lang.String"),
-                null, false,
-                Optional.of("java.lang.String"), Optional.empty(), Optional.empty()));
+                        "org.test.TestTool", "java.lang.String"))
+                .inputSchemaGenerator("java.lang.String").build());
 
         ctx.handler().handle(jsonRpcRequest(3, "tools/list"), ctx.connection(), ctx.responder());
         assertTrue(ctx.responder().hasResult());
@@ -322,12 +317,12 @@ public class ToolAnnotationsTestCase {
     }
 
     private JsonObject listSingleTool(ToolAnnotations annotations, boolean structuredContent) {
-        ToolTestContext ctx = setupToolTest("test-tool", new MCPFeatureMetadata(
+        ToolTestContext ctx = setupToolTest("test-tool", MCPFeatureMetadata.builder(
                 MCPFeatureMetadata.Kind.TOOL, "test-tool",
                 new MethodMetadata("testTool", "A test tool", null, null,
                         List.of(new ArgumentMetadata("input", "Test input", true, String.class)),
-                        "org.test.TestTool", "java.lang.String"),
-                annotations, structuredContent, Optional.empty(), Optional.empty(), Optional.empty()));
+                        "org.test.TestTool", "java.lang.String"))
+                .toolAnnotations(annotations).structuredContent(structuredContent).build());
 
         ctx.handler().handle(jsonRpcRequest(3, "tools/list"), ctx.connection(), ctx.responder());
         assertTrue(ctx.responder().hasResult());

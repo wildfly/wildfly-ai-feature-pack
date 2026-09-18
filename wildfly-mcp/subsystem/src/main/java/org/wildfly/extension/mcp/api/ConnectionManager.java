@@ -13,6 +13,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -32,9 +33,23 @@ public class ConnectionManager {
 
     public static final HttpString MCP_SESSION_ID_HEADER = HttpString.tryFromString("mcp-session-id");
     public static final HttpString MCP_PROTOCOL_VERSION_HEADER = HttpString.tryFromString("mcp-protocol-version");
+    public static final HttpString MCP_METHOD_HEADER = HttpString.tryFromString("mcp-method");
+    public static final HttpString MCP_NAME_HEADER = HttpString.tryFromString("mcp-name");
     private final ConcurrentMap<String, MCPConnection> connections = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, PendingMessage> pendingMessages = new ConcurrentHashMap<>();
     private ScheduledFuture<?> cleanupTask;
     private volatile List<MCPMessageListener> listeners = List.of();
+
+    public record PendingMessage(JsonObject content, String clientAddress, int clientPort,
+                                  String networkProtocolVersion, Map<String, String> mcpHeaders, long createdAt) {}
+
+    public void setPending(String sessionId, PendingMessage message) {
+        pendingMessages.put(sessionId, message);
+    }
+
+    public PendingMessage takePending(String sessionId) {
+        return pendingMessages.remove(sessionId);
+    }
 
     /**
      * Registers message listeners that will be notified via {@link MCPMessageListener#onConnectionClosed}
@@ -246,5 +261,6 @@ public class ConnectionManager {
             ROOT_LOGGER.closingStaleConnection(id);
             remove(id);
         }
+        pendingMessages.entrySet().removeIf(entry -> entry.getValue().createdAt() < cutoff);
     }
 }

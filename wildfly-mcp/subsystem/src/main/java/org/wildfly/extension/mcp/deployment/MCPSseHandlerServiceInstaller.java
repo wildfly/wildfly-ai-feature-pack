@@ -6,6 +6,9 @@ package org.wildfly.extension.mcp.deployment;
 
 import static org.jboss.as.server.security.VirtualDomainMarkerUtility.virtualDomainName;
 import static org.wildfly.extension.mcp.MCPLogger.ROOT_LOGGER;
+import static org.wildfly.extension.mcp.api.MCPMethods.NOTIFICATIONS_PROMPTS_LIST_CHANGED;
+import static org.wildfly.extension.mcp.api.MCPMethods.NOTIFICATIONS_RESOURCES_LIST_CHANGED;
+import static org.wildfly.extension.mcp.api.MCPMethods.NOTIFICATIONS_TOOLS_LIST_CHANGED;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,6 +42,7 @@ import org.wildfly.extension.mcp.Capabilities;
 import org.wildfly.extension.mcp.api.ConnectionManager;
 import org.wildfly.extension.mcp.api.Messages;
 import org.wildfly.extension.mcp.injection.WildFlyMCPRegistry;
+import org.wildfly.extension.mcp.server.MCPHandlerConfig;
 import org.wildfly.extension.mcp.server.MCPMessageHandler;
 import org.wildfly.extension.mcp.server.MCPServerSentConnectionCallBack;
 import org.wildfly.extension.mcp.server.MCPStreamableConnectionCallBack;
@@ -99,15 +103,19 @@ public class MCPSseHandlerServiceInstaller implements DeploymentServiceInstaller
         // One shared handler instance for the deployment: both HTTP endpoints and the SSE callback
         // route through the same MCPMessageHandler so listener state (e.g. session tracking maps)
         // is consistent across connection types.
+        final String requestStateSecret = configuration.requestStateSecret();
+        final long cacheTtlMs = configuration.cacheTtlMs();
+        final String cacheScope = configuration.cacheScope();
         final MCPMessageHandler mcpMessageHandler = new MCPMessageHandler(
-                connectionManager, registry, classLoader, serverName, deploymentUnit.getName(), pageSize, listeners);
+                connectionManager, registry, classLoader, serverName, deploymentUnit.getName(),
+                new MCPHandlerConfig(pageSize, listeners, requestStateSecret, cacheTtlMs, cacheScope));
         final MCPServerSentConnectionCallBack mcpServerSentConnectionCallBack = new MCPServerSentConnectionCallBack(messagesEndpoint, connectionManager);
         final MCPStreamableConnectionCallBack mcpStreamableConnectionCallBack = new MCPStreamableConnectionCallBack(connectionManager, mcpMessageHandler);
-        final MessagesHttpHandler messagesHttpHandler = new MessagesHttpHandler(connectionManager, mcpMessageHandler);
+        final MessagesHttpHandler messagesHttpHandler = new MessagesHttpHandler(connectionManager, mcpMessageHandler, configuration.allowedOrigins());
         final String ssePath = "/".equals(webContext) ? webContext + configuration.ssePath() : webContext + '/' + configuration.ssePath();
         final String streamableEndpoint = "/".equals(webContext) ? webContext + configuration.streamablePath() : webContext + '/' + configuration.streamablePath();
         final ServerSentEventHandler sseHandler = Handlers.serverSentEvents(mcpServerSentConnectionCallBack);
-        final StreamableHttpHandler streamableHttpHandler = new StreamableHttpHandler(connectionManager, mcpMessageHandler, Handlers.serverSentEvents(mcpStreamableConnectionCallBack));
+        final StreamableHttpHandler streamableHttpHandler = new StreamableHttpHandler(connectionManager, mcpMessageHandler, Handlers.serverSentEvents(mcpStreamableConnectionCallBack), configuration.allowedOrigins());
         Runnable start = new Runnable() {
             @Override
             public void run() {
@@ -128,20 +136,21 @@ public class MCPSseHandlerServiceInstaller implements DeploymentServiceInstaller
                 }
                 ROOT_LOGGER.endpointRegistered(ssePath, host.get().getName());
                 ROOT_LOGGER.endpointRegistered(streamableEndpoint, host.get().getName());
-                connectionManager.broadcast(Messages.newNotification("notifications/prompts/list_changed"),
-                        Messages.newNotification("notifications/resources/list_changed"),
-                        Messages.newNotification("notifications/tools/list_changed"));
+                connectionManager.broadcast(Messages.newNotification(NOTIFICATIONS_PROMPTS_LIST_CHANGED),
+                        Messages.newNotification(NOTIFICATIONS_RESOURCES_LIST_CHANGED),
+                        Messages.newNotification(NOTIFICATIONS_TOOLS_LIST_CHANGED));
             }
         };
         Runnable stop = new Runnable() {
             @Override
             public void run() {
                 connectionManager.broadcastThenShutdown(
-                        Messages.newNotification("notifications/prompts/list_changed"),
-                        Messages.newNotification("notifications/resources/list_changed"),
-                        Messages.newNotification("notifications/tools/list_changed"));
+                        Messages.newNotification(NOTIFICATIONS_PROMPTS_LIST_CHANGED),
+                        Messages.newNotification(NOTIFICATIONS_RESOURCES_LIST_CHANGED),
+                        Messages.newNotification(NOTIFICATIONS_TOOLS_LIST_CHANGED));
                 host.get().unregisterHandler(ssePath);
                 host.get().unregisterHandler(messagesEndpoint);
+                host.get().unregisterHandler(streamableEndpoint);
                 ROOT_LOGGER.endpointUnregistered(ssePath, host.get().getName());
                 ROOT_LOGGER.endpointUnregistered(streamableEndpoint, host.get().getName());
             }

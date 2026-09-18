@@ -17,8 +17,6 @@ import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
-import java.util.OptionalDouble;
 import java.util.Set;
 import org.junit.Before;
 import org.junit.Test;
@@ -43,48 +41,48 @@ public class ResourceFeaturesTestCase {
         registry = new WildFlyMCPRegistry();
 
         // Resource WITH title, size, and annotations
-        registry.addResource("file:///data/report.csv", new MCPFeatureMetadata(
+        registry.addResource("file:///data/report.csv", MCPFeatureMetadata.builder(
                 MCPFeatureMetadata.Kind.RESOURCE, "report",
                 new MethodMetadata("getReport", "Monthly report", "file:///data/report.csv", "text/csv",
-                        List.of(), "org.test.ReportResource", "java.lang.String"),
-                "Monthly Report", 2048, Optional.of(Set.of(Role.USER)), OptionalDouble.of(0.7)));
+                        List.of(), "org.test.ReportResource", "java.lang.String"))
+                .title("Monthly Report").size(2048).audience(Set.of(Role.USER)).priority(0.7).build());
 
         // Resource WITHOUT title, size, or annotations
-        registry.addResource("file:///logs/app.log", new MCPFeatureMetadata(
+        registry.addResource("file:///logs/app.log", MCPFeatureMetadata.builder(
                 MCPFeatureMetadata.Kind.RESOURCE, "app-log",
                 new MethodMetadata("appLog", "Application log", "file:///logs/app.log", "text/plain",
-                        List.of(), "org.test.AppLogResource", "java.lang.String")));
+                        List.of(), "org.test.AppLogResource", "java.lang.String")).build());
 
         // Resource with audience-only annotations (no priority)
-        registry.addResource("file:///data/public.txt", new MCPFeatureMetadata(
+        registry.addResource("file:///data/public.txt", MCPFeatureMetadata.builder(
                 MCPFeatureMetadata.Kind.RESOURCE, "public-data",
                 new MethodMetadata("getPublicData", "Public data", "file:///data/public.txt", "text/plain",
-                        List.of(), "org.test.PublicDataResource", "java.lang.String"),
-                null, -1, Optional.of(Set.of(Role.USER)), OptionalDouble.empty()));
+                        List.of(), "org.test.PublicDataResource", "java.lang.String"))
+                .audience(Set.of(Role.USER)).build());
 
         // Resource with priority-only annotations (no audience)
-        registry.addResource("file:///data/priority.txt", new MCPFeatureMetadata(
+        registry.addResource("file:///data/priority.txt", MCPFeatureMetadata.builder(
                 MCPFeatureMetadata.Kind.RESOURCE, "priority-data",
                 new MethodMetadata("getPriorityData", "Priority data", "file:///data/priority.txt", "text/plain",
-                        List.of(), "org.test.PriorityDataResource", "java.lang.String"),
-                null, -1, Optional.empty(), OptionalDouble.of(0.3)));
+                        List.of(), "org.test.PriorityDataResource", "java.lang.String"))
+                .priority(0.3).build());
 
         // Resource template WITH title and annotations
-        registry.addResourceTemplate("db:///{database}/tables/{table}", new MCPFeatureMetadata(
+        registry.addResourceTemplate("db:///{database}/tables/{table}", MCPFeatureMetadata.builder(
                 MCPFeatureMetadata.Kind.RESOURCE_TEMPLATE, "db-table",
                 new MethodMetadata("readTable", "Read a database table", "db:///{database}/tables/{table}", "application/json",
                         List.of(
                                 new ArgumentMetadata("database", "Database name", true, String.class),
                                 new ArgumentMetadata("table", "Table name", true, String.class)),
-                        "org.test.DbResource", "java.lang.String"),
-                "Database Table", -1, Optional.of(Set.of(Role.ASSISTANT)), OptionalDouble.of(0.9)));
+                        "org.test.DbResource", "java.lang.String"))
+                .title("Database Table").audience(Set.of(Role.ASSISTANT)).priority(0.9).build());
 
         // Resource template WITHOUT title or annotations
-        registry.addResourceTemplate("config:///{key}", new MCPFeatureMetadata(
+        registry.addResourceTemplate("config:///{key}", MCPFeatureMetadata.builder(
                 MCPFeatureMetadata.Kind.RESOURCE_TEMPLATE, "config-entry",
                 new MethodMetadata("readConfig", "Read config entry", "config:///{key}", "text/plain",
                         List.of(new ArgumentMetadata("key", "Config key", true, String.class)),
-                        "org.test.ConfigResource", "java.lang.String")));
+                        "org.test.ConfigResource", "java.lang.String")).build());
 
         connectionManager = new ConnectionManager();
         handler = new MCPMessageHandler(connectionManager, registry, getClass().getClassLoader(), "test-server", "1.0.0");

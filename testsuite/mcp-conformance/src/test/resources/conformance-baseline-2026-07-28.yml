@@ -1,0 +1,16 @@
+# Expected failures for @modelcontextprotocol/conformance server tests.
+# Spec version: 2026-07-28
+#
+# Scenarios listed here are expected to fail and will not cause the build to break.
+# Remove entries as the implementation is updated to pass them.
+# If a baselined scenario starts passing, the conformance suite will report it
+# as a stale entry (exit code 1) so you know to remove it.
+#
+# See https://github.com/modelcontextprotocol/conformance for details.
+#
+# Remaining failures (2):
+#   input-required-result-basic-sampling: server does not implement sampling/createMessage dispatch (not planned)
+#   input-required-result-basic-list-roots: server does not implement roots/list dispatch (not planned)
+server:
+  - input-required-result-basic-sampling
+  - input-required-result-basic-list-roots

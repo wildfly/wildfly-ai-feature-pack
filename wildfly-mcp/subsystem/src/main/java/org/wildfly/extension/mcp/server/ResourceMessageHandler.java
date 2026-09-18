@@ -23,6 +23,7 @@ import static org.wildfly.extension.mcp.injection.MCPFieldNames.TITLE;
 import static org.wildfly.extension.mcp.injection.MCPFieldNames.URI;
 
 import static org.wildfly.extension.mcp.server.MCPServerUtils.SHARED_MAPPER;
+import static org.wildfly.extension.mcp.server.MCPServerUtils.asJsonObject;
 import static org.wildfly.extension.mcp.server.MCPServerUtils.getRequestId;
 import static org.wildfly.extension.mcp.server.MCPServerUtils.invokeViaReflection;
 import static org.wildfly.extension.mcp.server.MCPServerUtils.prepareArguments;
@@ -52,6 +53,7 @@ import org.mcpjava.server.resources.BlobResourceContents;
 import org.mcpjava.server.resources.ResourceContents;
 import org.mcpjava.server.resources.ResourceResponse;
 import org.mcpjava.server.resources.TextResourceContents;
+import org.wildfly.extension.mcp.api.ConnectionManager;
 import org.wildfly.extension.mcp.api.ContentMapper;
 import org.wildfly.extension.mcp.api.Cursor;
 import org.wildfly.extension.mcp.api.MCPConnection;
@@ -71,13 +73,27 @@ public class ResourceMessageHandler {
     private final ExecutorService executorService;
     private final int pageSize;
     private final ConcurrentHashMap<String, Set<MCPConnection>> subscriptions = new ConcurrentHashMap<>();
+    private final SubscriptionManager subscriptionManager;
+    private final ConnectionManager connectionManager;
+    private volatile java.util.function.BiConsumer<String, Set<String>> streamNotifier;
 
     ResourceMessageHandler(WildFlyMCPRegistry registry, ClassLoader classLoader, ExecutorService executorService, int pageSize) {
+        this(registry, classLoader, executorService, pageSize, null, null);
+    }
+
+    ResourceMessageHandler(WildFlyMCPRegistry registry, ClassLoader classLoader, ExecutorService executorService, int pageSize,
+                           SubscriptionManager subscriptionManager, ConnectionManager connectionManager) {
         this.registry = registry;
         this.mapper = SHARED_MAPPER;
         this.classLoader = classLoader;
         this.executorService = executorService;
+        this.subscriptionManager = subscriptionManager;
+        this.connectionManager = connectionManager;
         this.pageSize = pageSize;
+    }
+
+    void setStreamNotifier(java.util.function.BiConsumer<String, Set<String>> notifier) {
+        this.streamNotifier = notifier;
     }
 
     void resourcesList(JsonObject message, Responder responder) {
@@ -114,12 +130,12 @@ public class ResourceMessageHandler {
 
     void resourcesSubscribe(JsonObject message, Responder responder, MCPConnection connection) {
         String id = getRequestId(message);
-        JsonValue paramsValue = message.get(PARAMS);
-        if (paramsValue == null || paramsValue.getValueType() != JsonValue.ValueType.OBJECT) {
+        JsonObject params = asJsonObject(message.get(PARAMS));
+        if (params == null) {
             responder.sendError(id, INVALID_PARAMS, ROOT_LOGGER.missingRequiredMessage());
             return;
         }
-        String resourceUri = paramsValue.asJsonObject().getString(URI, null);
+        String resourceUri = params.getString(URI, null);
         if (resourceUri == null) {
             responder.sendError(id, INVALID_PARAMS, ROOT_LOGGER.resourceUriNotDefined());
             return;
@@ -131,12 +147,12 @@ public class ResourceMessageHandler {
 
     void resourcesUnsubscribe(JsonObject message, Responder responder, MCPConnection connection) {
         String id = getRequestId(message);
-        JsonValue paramsValue = message.get(PARAMS);
-        if (paramsValue == null || paramsValue.getValueType() != JsonValue.ValueType.OBJECT) {
+        JsonObject params = asJsonObject(message.get(PARAMS));
+        if (params == null) {
             responder.sendError(id, INVALID_PARAMS, ROOT_LOGGER.missingRequiredMessage());
             return;
         }
-        String resourceUri = paramsValue.asJsonObject().getString(URI, null);
+        String resourceUri = params.getString(URI, null);
         if (resourceUri == null) {
             responder.sendError(id, INVALID_PARAMS, ROOT_LOGGER.resourceUriNotDefined());
             return;
@@ -155,33 +171,52 @@ public class ResourceMessageHandler {
         }
     }
 
-    //TODO expose this somehow to the user to be actually used.
     void notifyResourceUpdated(String uri) {
-        Set<MCPConnection> subscribers = subscriptions.get(uri);
-        if (subscribers == null || subscribers.isEmpty()) {
-            return;
-        }
         JsonObject notification = Messages.newNotification("notifications/resources/updated",
                 Json.createObjectBuilder().add("uri", uri));
-        for (MCPConnection connection : subscribers) {
-            if (connection instanceof Responder responder) {
-                try {
-                    responder.send(notification);
-                } catch (Exception e) {
-                    ROOT_LOGGER.debugf("Failed to send resource updated notification to connection %s", connection.id());
+        Set<String> notified = ConcurrentHashMap.newKeySet();
+        Set<MCPConnection> legacySubscribers = subscriptions.get(uri);
+        if (legacySubscribers != null) {
+            for (MCPConnection connection : legacySubscribers) {
+                if (connection instanceof Responder responder) {
+                    notified.add(connection.id());
+                    try {
+                        responder.send(notification);
+                    } catch (Exception e) {
+                        ROOT_LOGGER.debugf("Failed to send resource updated notification to connection %s", connection.id());
+                    }
                 }
             }
+        }
+        if (subscriptionManager != null && connectionManager != null) {
+            subscriptionManager.forEachSubscriber("resource", uri, connectionId -> {
+                if (notified.contains(connectionId)) {
+                    return;
+                }
+                MCPConnection connection = connectionManager.get(connectionId);
+                if (connection instanceof Responder responder
+                        && connection.status() == MCPConnection.Status.IN_OPERATION) {
+                    try {
+                        responder.send(notification);
+                    } catch (Exception e) {
+                        ROOT_LOGGER.debugf("Failed to send resource updated notification to connection %s", connectionId);
+                    }
+                }
+            });
+        }
+        java.util.function.BiConsumer<String, Set<String>> notifier = this.streamNotifier;
+        if (notifier != null) {
+            notifier.accept(uri, notified);
         }
     }
 
     void resourceCall(JsonObject message, Responder responder, MCPConnection connection) {
         String id = getRequestId(message);
-        JsonValue paramsValue = message.get(PARAMS);
-        if (paramsValue == null || paramsValue.getValueType() != JsonValue.ValueType.OBJECT) {
+        JsonObject params = asJsonObject(message.get(PARAMS));
+        if (params == null) {
             responder.sendError(id, INVALID_PARAMS, ROOT_LOGGER.missingRequiredMessage());
             return;
         }
-        JsonObject params = paramsValue.asJsonObject();
         String resourceUri = params.getString(URI);
         ROOT_LOGGER.debugf("Call resource %s [id: %s]", resourceUri, id);
         Map<String, JsonValue> args = new HashMap<>();
@@ -193,7 +228,9 @@ public class ResourceMessageHandler {
         }
         final MCPFeatureMetadata metadata = registry.getResource(resourceUri);
         if (metadata == null) {
-            responder.sendError(id, INVALID_PARAMS, ROOT_LOGGER.invalidResourceName(resourceUri));
+            responder.send(Messages.newErrorWithData(id, INVALID_PARAMS,
+                    ROOT_LOGGER.invalidResourceName(resourceUri),
+                    Json.createObjectBuilder().add(URI, resourceUri)));
             return;
         }
         final ClassLoader prevCL = WildFlySecurityManager.getCurrentContextClassLoaderPrivileged();
@@ -217,7 +254,7 @@ public class ResourceMessageHandler {
                             }
                         } catch (Throwable ex) {
                             ROOT_LOGGER.errorInvokingResource(ex, resourceUri);
-                            responder.sendError(id, INTERNAL_ERROR, "Internal error");
+                            responder.sendError(id, INTERNAL_ERROR, ROOT_LOGGER.internalError());
                             return;
                         }
                     } else {
@@ -249,11 +286,11 @@ public class ResourceMessageHandler {
                     JsonObjectBuilder builder = Json.createObjectBuilder();
                     builder.add(CONTENTS, jsonContent);
                     responder.sendResult(id, builder);
-                } catch (MCPException e) {
-                    MCPException.sendError(e, id, responder);
-                } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException | SecurityException | ClassNotFoundException | InstantiationException | IllegalArgumentException ex) {
+                } catch (IllegalArgumentException e) {
+                    MCPServerUtils.sendInvalidParamsError(e, id, responder);
+                } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException | SecurityException | ClassNotFoundException | InstantiationException ex) {
                     ROOT_LOGGER.errorInvokingResource(ex, resourceUri);
-                    responder.sendError(id, INTERNAL_ERROR, "Internal error");
+                    responder.sendError(id, INTERNAL_ERROR, ROOT_LOGGER.internalError());
                 }
             })));
         } finally {

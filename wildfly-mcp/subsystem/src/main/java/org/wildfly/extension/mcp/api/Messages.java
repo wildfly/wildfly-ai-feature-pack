@@ -30,6 +30,21 @@ public class Messages {
         return response.build();
     }
 
+    public static JsonObject newErrorWithData(String id, int code, String message, JsonObjectBuilder data) {
+        String msg = message == null ? "" : message;
+        JsonObjectBuilder response = Json.createObjectBuilder();
+        response.add("jsonrpc", JsonRPC.VERSION);
+        addId(response, id);
+        JsonObjectBuilder error = Json.createObjectBuilder()
+                .add("code", code)
+                .add("message", msg);
+        if (data != null) {
+            error.add("data", data);
+        }
+        response.add("error", error);
+        return response.build();
+    }
+
     /**
      * Adds the JSON-RPC {@code id} field to the response builder.
      * <p>

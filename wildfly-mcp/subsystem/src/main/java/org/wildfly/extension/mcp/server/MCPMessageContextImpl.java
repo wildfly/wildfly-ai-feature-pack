@@ -4,12 +4,14 @@
  */
 package org.wildfly.extension.mcp.server;
 
+import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Map;
 
 import org.wildfly.extension.mcp.api.MCPConnection;
 import org.wildfly.extension.mcp.api.MCPContextKey;
 import org.wildfly.extension.mcp.api.MCPMessageContext;
+import org.wildfly.extension.mcp.api.RequestMetadata;
 
 /**
  * Mutable implementation of {@link MCPMessageContext}.
@@ -35,6 +37,10 @@ class MCPMessageContextImpl implements MCPMessageContext {
     private int clientPort = -1;
     private String networkProtocolVersion;
     private String resourceUri;
+    private Map<String, String> mcpHeaders = Collections.emptyMap();
+    private RequestMetadata requestMetadata;
+    private RequestStateCodec.DecodedState decodedRequestState;
+    private String requestedVersion;
     // All listener callbacks for a given message are invoked sequentially on the same thread,
     // so IdentityHashMap is safe here without synchronization.
     private final Map<MCPContextKey<?>, Object> attributes = new IdentityHashMap<>();
@@ -166,6 +172,39 @@ class MCPMessageContextImpl implements MCPMessageContext {
 
     void setResourceUri(String resourceUri) {
         this.resourceUri = resourceUri;
+    }
+
+    @Override
+    public Map<String, String> mcpHeaders() {
+        return mcpHeaders;
+    }
+
+    void setMcpHeaders(Map<String, String> mcpHeaders) {
+        this.mcpHeaders = mcpHeaders != null ? mcpHeaders : Collections.emptyMap();
+    }
+
+    RequestMetadata requestMetadata() {
+        return requestMetadata;
+    }
+
+    void setRequestMetadata(RequestMetadata requestMetadata) {
+        this.requestMetadata = requestMetadata;
+    }
+
+    RequestStateCodec.DecodedState decodedRequestState() {
+        return decodedRequestState;
+    }
+
+    void setDecodedRequestState(RequestStateCodec.DecodedState decodedRequestState) {
+        this.decodedRequestState = decodedRequestState;
+    }
+
+    String requestedVersion() {
+        return requestedVersion;
+    }
+
+    void setRequestedVersion(String requestedVersion) {
+        this.requestedVersion = requestedVersion;
     }
 
     @Override

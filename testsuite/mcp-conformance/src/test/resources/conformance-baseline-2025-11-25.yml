@@ -1,0 +1,16 @@
+# Expected failures for @modelcontextprotocol/conformance server tests.
+# Spec version: 2025-11-25
+#
+# Scenarios listed here are expected to fail and will not cause the build to break.
+# Remove entries as the implementation is updated to pass them.
+# If a baselined scenario starts passing, the conformance suite will report it
+# as a stale entry (exit code 1) so you know to remove it.
+#
+# See https://github.com/modelcontextprotocol/conformance for details.
+#
+# Remaining failures (2):
+#   tools-call-with-logging: needs server-side log notification API (notifications/message)
+#   tools-call-sampling: needs sampling/createMessage API (not implemented)
+server:
+  - tools-call-with-logging
+  - tools-call-sampling

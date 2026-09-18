@@ -12,6 +12,7 @@ The project is at **experimental** stability level. It targets **WildFly** and u
 ```bash
 ./mvnw clean install                    # build + unit tests
 ./mvnw clean install -Pintegration-test # full build + integration tests
+./mvnw clean verify -Pmcp-conformance -pl testsuite/mcp-conformance/  # MCP conformance tests (requires npx)
 ./mvnw clean install -DskipTests=true   # skip tests
 ./mvnw clean install -Dtest=TestClass   # run a single test class
 ```
@@ -38,6 +39,7 @@ ai-feature-pack/      Provisioning resources, Galleon layers, and feature pack s
 testsuite/
   integration/          Arquillian integration tests (deploys to managed WildFly)
   mcp/                  MCP-specific tests
+  mcp-conformance/      Official MCP conformance suite (-Pmcp-conformance)
 doc/
   glow-layer-doc/       Per-layer documentation for Glow (one file per Galleon layer)
 ```
@@ -137,6 +139,37 @@ When adding a new AI provider or resource type, follow the existing pattern in `
 - **Container dependencies**: Integration tests use Testcontainers to manage Ollama (for LLM) and LGTM (for OpenTelemetry). Ollama is started automatically and downloads `llama3.2:1b` on first use. LGTM-dependent OpenTelemetry tests are skipped when Docker/Podman and a local LGTM instance are unavailable.
 - **Integration-test profile**: `testsuite/integration` is excluded from the default reactor; use `-Pintegration-test` to include it. CI intentionally runs only the default build.
 - Run a specific integration test: `./mvnw clean install -Pintegration-test -Dtest=OllamaChatModelTestCase`
+
+### MCP conformance tests
+
+The `testsuite/mcp-conformance` module runs the official `@modelcontextprotocol/conformance` suite against the WildFly MCP server. It validates protocol compliance for spec versions `2025-11-25` and `2026-07-28`.
+
+**Prerequisites**: Node.js with `npx` must be available on the PATH. The test is skipped if `npx` is not found.
+
+**How to run**:
+
+```bash
+mvn clean verify -Pmcp-conformance                                    # run all conformance scenarios for both spec versions
+mvn clean verify -Pmcp-conformance -Dconformance.scenario=tools-list  # run a single scenario
+```
+
+**How it works**:
+
+1. The `wildfly-maven-plugin` provisions a WildFly server with the `mcp-server` Galleon layer during `process-test-resources`.
+2. The server is started and the conformance WAR (containing `ConformanceTool`, `ConformancePrompt`, `ConformanceResource`, `ConformanceResourceTemplate` beans) is deployed during `pre-integration-test`.
+3. `maven-failsafe-plugin` runs `MCPConformanceIT`, which invokes `npx @modelcontextprotocol/conformance server --url http://localhost:8080/mcp/stream --suite all --verbose` for each spec version.
+4. The server is shut down during `post-integration-test`.
+
+**Expected-failure baselines**: Known failures are tracked in YAML files under `src/test/resources/`:
+
+- `conformance-baseline-2025-11-25.yml` — expected failures for spec version 2025-11-25
+- `conformance-baseline-2026-07-28.yml` — expected failures for spec version 2026-07-28
+
+When a baselined scenario starts passing, the conformance suite reports it as a stale entry (exit code 1) so you know to remove it. When a new failure appears, add it to the appropriate baseline file with a comment explaining why.
+
+**Fixture classes** (`testsuite/mcp-conformance/src/main/java/`): `ConformanceTool`, `ConformancePrompt`, `ConformanceResource`, `ConformanceResourceTemplate`, and `ConformanceFixtures` provide the MCP server features exercised by the conformance suite. `JsonSchema2020_12SchemaGenerator` supplies a custom `ToolSchemaGenerator` for tools that require explicit JSON Schema control.
+
+**Output**: Conformance output for each spec version is saved to `target/conformance-output-<version>.txt` for post-run review.
 
 ## Change checklists
 

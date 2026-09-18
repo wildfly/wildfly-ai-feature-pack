@@ -12,15 +12,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
-import java.util.Optional;
-import java.util.OptionalDouble;
-import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.wildfly.extension.mcp.injection.tool.ArgumentMetadata;
 import org.wildfly.extension.mcp.injection.tool.MCPFeatureMetadata;
 import org.wildfly.extension.mcp.injection.tool.MCPFeatureMetadata.Kind;
 import org.wildfly.extension.mcp.injection.tool.MethodMetadata;
@@ -36,7 +32,7 @@ class WildFlyMCPRegistryTestCase {
 
     private static MCPFeatureMetadata metadata(Kind kind, String name) {
         MethodMetadata method = new MethodMetadata("doIt", "A description", null, null, List.of(), "com.example.Foo", "java.lang.String");
-        return new MCPFeatureMetadata(kind, name, method);
+        return MCPFeatureMetadata.builder(kind, name, method).build();
     }
 
     // --- Tool name validation ---

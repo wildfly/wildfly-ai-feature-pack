@@ -50,6 +50,8 @@ public interface MCPMessageContext {
 
     String resourceUri();
 
+    Map<String, String> mcpHeaders();
+
     <T> void setAttribute(MCPContextKey<T> key, T value);
 
     <T> T getAttribute(MCPContextKey<T> key);

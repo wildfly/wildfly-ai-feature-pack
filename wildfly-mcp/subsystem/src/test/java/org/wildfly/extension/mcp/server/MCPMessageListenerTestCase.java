@@ -39,16 +39,16 @@ public class MCPMessageListenerTestCase {
     public void setUp() {
         WildFlyMCPRegistry registry = new WildFlyMCPRegistry();
 
-        registry.addTool("echo", new MCPFeatureMetadata(
+        registry.addTool("echo", MCPFeatureMetadata.builder(
                 MCPFeatureMetadata.Kind.TOOL, "echo",
                 new MethodMetadata("echo", "Echoes the input", null, null,
                         List.of(),
-                        "org.test.EchoTool", "java.lang.String")));
+                        "org.test.EchoTool", "java.lang.String")).build());
 
         connectionManager = new ConnectionManager();
         listener = new RecordingListener();
         handler = new MCPMessageHandler(connectionManager, registry, getClass().getClassLoader(),
-                "test-server", "1.0.0", 0, List.of(listener));
+                "test-server", "1.0.0", new MCPHandlerConfig(0, List.of(listener), null, 3_600_000L, "public"));
 
         responder = new TestResponder();
         connection = new TestMCPConnection("test-conn-1");
@@ -165,7 +165,7 @@ public class MCPMessageListenerTestCase {
 
         MCPMessageHandler handlerWithAttr = new MCPMessageHandler(connectionManager,
                 new WildFlyMCPRegistry(), getClass().getClassLoader(),
-                "test-server", "1.0.0", 0, List.of(attrListener));
+                "test-server", "1.0.0", new MCPHandlerConfig(0, List.of(attrListener), null, 3_600_000L, "public"));
         TestMCPConnection conn2 = new TestMCPConnection("test-conn-2");
         connectionManager.add(conn2);
         TestResponder resp2 = new TestResponder();
@@ -194,7 +194,7 @@ public class MCPMessageListenerTestCase {
 
         MCPMessageHandler handlerWithBadListener = new MCPMessageHandler(connectionManager,
                 new WildFlyMCPRegistry(), getClass().getClassLoader(),
-                "test-server", "1.0.0", 0, List.of(throwingListener, listener));
+                "test-server", "1.0.0", new MCPHandlerConfig(0, List.of(throwingListener, listener), null, 3_600_000L, "public"));
 
         TestMCPConnection conn3 = new TestMCPConnection("test-conn-3");
         connectionManager.add(conn3);
@@ -213,7 +213,7 @@ public class MCPMessageListenerTestCase {
 
         MCPMessageHandler multiHandler = new MCPMessageHandler(connectionManager,
                 new WildFlyMCPRegistry(), getClass().getClassLoader(),
-                "test-server", "1.0.0", 0, List.of(listener, listener2));
+                "test-server", "1.0.0", new MCPHandlerConfig(0, List.of(listener, listener2), null, 3_600_000L, "public"));
 
         TestMCPConnection conn4 = new TestMCPConnection("test-conn-4");
         connectionManager.add(conn4);
@@ -324,7 +324,7 @@ public class MCPMessageListenerTestCase {
 
         MCPMessageHandler handlerWithBadErrorListener = new MCPMessageHandler(connectionManager,
                 new WildFlyMCPRegistry(), getClass().getClassLoader(),
-                "test-server", "1.0.0", 0, List.of(throwingOnErrorListener, listener));
+                "test-server", "1.0.0", new MCPHandlerConfig(0, List.of(throwingOnErrorListener, listener), null, 3_600_000L, "public"));
 
         TestMCPConnection conn5 = new TestMCPConnection("test-conn-5");
         connectionManager.add(conn5);
@@ -341,7 +341,7 @@ public class MCPMessageListenerTestCase {
     public void testHandlerWorksWithNoListeners() {
         MCPMessageHandler noListenerHandler = new MCPMessageHandler(connectionManager,
                 new WildFlyMCPRegistry(), getClass().getClassLoader(),
-                "test-server", "1.0.0", 0, List.of());
+                "test-server", "1.0.0", new MCPHandlerConfig(0, List.of(), null, 3_600_000L, "public"));
         TestMCPConnection conn = new TestMCPConnection("no-listener-conn");
         connectionManager.add(conn);
         TestResponder resp = new TestResponder();

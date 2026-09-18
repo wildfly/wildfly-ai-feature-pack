@@ -28,6 +28,7 @@ public final class EnumProperty implements ElicitationProperty<String> {
     private String title;
     private String description;
     private List<String> enumTitles;
+    private boolean legacyFormat;
     private String defaultValue;
 
     public EnumProperty(String name, List<String> enumValues) {
@@ -66,6 +67,14 @@ public final class EnumProperty implements ElicitationProperty<String> {
             throw ROOT_LOGGER.parameterMustHaveSameSize("enumTitles", "enumValues");
         }
         this.enumTitles = List.copyOf(enumTitles);
+        return this;
+    }
+
+    /**
+     * Use the deprecated {@code enum} + {@code enumNames} serialization instead of {@code oneOf}.
+     */
+    public EnumProperty legacyFormat() {
+        this.legacyFormat = true;
         return this;
     }
 
@@ -118,7 +127,7 @@ public final class EnumProperty implements ElicitationProperty<String> {
             b.add("description", description);
         }
 
-        if (enumTitles != null) {
+        if (enumTitles != null && !legacyFormat) {
             JsonArrayBuilder oneOf = Json.createArrayBuilder();
             for (int i = 0; i < enumValues.size(); i++) {
                 oneOf.add(Json.createObjectBuilder()
@@ -132,6 +141,13 @@ public final class EnumProperty implements ElicitationProperty<String> {
                 values.add(v);
             }
             b.add("enum", values);
+            if (enumTitles != null) {
+                JsonArrayBuilder names = Json.createArrayBuilder();
+                for (String t : enumTitles) {
+                    names.add(t);
+                }
+                b.add("enumNames", names);
+            }
         }
 
         if (defaultValue != null) {

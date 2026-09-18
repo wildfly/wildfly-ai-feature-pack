@@ -16,13 +16,13 @@ public record InitializeRequest(Implementation implementation, String protocolVe
 
     public boolean supportsElicitationForm() {
         return findElicitationCapability()
-                .map(c -> c.properties().isEmpty() || c.properties().containsKey(FORM))
+                .map(c -> c.capabilities().isEmpty() || c.capabilities().contains(FORM))
                 .orElse(false);
     }
 
     public boolean supportsElicitationUrl() {
         return findElicitationCapability()
-                .map(c -> c.properties().containsKey(URL))
+                .map(c -> c.capabilities().contains(URL))
                 .orElse(false);
     }
 

@@ -11,16 +11,21 @@ import static org.wildfly.extension.mcp.injection.MCPFieldNames.ARGUMENTS;
 import static org.wildfly.extension.mcp.injection.MCPFieldNames.CONTENT;
 import static org.wildfly.extension.mcp.injection.MCPFieldNames.CURSOR;
 import static org.wildfly.extension.mcp.injection.MCPFieldNames.DESCRIPTION;
+import static org.wildfly.extension.mcp.injection.MCPFieldNames.INPUT_REQUESTS;
+import static org.wildfly.extension.mcp.injection.MCPFieldNames.INPUT_REQUIRED;
 import static org.wildfly.extension.mcp.injection.MCPFieldNames.MESSAGES;
 import static org.wildfly.extension.mcp.injection.MCPFieldNames.NAME;
 import static org.wildfly.extension.mcp.injection.MCPFieldNames.NEXT_CURSOR;
 import static org.wildfly.extension.mcp.injection.MCPFieldNames.PARAMS;
 import static org.wildfly.extension.mcp.injection.MCPFieldNames.PROMPTS;
+import static org.wildfly.extension.mcp.injection.MCPFieldNames.REQUEST_STATE;
 import static org.wildfly.extension.mcp.injection.MCPFieldNames.REQUIRED;
+import static org.wildfly.extension.mcp.injection.MCPFieldNames.RESULT_TYPE;
 import static org.wildfly.extension.mcp.injection.MCPFieldNames.ROLE;
 import static org.wildfly.extension.mcp.injection.MCPFieldNames.TITLE;
 
 import static org.wildfly.extension.mcp.server.MCPServerUtils.SHARED_MAPPER;
+import static org.wildfly.extension.mcp.server.MCPServerUtils.asJsonObject;
 import static org.wildfly.extension.mcp.server.MCPServerUtils.getRequestId;
 import static org.wildfly.extension.mcp.server.MCPServerUtils.invokeViaReflection;
 import static org.wildfly.extension.mcp.server.MCPServerUtils.prepareArguments;
@@ -51,10 +56,13 @@ import org.wildfly.extension.mcp.api.Cursor;
 import org.wildfly.extension.mcp.api.MCPConnection;
 import org.wildfly.extension.mcp.api.Responder;
 import org.wildfly.extension.mcp.injection.WildFlyMCPRegistry;
+import org.wildfly.extension.mcp.injection.input.InputResponsesHolder;
 import org.wildfly.extension.mcp.injection.tool.ArgumentMetadata;
 import org.wildfly.extension.mcp.injection.tool.MCPFeatureMetadata;
 import org.wildfly.extension.mcp.injection.tool.MCPPrompt;
 import org.wildfly.extension.mcp.injection.tool.MethodMetadata;
+import org.wildfly.mcp.api.tool.InputRequiredResult;
+import org.wildfly.mcp.api.tool.InputResponses;
 import org.wildfly.security.manager.WildFlySecurityManager;
 
 public class PromptMessageHandler {
@@ -64,13 +72,16 @@ public class PromptMessageHandler {
     private final ClassLoader classLoader;
     private final ExecutorService executorService;
     private final int pageSize;
+    private final RequestStateCodec requestStateCodec;
 
-    PromptMessageHandler(WildFlyMCPRegistry registry, ClassLoader classLoader, ExecutorService executorService, int pageSize) {
+    PromptMessageHandler(WildFlyMCPRegistry registry, ClassLoader classLoader, ExecutorService executorService,
+            int pageSize, RequestStateCodec requestStateCodec) {
         this.registry = registry;
         this.mapper = SHARED_MAPPER;
         this.classLoader = classLoader;
         this.executorService = executorService;
         this.pageSize = pageSize;
+        this.requestStateCodec = requestStateCodec;
     }
 
     void promptsList(JsonObject message, Responder responder) {
@@ -93,6 +104,9 @@ public class PromptMessageHandler {
 
             JsonArrayBuilder arguments = Json.createArrayBuilder();
             for (ArgumentMetadata arg : promptMetadata.arguments()) {
+                if (arg.type() instanceof Class<?> clazz && InputResponses.class.isAssignableFrom(clazz)) {
+                    continue;
+                }
                 JsonObjectBuilder argJson = Json.createObjectBuilder()
                         .add(NAME, arg.name())
                         .add(DESCRIPTION, arg.description())
@@ -109,14 +123,14 @@ public class PromptMessageHandler {
         responder.sendResult(id, resultBuilder);
     }
 
-    void promptsGet(JsonObject message, Responder responder, MCPConnection connection) {
+    void promptsGet(JsonObject message, Responder responder, MCPConnection connection,
+            RequestStateCodec.DecodedState decodedRequestState) {
         String id = getRequestId(message);
-        JsonValue paramsValue = message.get(PARAMS);
-        if (paramsValue == null || paramsValue.getValueType() != JsonValue.ValueType.OBJECT) {
+        JsonObject params = asJsonObject(message.get(PARAMS));
+        if (params == null) {
             responder.sendError(id, INVALID_PARAMS, ROOT_LOGGER.missingRequiredMessage());
             return;
         }
-        JsonObject params = paramsValue.asJsonObject();
         String promptName = params.getString(NAME);
         ROOT_LOGGER.debugf("Call prompt %s [id: %s]", promptName, id);
         Map<String, JsonValue> args = new HashMap<>();
@@ -126,27 +140,43 @@ public class PromptMessageHandler {
                 args.put(key, arguments.get(key));
             }
         }
+        final InputResponses inputResponses = ToolMessageHandler.parseInputResponses(params, decodedRequestState);
         final MCPFeatureMetadata metadata = registry.getPrompt(promptName);
         if (metadata == null) {
             responder.sendError(id, INVALID_PARAMS, ROOT_LOGGER.invalidPromptName(promptName));
             return;
         }
+        if (decodedRequestState != null) {
+            String tokenPrincipal = decodedRequestState.principal();
+            if (tokenPrincipal != null && !tokenPrincipal.isEmpty()
+                    && !tokenPrincipal.equals(MCPServerUtils.currentPrincipalName())) {
+                responder.sendError(id, INVALID_PARAMS, "requestState principal mismatch");
+                return;
+            }
+            String tokenPromptName = decodedRequestState.toolName();
+            if (tokenPromptName != null && !tokenPromptName.isEmpty()
+                    && !tokenPromptName.equals(promptName)) {
+                responder.sendError(id, INVALID_PARAMS, "requestState prompt binding mismatch");
+                return;
+            }
+        }
         final ClassLoader prevCL = WildFlySecurityManager.getCurrentContextClassLoaderPrivileged();
         try {
             WildFlySecurityManager.setCurrentContextClassLoaderPrivileged(classLoader);
-            connection.task(executorService.submit(() -> runWithCDIContext(connection, responder, MCPServerUtils.extractProgressToken(params), () -> {
+            connection.task(executorService.submit(() -> runWithCDIContext(connection, responder, MCPServerUtils.extractProgressToken(params), null, null, inputResponses, () -> {
                 try {
                     MethodMetadata methodMetadata = metadata.method();
                     Class<?> clazz = classLoader.loadClass(methodMetadata.declaringClassName());
                     Instance<?> beanInstance = CDI.current().select(clazz, MCPPrompt.MCPPromptLiteral.INSTANCE);
                     Object result = null;
+                    Object[] builtArgs = buildPromptArguments(metadata, args, mapper);
                     if (beanInstance.isResolvable()) {
                         ROOT_LOGGER.debugf("We have found the Singleton instance of the prompt %s", promptName);
                         try {
-                            if (args.isEmpty()) {
+                            if (builtArgs.length == 0) {
                                 result = registry.getPromptInvoker(promptName).invoke(beanInstance.get());
                             } else {
-                                List<Object> preparedArguments = new ArrayList<>(Arrays.asList(prepareArguments(metadata.arguments(), args, mapper)));
+                                List<Object> preparedArguments = new ArrayList<>(Arrays.asList(builtArgs));
                                 preparedArguments.add(0, beanInstance.get());
                                 result = registry.getPromptInvoker(promptName).invokeWithArguments(preparedArguments);
                             }
@@ -158,7 +188,22 @@ public class PromptMessageHandler {
                     } else {
                         ROOT_LOGGER.debugf("Singleton instance not found for prompt %s, using reflection", promptName);
                         Method method = clazz.getMethod(methodMetadata.name(), methodMetadata.argumentTypes());
-                        result = invokeViaReflection(method, prepareArguments(metadata.arguments(), args, mapper));
+                        result = invokeViaReflection(method, builtArgs);
+                    }
+                    if (result instanceof InputRequiredResult irr) {
+                        JsonObjectBuilder builder = Json.createObjectBuilder();
+                        builder.add(RESULT_TYPE, INPUT_REQUIRED);
+                        JsonObjectBuilder inputRequestsBuilder = Json.createObjectBuilder();
+                        for (Map.Entry<String, JsonObject> entry : irr.inputRequests().entrySet()) {
+                            inputRequestsBuilder.add(entry.getKey(), entry.getValue());
+                        }
+                        builder.add(INPUT_REQUESTS, inputRequestsBuilder);
+                        if (irr.requestState() != null) {
+                            builder.add(REQUEST_STATE, MCPServerUtils.encodeMrtrRequestState(
+                                    irr.requestState(), id, promptName, requestStateCodec));
+                        }
+                        responder.sendResult(id, builder);
+                        return;
                     }
                     Collection<? extends PromptMessage> promptMessages = ContentMapper.processResultAsPromptMessage(result);
                     JsonArrayBuilder messagesArray = Json.createArrayBuilder();
@@ -172,9 +217,9 @@ public class PromptMessageHandler {
                     builder.add(DESCRIPTION, methodMetadata.description());
                     builder.add(MESSAGES, messagesArray);
                     responder.sendResult(id, builder);
-                } catch (MCPException e) {
-                    MCPException.sendError(e, id, responder);
-                } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException | SecurityException | ClassNotFoundException | InstantiationException | IllegalArgumentException ex) {
+                } catch (IllegalArgumentException e) {
+                    MCPServerUtils.sendInvalidParamsError(e, id, responder);
+                } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException | SecurityException | ClassNotFoundException | InstantiationException ex) {
                     ROOT_LOGGER.errorInvokingPrompt(ex, promptName);
                     sendInvocationFailureResult(id, ex, responder);
                 }
@@ -182,6 +227,29 @@ public class PromptMessageHandler {
         } finally {
             WildFlySecurityManager.setCurrentContextClassLoaderPrivileged(prevCL);
         }
+    }
+
+    private Object[] buildPromptArguments(MCPFeatureMetadata metadata, Map<String, JsonValue> jsonArgs, ObjectMapper objectMapper) {
+        if (metadata.arguments().isEmpty()) {
+            return new Object[0];
+        }
+        Object[] ret = new Object[metadata.arguments().size()];
+        int idx = 0;
+        for (ArgumentMetadata arg : metadata.arguments()) {
+            if (arg.type() instanceof Class<?> clazz && InputResponses.class.isAssignableFrom(clazz)) {
+                ret[idx] = InputResponsesHolder.get();
+            } else {
+                JsonValue val = jsonArgs.get(arg.name());
+                if (val == null && arg.required()) {
+                    throw new IllegalArgumentException(ROOT_LOGGER.missingRequiredArgument(arg.name()));
+                }
+                Map<String, JsonValue> singleArg = val != null ? Map.of(arg.name(), val) : Map.of();
+                Object[] single = prepareArguments(List.of(arg), singleArg, objectMapper);
+                ret[idx] = single[0];
+            }
+            idx++;
+        }
+        return ret;
     }
 
 }

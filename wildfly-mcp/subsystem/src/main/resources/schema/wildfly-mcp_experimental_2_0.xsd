@@ -59,5 +59,33 @@
                 </xs:documentation>
             </xs:annotation>
         </xs:attribute>
+        <xs:attribute name="request-state-secret" type="xs:string">
+            <xs:annotation>
+                <xs:documentation>
+                    Base64-encoded secret used to sign and verify request state tokens. When set, the server encrypts opaque state that clients echo back across stateless requests.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="allowed-origins" type="xs:string">
+            <xs:annotation>
+                <xs:documentation>
+                    Space-separated list of additional hostnames accepted by DNS-rebinding validation. Localhost is always allowed.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="cache-ttl" type="xs:long">
+            <xs:annotation>
+                <xs:documentation>
+                    Default cache TTL in milliseconds for list and discover responses. Defaults to 3600000 (1 hour).
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="cache-scope" type="xs:string">
+            <xs:annotation>
+                <xs:documentation>
+                    Default cache scope for list and discover responses. Valid values are "public" and "private". Defaults to "public".
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
     </xs:complexType>
 </xs:schema>
