@@ -35,7 +35,7 @@ jobs:
           cache: maven
       - name: Build with Maven
         # The module 'wildfly-ai-feature-pack' requires the 'install' goal
-        run: ./mvnw --batch-mode --no-transfer-progress clean install
+        run: ./mvnw -Pmcp-conformance --batch-mode --no-transfer-progress clean install
       - uses: actions/upload-artifact@v7
         if: failure()
         with:
