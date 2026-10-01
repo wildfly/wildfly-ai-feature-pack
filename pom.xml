@@ -73,7 +73,7 @@
         <version.dev.langchain4j>1.19.0-beta29</version.dev.langchain4j>
         <version.dev.langchain4j.cdi>1.4.0</version.dev.langchain4j.cdi>
         <version.dev.langchain4j.community>1.18.0-beta28</version.dev.langchain4j.community>
-        <version.dev.langchain4j.core>1.19.0</version.dev.langchain4j.core>
+        <version.dev.langchain4j.core>1.20.0</version.dev.langchain4j.core>
         <version.dev.langchain4j.embeddings>1.19.0-beta29</version.dev.langchain4j.embeddings>
         <version.io.projectreactor.netty>1.2.16</version.io.projectreactor.netty>
         <version.io.projectreactor.reactor-core>3.7.17</version.io.projectreactor.reactor-core>
