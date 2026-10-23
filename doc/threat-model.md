@@ -130,8 +130,11 @@ The following are explicitly outside this project's security perimeter:
    unsigned tokens during development, but this is **not recommended for production**.
 2. **Restrict `allowedOrigins`** in production to the expected client origins.
 3. **Enable TLS** (`ssl-enabled`) for all AI provider connections.
-4. **Use `credential-reference`** with a credential store rather than plaintext `api-key`
-   attributes where possible.
+4. **Use `credential-reference`** for provider credentials. Layers map environment variables
+   to a clear-text reference, for example
+   `<credential-reference clear-text="${env.OPENAI_API_KEY}"/>`. For production, keep the
+   secret in an Elytron credential store instead:
+   `<credential-reference store="ai-store" alias="openai-api-key"/>`.
 5. **Set WASM memory limits** (`min-memory-constraint`, `max-memory-constraint`) for all
    WASM module configurations.
 6. **Disable debug logging** in production to prevent sensitive MCP message content from

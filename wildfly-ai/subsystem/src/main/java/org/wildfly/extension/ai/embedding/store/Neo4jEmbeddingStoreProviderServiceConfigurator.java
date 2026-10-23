@@ -21,15 +21,13 @@ import static org.wildfly.extension.ai.embedding.store.Neo4jEmbeddingStoreProvid
 import dev.langchain4j.community.store.embedding.neo4j.Neo4jEmbeddingStore;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.store.embedding.EmbeddingStore;
-import java.io.IOException;
 import java.util.function.Supplier;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.controller.security.CredentialReference;
 import org.jboss.dmr.ModelNode;
-import org.wildfly.security.credential.PasswordCredential;
+import org.wildfly.extension.ai.CredentialReferenceUtil;
 import org.wildfly.security.credential.source.CredentialSource;
-import org.wildfly.security.password.interfaces.ClearPassword;
 import org.wildfly.subsystem.service.ResourceServiceConfigurator;
 import org.wildfly.subsystem.service.ResourceServiceInstaller;
 import org.wildfly.subsystem.service.ServiceDependency;
@@ -54,12 +52,7 @@ public class Neo4jEmbeddingStoreProviderServiceConfigurator implements ResourceS
         Supplier<EmbeddingStore<TextSegment>> factory = new Supplier<>() {
             @Override
             public EmbeddingStore<TextSegment> get() {
-                String password;
-                try {
-                    password = String.valueOf(credentialRef.get().getCredential(PasswordCredential.class).getPassword(ClearPassword.class).getPassword());
-                } catch (IOException ex) {
-                    throw new RuntimeException(ex);
-                }
+                String password = CredentialReferenceUtil.getPassword(credentialRef.get());
                 return Neo4jEmbeddingStore.builder()
                         .withBasicAuth(boltUrl, userName, password)
                         .dimension(dimension)

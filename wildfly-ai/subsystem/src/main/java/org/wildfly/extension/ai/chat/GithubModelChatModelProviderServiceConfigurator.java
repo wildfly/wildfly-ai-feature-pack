@@ -27,13 +27,17 @@ import java.util.Map;
 import java.util.function.Supplier;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
+import org.jboss.as.controller.security.CredentialReference;
 import org.jboss.dmr.ModelNode;
 import org.wildfly.extension.ai.AIAttributeDefinitions;
+import org.wildfly.extension.ai.CredentialReferenceUtil;
 
 import org.wildfly.extension.ai.injection.chat.WildFlyChatModelConfig;
 import org.wildfly.extension.ai.injection.chat.WildFlyGithubModelChatModelConfig;
 
 import org.wildfly.service.capture.ValueRegistry;
+import org.wildfly.security.credential.source.CredentialSource;
+import org.wildfly.subsystem.service.ServiceDependency;
 import org.wildfly.subsystem.service.ResourceServiceInstaller;
 
 public class GithubModelChatModelProviderServiceConfigurator extends AbstractChatModelProviderServiceConfigurator {
@@ -48,7 +52,8 @@ public class GithubModelChatModelProviderServiceConfigurator extends AbstractCha
         Map<String, String> customHeaders = CUSTOM_HEADERS.unwrap(context, model);
         Long connectTimeOut = CONNECT_TIMEOUT.resolveModelAttribute(context, model).asLong();
         Double frequencyPenalty = FREQUENCY_PENALTY.resolveModelAttribute(context, model).asDoubleOrNull();
-        String key = API_KEY.resolveModelAttribute(context, model).asString();
+        ServiceDependency<CredentialSource> credentialReference = model.hasDefined(API_KEY.getName())
+                ? ServiceDependency.from(CredentialReference.getCredentialSourceDependency(context, API_KEY, model)) : null;
         String modelName = MODEL_NAME.resolveModelAttribute(context, model).asString();
         Integer maxRetries = MAX_RETRIES.resolveModelAttribute(context, model).asIntOrNull();
         Integer maxToken = MAX_TOKEN.resolveModelAttribute(context, model).asIntOrNull();
@@ -69,7 +74,7 @@ public class GithubModelChatModelProviderServiceConfigurator extends AbstractCha
                         .customHeaders(customHeaders)
                         .endpoint(endpoint)
                         .frequencyPenalty(frequencyPenalty)
-                        .gitHubToken(key)
+                        .gitHubToken(credentialReference == null ? null : CredentialReferenceUtil.getPassword(credentialReference.get()))
                         .logRequestsAndResponses(logRequestsAndResponses)
                         .maxRetries(maxRetries)
                         .maxTokens(maxToken)
@@ -86,6 +91,6 @@ public class GithubModelChatModelProviderServiceConfigurator extends AbstractCha
                         .userAgentSuffix(userAgentSuffix);
             }
         };
-        return installService(context.getCurrentAddressValue(), factory);
+        return installService(context.getCurrentAddressValue(), factory, credentialReference);
     }
 }

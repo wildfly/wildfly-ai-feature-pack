@@ -25,7 +25,8 @@
         <feature spec="subsystem.ai.openai-chat-model">
             <param name="openai-chat-model" value="openai"/>
             <param name="base-url" value="${org.wildfly.ai.openai.chat.url,env.OPENAI_CHAT_URL:https://api.openai.com/v1}"/>
-            <param name="api-key" value="${env.OPENAI_API_KEY:YOUR_KEY_VALUE}"/>
+            <param name="credential-reference" value="{clear-text=${env.OPENAI_API_KEY:YOUR_KEY_VALUE}}"/>
+            <param name="executor-service" value="default"/>
             <param name="model-name" value="${org.wildfly.ai.openai.chat.model.name,env.OPENAI_CHAT_MODEL_NAME:llama3-8b-8192}"/>
             <param name="log-requests" value="${org.wildfly.ai.openai.chat.log.request,env.OPENAI_CHAT_LOG_REQUEST:true}"/>
             <param name="log-responses" value="${org.wildfly.ai.openai.chat.log.response,env.OPENAI_CHAT_LOG_RESPONSE:true}"/>
