@@ -14,7 +14,7 @@ import org.wildfly.extension.mcp.api.MCPMessageListener;
 public record MCPHandlerConfig(
         int pageSize,
         List<MCPMessageListener> listeners,
-        String requestStateSecret,
+        byte[] requestStateSecret,
         long cacheTtlMs,
         String cacheScope) {
 

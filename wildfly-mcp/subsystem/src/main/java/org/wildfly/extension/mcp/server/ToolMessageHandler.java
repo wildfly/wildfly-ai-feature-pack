@@ -694,7 +694,7 @@ public class ToolMessageHandler {
                     } else {
                         ROOT_LOGGER.unsignedRequestStateRejected();
                         throw new IllegalArgumentException(
-                                "Unsigned requestState rejected — configure a request-state-secret "
+                                "Unsigned requestState rejected — configure a secret-key credential-reference "
                                         + "or set system property " + ALLOW_UNSIGNED_REQUEST_STATE_PROPERTY
                                         + "=true to accept unsigned tokens");
                     }

@@ -50,10 +50,11 @@ assets, trust boundaries, entry points, and deployment recommendations.
 
 ### Deployment Hardening
 
-1. **Configure `request-state-secret`** when using multi-round tool results (MRTR). Without this
-   attribute, any `requestState` token sent by a client is rejected with an `INVALID_PARAMS`
-   JSON-RPC error. If you need to accept unsigned tokens during development, set the system
-   property `org.wildfly.extension.mcp.allow-unsigned-request-state=true` — this is **not
+1. **Configure the MCP subsystem's `credential-reference`** (pointing to a secret-key credential
+   store entry) when using multi-round tool results (MRTR). Without it, any `requestState` token
+   sent by a client is rejected with an `INVALID_PARAMS` JSON-RPC error. If you need to accept
+   unsigned tokens during development, set the system property
+   `org.wildfly.extension.mcp.allow-unsigned-request-state=true` — this is **not
    recommended for production** as it allows clients to forge arbitrary request state.
 2. Restrict `allowedOrigins` to expected client origins in production
 3. Enable TLS for all AI provider connections
@@ -65,4 +66,4 @@ assets, trust boundaries, entry points, and deployment recommendations.
 
 | Property | Default | Description |
 |----------|---------|-------------|
-| `org.wildfly.extension.mcp.allow-unsigned-request-state` | `false` | When `true`, accepts `requestState` tokens without HMAC verification if no `request-state-secret` is configured. **Not recommended for production.** |
+| `org.wildfly.extension.mcp.allow-unsigned-request-state` | `false` | When `true`, accepts `requestState` tokens without HMAC verification if no secret-key `credential-reference` is configured. **Not recommended for production.** |
