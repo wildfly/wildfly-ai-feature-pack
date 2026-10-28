@@ -15,10 +15,15 @@
         <layer name="cdi"/>
         <layer name="ee-concurrency"/>
     </dependencies>
+    <!--
+      MRTR requestState signing (credential-reference) needs a real secret-key credential-store entry
+      (see org.wildfly.security.credential.SecretKeyCredential), which can't be generated as a provisioning-time
+      param default the way a clear-text password can. Configure it after provisioning, e.g. via the elytron
+      credential-store's generate-secret-key operation and /subsystem=mcp:write-attribute(name=credential-reference,...).
+    -->
     <feature spec="subsystem.mcp">
         <param name="sse-path" value="sse"/>
         <param name="messages-path" value="messages"/>
         <param name="streamable-path" value="stream"/>
-        <param name="request-state-secret" value="${org.wildfly.ai.mcp.server.request-state-secret,env.MCP_SERVER_REQUEST_STATE_SECRET:undefined}"/>
     </feature>
 </layer-spec>

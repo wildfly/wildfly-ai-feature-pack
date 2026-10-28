@@ -14,14 +14,9 @@ import org.wildfly.extension.mcp.api.MCPMessageListener;
 public record MCPHandlerConfig(
         int pageSize,
         List<MCPMessageListener> listeners,
-        String requestStateSecret,
+        byte[] requestStateSecret,
         long cacheTtlMs,
         String cacheScope) {
 
     public static final MCPHandlerConfig DEFAULT = new MCPHandlerConfig(0, List.of(), null, 3_600_000L, "public");
-
-    public MCPHandlerConfig {
-        listeners = listeners != null ? List.copyOf(listeners) : List.of();
-        cacheScope = cacheScope != null ? cacheScope : "public";
-    }
 }

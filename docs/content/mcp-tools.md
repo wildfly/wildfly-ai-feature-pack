@@ -249,7 +249,7 @@ Object confirmDelete(@ToolArg(description = "Item to delete") String item,
 
 ### requestState Security
 
-When `request-state-secret` is configured on the MCP subsystem, the server HMAC-signs the `requestState` to prevent tampering. **Without this attribute, unsigned `requestState` tokens are rejected by default.** See [Security](security) for deployment guidance.
+When the MCP subsystem's `credential-reference` (a secret-key credential store entry) is configured, the server HMAC-signs the `requestState` to prevent tampering. **Without it, unsigned `requestState` tokens are rejected by default.** See [Security](security) for deployment guidance.
 
 ## Combining All APIs
 
