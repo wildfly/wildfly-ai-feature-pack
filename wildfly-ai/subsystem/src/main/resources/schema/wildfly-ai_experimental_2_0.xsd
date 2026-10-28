@@ -1,0 +1,1836 @@
+<?xml version="1.1" encoding="UTF-8" ?>
+
+<!--
+~ Copyright The WildFly Authors
+~ SPDX-License-Identifier: Apache-2.0
+-->
+
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="urn:jboss:domain:ai:experimental:2.0"
+           xmlns="urn:jboss:domain:ai:experimental:2.0"
+           xmlns:credential-reference="urn:wildfly:credential-reference:1.1"
+           elementFormDefault="qualified"
+           attributeFormDefault="unqualified"
+           version="1.0">
+    <xs:import namespace="urn:wildfly:credential-reference:1.1" schemaLocation="https://www.jboss.org/schema/jbossas/wildfly-credential-reference_1_1.xsd"/>
+    <xs:element name="subsystem" type="subsystemType">
+        <xs:annotation>
+            <xs:documentation>
+                The AI subsystem root element.
+            </xs:documentation>
+        </xs:annotation>
+    </xs:element>
+
+    <xs:complexType name="subsystemType">
+        <xs:annotation>
+            <xs:documentation>
+                The AI subsystem root type.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:choice minOccurs="0" maxOccurs="unbounded">
+            <xs:element name="chat-language-models" type="chatLanguageModelsType">
+                <xs:annotation>
+                    <xs:documentation>
+                        The chat language models.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="embedding-models" type="embeddingModelsType">
+                <xs:annotation>
+                    <xs:documentation>
+                        The chat embedding models.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="embedding-stores" type="embeddingStoresType">
+                <xs:annotation>
+                    <xs:documentation>
+                        The chat embedding models.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="content-retrievers" type="contentRetrieversType">
+                <xs:annotation>
+                    <xs:documentation>
+                        The chat content retrievers.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="chat-memories" type="chatMemoryProvidersType">
+                <xs:annotation>
+                    <xs:documentation>
+                        The chat memory providers.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="mcp" type="mcpType">
+                <xs:annotation>
+                    <xs:documentation>
+                        The MCP client integration configuration.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:choice>
+    </xs:complexType>
+
+    <xs:complexType name="embeddingModelsType">
+        <xs:annotation>
+            <xs:documentation>
+                The embedding models.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:choice minOccurs="0" maxOccurs="unbounded">
+            <xs:element name="in-memory-embedding-model" type="inMemoryEmbeddingModelType">
+                <xs:annotation>
+                    <xs:documentation>
+                        An embedding-model provider definition element.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="ollama-embedding-model" type="ollamaEmbeddingModelType">
+                <xs:annotation>
+                    <xs:documentation>
+                        An embedding-model provider definition element.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:choice>
+    </xs:complexType>
+
+    <xs:complexType name="embeddingStoresType">
+        <xs:annotation>
+            <xs:documentation>
+                The embedding stores.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:choice minOccurs="0" maxOccurs="unbounded">
+            <xs:element name="chroma-embedding-store" type="chromaEmbeddingStoreType">
+                <xs:annotation>
+                    <xs:documentation>
+                        A Chroma embedding-store provider definition element.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="in-memory-embedding-store" type="inMemoryEmbeddingStoreType">
+                <xs:annotation>
+                    <xs:documentation>
+                        An in-memory embedding-store provider definition element.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="neo4j-embedding-store" type="neo4jEmbeddingStoreType">
+                <xs:annotation>
+                    <xs:documentation>
+                        A Neo4J embedding-store provider definition element.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="weaviate-embedding-store" type="weaviateEmbeddingStoreType">
+                <xs:annotation>
+                    <xs:documentation>
+                        A Weaviate embedding-store provider definition element.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:choice>
+    </xs:complexType>
+
+
+    <xs:complexType name="contentRetrieversType">
+        <xs:annotation>
+            <xs:documentation>
+                The content retrievers.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:choice minOccurs="0" maxOccurs="unbounded">
+            <xs:element name="embedding-store-content-retriever" type="embeddingStoreContentRetrieverType">
+                <xs:annotation>
+                    <xs:documentation>
+                        A content retriever retrieving content from an embedding store definition element.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="neo4j-content-retriever" type="neo4jContentRetrieverType">
+                <xs:annotation>
+                    <xs:documentation>
+                        A content retriever retrieving content from a Neo4J Graph database.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="web-search-content-retriever" type="webSearchContentRetrieverType">
+                <xs:annotation>
+                    <xs:documentation>
+                        A content retriever retrieving content from a web search definition element.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:choice>
+    </xs:complexType>
+
+    <xs:complexType name="chatMemoryProvidersType">
+        <xs:annotation>
+            <xs:documentation>
+                The chat memory providers.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:choice minOccurs="0" maxOccurs="unbounded">
+            <xs:element name="chat-memory" type="chatMemoryProviderType">
+                <xs:annotation>
+                    <xs:documentation>
+                        A chat memory provider.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:choice>
+    </xs:complexType>
+
+    <xs:complexType name="mcpType">
+        <xs:annotation>
+            <xs:documentation>
+                The MCP client integration configuration.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:choice minOccurs="0" maxOccurs="unbounded">
+            <xs:element name="mcp-tool-provider" type="mcpToolProviderType">
+                <xs:annotation>
+                    <xs:documentation>
+                        Tool provider using MCP protocol.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="mcp-client-sse" type="mcpClientSseType">
+                <xs:annotation>
+                    <xs:documentation>
+                        An MCP SSE client.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="mcp-client-stdio" type="mcpClientStdioType">
+                <xs:annotation>
+                    <xs:documentation>
+                        An MCP Stdio Client.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:choice>
+    </xs:complexType>
+
+
+    <xs:complexType name="chatLanguageModelsType">
+        <xs:annotation>
+            <xs:documentation>
+                The chat language models.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:choice minOccurs="0" maxOccurs="unbounded">
+            <xs:element name="gemini-chat-model" type="geminiChatModelType">
+                <xs:annotation>
+                    <xs:documentation>
+                        A chat model provider element.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="github-chat-model" type="githubModelsChatModelType">
+                <xs:annotation>
+                    <xs:documentation>
+                        A chat model provider element.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="openai-chat-model" type="openaiChatModelType">
+                <xs:annotation>
+                    <xs:documentation>
+                        A chat model provider element.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="ollama-chat-model" type="ollamaChatModelType">
+                <xs:annotation>
+                    <xs:documentation>
+                        A chat model provider element.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="mistral-ai-chat-model" type="mistralAIChatModelType">
+                <xs:annotation>
+                    <xs:documentation>
+                        A chat model provider element.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:choice>
+    </xs:complexType>
+
+    <xs:complexType name="geminiChatModelType">
+        <xs:annotation>
+            <xs:documentation>
+                A provider of a Google Gemini chat model.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="api-key" type="credential-reference:credentialReferenceType" minOccurs="1" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>
+                        Credential to be used by the configuration.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+        <xs:attribute name="name" type="xs:string" use="required">
+            <xs:annotation>
+                <xs:documentation>
+                    The name of this provider.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="allowed-code-execution" type="xs:boolean" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    Allow generated code to be executed.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="civic-integrity" type="threshold" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The threshold to filter civic integrity.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="connect-timeout" type="xs:long" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The connection timeout of the chat model
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="enable-enhanced-civic-answers" type="xs:boolean" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    Enable enhanced civic answers.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="executor-service" type="xs:string" use="required">
+            <xs:annotation>
+                <xs:documentation>
+                    The name of the ManagedExecutorService to use for process request.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="frequency-penalty" type="xs:double" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The frequency penalty of the chat model.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="dangerous-content" type="threshold" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The threshold to filter dangerous content.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="harassment" type="threshold" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The threshold to filter harassment content.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="hate-speech" type="threshold" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The threshold to filter hate speech content.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="include-code-execution-output" type="xs:boolean" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    Enables providing the code and the result in the ouptut.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="include-thoughts" type="xs:boolean" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    Include thoughts in the model configuration.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="log-requests" type="xs:boolean" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    Whether to log API requests.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="log-responses" type="xs:boolean" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    Whether to log API responses.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="log-probs" type="xs:int" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The number of log probabilities to include in the response.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="max-output-token" type="xs:int" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The maximum number of output tokens of the chat model
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="model-name" type="xs:string" use="required">
+            <xs:annotation>
+                <xs:documentation>
+                    The name of the model to use
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="presence-penalty" type="xs:double" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The presence penalty of the chat model.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="response-format" use="optional">
+            <xs:simpleType>
+                <xs:restriction base="xs:string">
+                    <xs:enumeration value="JSON"/>
+                    <xs:enumeration value="TEXT"/>
+                </xs:restriction>
+            </xs:simpleType>
+        </xs:attribute>
+        <xs:attribute name="response-log-probs" type="xs:boolean" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    Whether to include log probabilities in the response.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="return-thinking" type="xs:boolean" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    Whether to return thinking process in the response.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="seed" type="xs:int" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The seed for deterministic generation.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="sexually-explicit" type="threshold" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The threshold to filter out sexually explicit content.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="stop-sequences" type="stringList" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    A list of strings to stop generation at.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="streaming" type="xs:boolean" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    Whether to create a token streaming chat language model or not
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="temperature" type="xs:double" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The temperature of the chat model
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="thinking-budget" type="xs:int" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The budget for thinking tokens.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="top-k" type="xs:int" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The Top K of the chat model
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="top-p" type="xs:double" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The Top P of the chat model
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+    </xs:complexType>
+
+    <xs:complexType name="githubModelsChatModelType">
+        <xs:annotation>
+            <xs:documentation>
+                A provider of a GitHub chat model.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:annotation>
+                <xs:documentation>
+                    Custom HTTP headers.
+                </xs:documentation>
+            </xs:annotation>
+            <xs:element name="header" minOccurs="0" maxOccurs="unbounded" type="headerType"/>
+            <xs:element name="api-key" type="credential-reference:credentialReferenceType" minOccurs="1" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>
+                        Credential to be used by the configuration.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+        <xs:attribute name="name" type="xs:string" use="required">
+            <xs:annotation>
+                <xs:documentation>
+                    The name of this provider.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="connect-timeout" type="xs:long" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The connection timeout of the chat model
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="endpoint" type="xs:string" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The chat model endpoint
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="frequency-penalty" type="xs:double" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The frequency penalty of the chat model
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="log-requests-responses" type="xs:boolean" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    Whether to log API requests / responses.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="max-retries" type="xs:int" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The maximum number of retries for a request to the chat model
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="max-token" type="xs:int" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The maximum number of token of the chat model
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="model-name" type="xs:string">
+            <xs:annotation>
+                <xs:documentation>
+                    The name of the model to use
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="presence-penalty" type="xs:double" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The presence penalty of the chat model
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="response-format" use="optional">
+            <xs:simpleType>
+                <xs:restriction base="xs:string">
+                    <xs:enumeration value="JSON"/>
+                    <xs:enumeration value="TEXT"/>
+                </xs:restriction>
+            </xs:simpleType>
+        </xs:attribute>
+        <xs:attribute name="seed" type="xs:double" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The seed of the chat model
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="service-version" use="optional">
+            <xs:simpleType>
+                <xs:restriction base="xs:string">
+                    <xs:enumeration value="2024-05-01-preview"/>
+                    <xs:enumeration value="2024-05-01-preview"/>
+                </xs:restriction>
+            </xs:simpleType>
+        </xs:attribute>
+        <xs:attribute name="streaming" type="xs:boolean" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    Whether to create a token streaming chat language model or not
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="temperature" type="xs:double" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The temperature of the chat model
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="top-p" type="xs:double" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The Top P of the chat model
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="user-agent-suffix" type="xs:string" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The user-agent suffix
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+    </xs:complexType>
+
+    <xs:complexType name="ollamaChatModelType">
+        <xs:annotation>
+            <xs:documentation>
+                A provider of Ollama chat model.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:attribute name="name" type="xs:string" use="required">
+            <xs:annotation>
+                <xs:documentation>
+                    The name of this provider.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="base-url" type="xs:string">
+            <xs:annotation>
+                <xs:documentation>
+                    The base url to the chat model endpoint
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="connect-timeout" type="xs:long" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The connection timeout of the chat model
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="executor-service" type="xs:string" use="required">
+            <xs:annotation>
+                <xs:documentation>
+                    The name of the ManagedExecutorService to use for process request.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="log-requests" type="xs:boolean" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    Whether to log API requests
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="log-responses" type="xs:boolean" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    Whether to log API responses
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="max-retries" type="xs:int" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The maximum number of retries for API requests
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="model-name" type="xs:string">
+            <xs:annotation>
+                <xs:documentation>
+                    The model used on Ollama.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="num-predict" type="xs:int" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The maximum number of tokens to predict
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="repeat-penalty" type="xs:double" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    Penalty for token repetition
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="response-format" use="optional">
+            <xs:simpleType>
+                <xs:restriction base="xs:string">
+                    <xs:enumeration value="JSON"/>
+                    <xs:enumeration value="TEXT"/>
+                </xs:restriction>
+            </xs:simpleType>
+        </xs:attribute>
+        <xs:attribute name="streaming" type="xs:boolean" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    Whether to create a token streaming chat language model or not
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="seed" type="xs:int" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The seed for deterministic generation
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="stop-sequences" type="stringList" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    A list of strings to stop generation at
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="temperature" type="xs:double" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The temperature of the chat model
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="top-k" type="xs:int" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The number of highest probability tokens to consider
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="top-p" type="xs:double" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    Controls token diversity using nucleus sampling
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+    </xs:complexType>
+
+    <xs:complexType name="openaiChatModelType">
+        <xs:annotation>
+            <xs:documentation>
+                A provider of an OpenAI chat model.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="api-key" type="credential-reference:credentialReferenceType" minOccurs="1" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>
+                        Credential to be used by the configuration.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+        <xs:attribute name="name" type="xs:string" use="required">
+            <xs:annotation>
+                <xs:documentation>
+                    The name of this provider.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="base-url" type="xs:string">
+            <xs:annotation>
+                <xs:documentation>
+                    The base url to the chat model endpoint
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="connect-timeout" type="xs:long" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The connection timeout of the chat model
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="executor-service" type="xs:string" use="required">
+            <xs:annotation>
+                <xs:documentation>
+                    The name of the ManagedExecutorService to use for process request.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="frequency-penalty" type="xs:double" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The frequency penalty of the chat model
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="log-requests" type="xs:boolean" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    Whether to log API requests
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="log-responses" type="xs:boolean" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    Whether to log API responses
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="max-token" type="xs:int" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The maximum number of token of the chat model
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="model-name" type="xs:string">
+            <xs:annotation>
+                <xs:documentation>
+                    The name of the model to use
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="organization-id" type="xs:string" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The organization id of the chat model
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="presence-penalty" type="xs:double" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The presence penalty of the chat model
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="response-format" use="optional">
+            <xs:simpleType>
+                <xs:restriction base="xs:string">
+                    <xs:enumeration value="JSON"/>
+                    <xs:enumeration value="TEXT"/>
+                </xs:restriction>
+            </xs:simpleType>
+        </xs:attribute>
+        <xs:attribute name="seed" type="xs:double" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The seed of the chat model
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="streaming" type="xs:boolean" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    Whether to create a token streaming chat language model or not
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="temperature" type="xs:double" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The temperature of the chat model
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="top-p" type="xs:double" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The Top P of the chat model
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+    </xs:complexType>
+
+    <xs:complexType name="mistralAIChatModelType">
+        <xs:annotation>
+            <xs:documentation>
+                A provider of a Mistral AI chat model.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="api-key" type="credential-reference:credentialReferenceType" minOccurs="1" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>
+                        Credential to be used by the configuration.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+        <xs:attribute name="name" type="xs:string" use="required">
+            <xs:annotation>
+                <xs:documentation>
+                    The name of this provider.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="base-url" type="xs:string">
+            <xs:annotation>
+                <xs:documentation>
+                    The base URL to the chat model endpoint
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="connect-timeout" type="xs:long" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The connection timeout of the chat model
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="executor-service" type="xs:string" use="required">
+            <xs:annotation>
+                <xs:documentation>
+                    The name of the ManagedExecutorService to use for process request.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="frequency-penalty" type="xs:double" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The frequency penalty of the chat model
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="log-requests" type="xs:boolean" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    Whether to log API requests
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="log-responses" type="xs:boolean" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    Whether to log API responses
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="max-retries" type="xs:int" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The maximum number of retries for API requests
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="max-token" type="xs:int" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The maximum number of token of the chat model
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="model-name" type="xs:string">
+            <xs:annotation>
+                <xs:documentation>
+                    The name of the model to use
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="presence-penalty" type="xs:double" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The presence penalty of the chat model
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="random-seed" type="xs:int" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The seed of the chat model
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="response-format" use="optional">
+            <xs:simpleType>
+                <xs:restriction base="xs:string">
+                    <xs:enumeration value="JSON"/>
+                    <xs:enumeration value="TEXT"/>
+                </xs:restriction>
+            </xs:simpleType>
+        </xs:attribute>
+        <xs:attribute name="safe-prompt" type="xs:boolean" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    Whether to inject a safety prompt before all conversations.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="stop-sequences" type="stringList" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    A list of strings to stop generation at.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="streaming" type="xs:boolean" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    Whether to create a token streaming chat language model or not
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="temperature" type="xs:double" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The temperature of the chat model
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="top-p" type="xs:double" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The Top P of the chat model
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+    </xs:complexType>
+
+    <xs:complexType name="mcpToolProviderType">
+        <xs:annotation>
+            <xs:documentation>
+                A tool provider using several MCP servers.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:attribute name="name" type="xs:string" use="required">
+            <xs:annotation>
+                <xs:documentation>
+                    The name of this provider.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="fail-if-one-server-fails" type="xs:boolean" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    If this is true, then the tool provider will throw an exception if it fails to list tools from any of the servers.
+                    If this is false (default), then the tool provider will ignore the error and continue with the next server.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="mcp-clients" type="stringList">
+            <xs:annotation>
+                <xs:documentation>
+                    A comma separated list of the names of the MCP clients to use to get the list of tools.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+    </xs:complexType>
+
+    <xs:complexType name="mcpClientSseType">
+        <xs:annotation>
+            <xs:documentation>
+                The configuration of a client to an SSE MCP server.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:attribute name="name" type="xs:string" use="required">
+            <xs:annotation>
+                <xs:documentation>
+                    The name of this MCP client.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="connect-timeout" type="xs:long" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The connection timeout of the SSE client.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="log-requests" type="xs:boolean" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    Whether to log API requests
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="log-responses" type="xs:boolean" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    Whether to log API responses
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="socket-binding" type="xs:string">
+            <xs:annotation>
+                <xs:documentation>
+                    The name of outbound the socket-binding to use to connect to the MCP server.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="sse-path" type="xs:string">
+            <xs:annotation>
+                <xs:documentation>
+                    The URL path elements.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="ssl-enabled" type="xs:boolean" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    If the connection to the MCP server is secured.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+    </xs:complexType>
+
+    <xs:complexType name="mcpClientStdioType">
+        <xs:annotation>
+            <xs:documentation>
+                The configuration of a client to a stdio MCP server.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:attribute name="name" type="xs:string" use="required">
+            <xs:annotation>
+                <xs:documentation>
+                    The name of this MCP client
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="cmd" type="xs:string">
+            <xs:annotation>
+                <xs:documentation>
+                    The command to execute to start the MCP server process.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="args" type="stringList" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The list of arguments to pass to the command.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+    </xs:complexType>
+
+    <xs:complexType name="ollamaEmbeddingModelType">
+        <xs:annotation>
+            <xs:documentation>
+                A provider of Ollama embedding model.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:attribute name="name" type="xs:string" use="required">
+            <xs:annotation>
+                <xs:documentation>
+                    The name of this provider.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="base-url" type="xs:string">
+            <xs:annotation>
+                <xs:documentation>
+                    The base url to the chat model endpoint
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="connect-timeout" type="xs:long" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The connection timeout of the chat model
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="log-requests" type="xs:boolean" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    Whether to log API requests
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="log-responses" type="xs:boolean" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    Whether to log API responses
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="model-name" type="xs:string">
+            <xs:annotation>
+                <xs:documentation>
+                    The model used on Ollama.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+    </xs:complexType>
+
+    <xs:complexType name="inMemoryEmbeddingModelType">
+        <xs:annotation>
+            <xs:documentation>
+                A provider of embedding model.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:attribute name="name" type="xs:string" use="required">
+            <xs:annotation>
+                <xs:documentation>
+                    The name of this provider.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="module" type="xs:string" use="required">
+            <xs:annotation>
+                <xs:documentation>
+                    The module to load the embedding model from.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="embedding-class" type="xs:string" use="required">
+            <xs:annotation>
+                <xs:documentation>
+                    The class from which the embedding model will be instantiated.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+    </xs:complexType>
+
+
+    <xs:complexType name="inMemoryEmbeddingStoreType">
+        <xs:annotation>
+            <xs:documentation>
+                A provider of in-memory embedding store.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:attribute name="name" type="xs:string" use="required">
+            <xs:annotation>
+                <xs:documentation>
+                    The name of this provider.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="path" use="required">
+            <xs:annotation>
+                <xs:documentation>
+                    The actual filesystem path. Treated as an absolute path, unless the
+                    'relative-to' attribute is specified, in which case the value
+                    is treated as relative to that path.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="relative-to" type="xs:string" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    Reference to a filesystem path defined in the "paths" section
+                    of the server configuration.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+    </xs:complexType>
+
+    <xs:complexType name="neo4jEmbeddingStoreType">
+        <xs:annotation>
+            <xs:documentation>
+                A provider of Neo4J embedding store.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="credential-reference" type="credential-reference:credentialReferenceType" minOccurs="1" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>
+                        Credential to be used by the configuration.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+        <xs:attribute name="name" type="xs:string" use="required">
+            <xs:annotation>
+                <xs:documentation>
+                    The name of this provider.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="bolt-url" type="xs:string" use="required">
+            <xs:annotation>
+                <xs:documentation>
+                    The bolt url to Neo4J server.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="database-name" type="xs:string" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The name of the Neo4J database.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="dimension" type="xs:int" use="required">
+            <xs:annotation>
+                <xs:documentation>
+                    The dimension of the embedding vector.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="embedding-property" type="xs:string" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The optional embeddingProperty name
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="id-property" type="xs:string" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The optional id property name (default: "id").
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="index-name" type="xs:string" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The optional index name (default: "vector")
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="label" type="xs:string" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The optional label name (default: "Document")
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="metadata-prefix" type="xs:string" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The optional metadata prefix (default: "")
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="retrieval-query" type="xs:string" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The optional retrieval query
+                    (default: "RETURN properties(node) AS metadata, node.`idProperty` AS `idProperty`, node.`textProperty` AS `textProperty`, node.`embeddingProperty` AS `embeddingProperty`, score")
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="text-property" type="xs:string" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The optional textProperty property name (default: "text")
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="username" type="xs:string" use="required">
+            <xs:annotation>
+                <xs:documentation>
+                    The username for connecting to Neo4J server.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+    </xs:complexType>
+
+    <xs:complexType name="weaviateEmbeddingStoreType">
+        <xs:annotation>
+            <xs:documentation>
+                A provider of Weaviate embedding store.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:attribute name="name" type="xs:string" use="required">
+            <xs:annotation>
+                <xs:documentation>
+                    The name of this provider.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="avoid-dups" type="xs:boolean" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    If true the object id is a hashed ID based on provided text segment else a random ID will be generated.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="consistency-level" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    How the consistency is tuned when writing into weaviate embedding store.
+                </xs:documentation>
+            </xs:annotation>
+            <xs:simpleType>
+                <xs:restriction base="xs:string">
+                    <xs:enumeration value="ALL"/>
+                    <xs:enumeration value="QUORUM"/>
+                    <xs:enumeration value="ONE"/>
+                </xs:restriction>
+            </xs:simpleType>
+        </xs:attribute>
+        <xs:attribute name="object-class" type="xs:string">
+            <xs:annotation>
+                <xs:documentation>
+                    The object class for collections on Weaviate store.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="socket-binding" type="xs:string">
+            <xs:annotation>
+                <xs:documentation>
+                    The name of outbound the socket-binding to use to connect to the Weaviate store.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="ssl-enabled" type="xs:boolean" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    If the connection to the Weaviate store is secured.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="metadata" type="stringList" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The list of metadata fields to get from the weaviate store.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+    </xs:complexType>
+
+    <xs:complexType name="chromaEmbeddingStoreType">
+        <xs:annotation>
+            <xs:documentation>
+                A provider of Chroma embedding store.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:attribute name="name" type="xs:string" use="required">
+            <xs:annotation>
+                <xs:documentation>
+                    The name of this provider.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="api-version" use="required">
+            <xs:annotation>
+                <xs:documentation>
+                    The API version to use on the Chroma server.
+                </xs:documentation>
+            </xs:annotation>
+            <xs:simpleType>
+                <xs:restriction base="xs:string">
+                    <xs:enumeration value="V1"/>
+                    <xs:enumeration value="V2"/>
+                </xs:restriction>
+            </xs:simpleType>
+        </xs:attribute>
+        <xs:attribute name="base-url" type="xs:string" use="required">
+            <xs:annotation>
+                <xs:documentation>
+                    The base URL to the Chroma server.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="collection-name" type="xs:string" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The name of the collection in Chroma database.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="connect-timeout" type="xs:long" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The connection timeout for connecting to the Chroma server.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="database-name" type="xs:string" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The name of the database in Chroma database.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="log-requests" type="xs:boolean" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    Whether to log API requests to the Chroma server.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="log-responses" type="xs:boolean" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    Whether to log API responses from the Chroma server.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="tenant-name" type="xs:string" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The name of the tenant in Chroma database.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+    </xs:complexType>
+
+    <xs:complexType name="neo4jContentRetrieverType">
+        <xs:annotation>
+            <xs:documentation>
+                A content retriever retrieving content from a Neo4J graph database.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="credential-reference" type="credential-reference:credentialReferenceType" minOccurs="1" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>
+                        Credential to be used by the configuration.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+        <xs:attribute name="name" type="xs:string" use="required">
+            <xs:annotation>
+                <xs:documentation>
+                    The name of this provider.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="bolt-url" type="xs:string" use="required">
+            <xs:annotation>
+                <xs:documentation>
+                    The bolt url to Neo4J server.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="chat-language-model" type="xs:string" use="required">
+            <xs:annotation>
+                <xs:documentation>
+                    The chat language model to use to create cypher queries.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="prompt-template" type="xs:string" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The prompt template to use to create the cypher queries.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="username" type="xs:string" use="required">
+            <xs:annotation>
+                <xs:documentation>
+                    The username for connecting to Neo4J server.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+    </xs:complexType>
+
+
+    <xs:complexType name="embeddingStoreContentRetrieverType">
+        <xs:annotation>
+            <xs:documentation>
+                A content retriever retrieving content from an embedding store.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:attribute name="name" type="xs:string" use="required">
+            <xs:annotation>
+                <xs:documentation>
+                    The name of this provider.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="embedding-store" type="xs:string" use="required">
+            <xs:annotation>
+                <xs:documentation>
+                    The embedding store to retrieve content from the embedding model from.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="embedding-model" type="xs:string" use="required">
+            <xs:annotation>
+                <xs:documentation>
+                    The embedding model to use.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="max-results" type="xs:int" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The maximum number of contents to retrieve.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="min-score" type="xs:double" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The minimum relevance score for the returned contents. Contents scoring below this score are excluded from the results.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+    </xs:complexType>
+
+    <xs:complexType name="webSearchContentRetrieverType">
+        <xs:annotation>
+            <xs:documentation>
+                A content retriever retrieving content from a web search.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:choice>
+            <xs:element name="google" type="googleCustomSearchEngineType">
+                <xs:annotation>
+                    <xs:documentation>
+                        The Google Custom Search Engine to retrieve content from.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="tavily" type="tavilySearchEngineType">
+                <xs:annotation>
+                    <xs:documentation>
+                        The Tavily Search Engine to retrieve content from.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:choice>
+        <xs:attribute name="name" type="xs:string" use="required">
+            <xs:annotation>
+                <xs:documentation>
+                    The name of this provider.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="max-results" type="xs:int" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The maximum number of contents to retrieve.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+    </xs:complexType>
+
+    <xs:complexType name="googleCustomSearchEngineType">
+        <xs:annotation>
+            <xs:documentation>
+                A Google Custom Search Engine to retrieve content from.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="api-key" type="credential-reference:credentialReferenceType" minOccurs="1" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>
+                        Credential to be used by the configuration.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+        <xs:attribute name="connect-timeout" type="xs:long" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The connection timeout of the search
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="custom-search-id" type="xs:string">
+            <xs:annotation>
+                <xs:documentation>
+                    The Custom Search ID parameter for search the entire web.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="site-restrict" type="xs:boolean" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    If your Search Engine is restricted to only searching specific sites, you can set this parameter to true.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="log-requests" type="xs:boolean" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    Whether to log API requests
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="log-responses" type="xs:boolean" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    Whether to log API responses
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="max-retries" type="xs:int" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The maximum number of retries for API requests
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+    </xs:complexType>
+
+    <xs:complexType name="tavilySearchEngineType">
+        <xs:annotation>
+            <xs:documentation>
+                A Tavily Search Engine to retrieve content from.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="api-key" type="credential-reference:credentialReferenceType" minOccurs="1" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>
+                        Credential to be used by the configuration.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+        <xs:attribute name="base-url" type="xs:string">
+            <xs:annotation>
+                <xs:documentation>
+                    The URL to call the Tavily APi from: "https://api.tavily.com".
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="connect-timeout" type="xs:long" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The connection timeout of the search
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="exclude-domains" type="xs:string" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    A list of domains to specifically exclude from the search results.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="include-answer" type="xs:boolean" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    Include answers in the search results.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="include-domains" type="xs:string" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    A list of domains to specifically include in the search results.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="include-raw-content" type="xs:boolean" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    Include raw content in the search results.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="search-depth" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The depth of the search. It can be basic or advanced. Default is basic for quick results and advanced for indepth high quality results but longer response time. Advanced calls equals 2 requests.
+                </xs:documentation>
+            </xs:annotation>
+            <xs:simpleType>
+                <xs:restriction base="xs:string">
+                    <xs:enumeration value="basic"/>
+                    <xs:enumeration value="advanced"/>
+                </xs:restriction>
+            </xs:simpleType>
+        </xs:attribute>
+    </xs:complexType>
+
+    <xs:complexType name="chatMemoryProviderType">
+        <xs:annotation>
+            <xs:documentation>
+                A chat memory provider.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:attribute name="name" type="xs:string" use="required">
+            <xs:annotation>
+                <xs:documentation>
+                    The name of this provider.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="size" type="xs:int" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                   The size of the memory
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="type" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    The type of memory.
+                </xs:documentation>
+            </xs:annotation>
+             <xs:simpleType>
+                <xs:restriction base="xs:string">
+                    <xs:enumeration value="MESSAGE"/>
+                    <xs:enumeration value="TOKEN"/>
+                </xs:restriction>
+            </xs:simpleType>
+        </xs:attribute>
+        <xs:attribute name="use-http-session" type="xs:boolean" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    If the HTTP Session is use to manage the chat memory id.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+    </xs:complexType>
+
+    <xs:simpleType name="stringList">
+        <xs:restriction base="xs:string">
+            <xs:annotation>
+                <xs:documentation>
+                    A list of string separated by whitespaces.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="threshold">
+        <xs:restriction base="xs:string">
+            <xs:annotation>
+                <xs:documentation>
+                    A threshold.
+                </xs:documentation>
+            </xs:annotation>
+            <xs:enumeration value="HARM_BLOCK_THRESHOLD_UNSPECIFIED"/>
+            <xs:enumeration value="BLOCK_LOW_AND_ABOVE"/>
+            <xs:enumeration value="BLOCK_MEDIUM_AND_ABOVE"/>
+            <xs:enumeration value="BLOCK_ONLY_HIGH"/>
+            <xs:enumeration value="BLOCK_NONE"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:complexType name="headerType">
+        <xs:annotation>
+            <xs:documentation>
+                A custom header.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="value" type="xs:string" use="required"/>
+    </xs:complexType>
+</xs:schema>

@@ -33,12 +33,15 @@ import java.util.function.Supplier;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.ee.concurrent.adapter.ManagedExecutorServiceAdapter;
+import org.jboss.as.controller.security.CredentialReference;
 import org.jboss.dmr.ModelNode;
 import org.wildfly.extension.ai.AIAttributeDefinitions;
+import org.wildfly.extension.ai.CredentialReferenceUtil;
 import org.wildfly.extension.ai.injection.chat.WildFlyChatModelConfig;
 import org.wildfly.extension.ai.injection.chat.WildFlyMistralAiChatModelConfig;
 
 import org.wildfly.service.capture.ValueRegistry;
+import org.wildfly.security.credential.source.CredentialSource;
 import org.wildfly.subsystem.service.ResourceServiceInstaller;
 import org.wildfly.subsystem.service.ServiceDependency;
 
@@ -56,7 +59,8 @@ public class MistralAIChatModelProviderServiceConfigurator extends AbstractChatM
         String baseUrl = BASE_URL.resolveModelAttribute(context, model).asString();
         Long connectTimeOut = CONNECT_TIMEOUT.resolveModelAttribute(context, model).asLong();
         Double frequencyPenalty = FREQUENCY_PENALTY.resolveModelAttribute(context, model).asDoubleOrNull();
-        String key = API_KEY.resolveModelAttribute(context, model).asString();
+        ServiceDependency<CredentialSource> credentialReference = model.hasDefined(API_KEY.getName())
+                ? ServiceDependency.from(CredentialReference.getCredentialSourceDependency(context, API_KEY, model)) : null;
         Boolean logRequests = LOG_REQUESTS.resolveModelAttribute(context, model).asBooleanOrNull();
         Boolean logResponses = LOG_RESPONSES.resolveModelAttribute(context, model).asBooleanOrNull();
         Integer maxRetries = MAX_RETRIES.resolveModelAttribute(context, model).asIntOrNull();
@@ -77,7 +81,7 @@ public class MistralAIChatModelProviderServiceConfigurator extends AbstractChatM
             @Override
             public WildFlyChatModelConfig get() {
                 return new WildFlyMistralAiChatModelConfig()
-                        .apiKey(key)
+                        .apiKey(credentialReference == null ? null : CredentialReferenceUtil.getPassword(credentialReference.get()))
                         .baseUrl(baseUrl)
                         .frequencyPenalty(frequencyPenalty)
                         .httpClientBuilder(new JdkHttpClientBuilderFactory().create().httpClientBuilder(HttpClient.newBuilder().executor(executorAdapter.get())))
@@ -98,6 +102,6 @@ public class MistralAIChatModelProviderServiceConfigurator extends AbstractChatM
                         .topP(topP);
             }
         };
-        return installService(context.getCurrentAddressValue(), factory, isObservable, executorAdapter);
+        return installService(context.getCurrentAddressValue(), factory, isObservable, executorAdapter, credentialReference);
     }
 }

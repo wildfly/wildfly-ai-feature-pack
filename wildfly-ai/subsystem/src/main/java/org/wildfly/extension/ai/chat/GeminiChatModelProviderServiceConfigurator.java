@@ -46,13 +46,16 @@ import org.jboss.as.controller.AttributeDefinition;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.ee.concurrent.adapter.ManagedExecutorServiceAdapter;
+import org.jboss.as.controller.security.CredentialReference;
 import org.jboss.dmr.ModelNode;
 import org.wildfly.extension.ai.AIAttributeDefinitions;
+import org.wildfly.extension.ai.CredentialReferenceUtil;
 
 import org.wildfly.extension.ai.injection.chat.WildFlyChatModelConfig;
 import org.wildfly.extension.ai.injection.chat.WildFlyGeminiChatModelConfig;
 
 import org.wildfly.service.capture.ValueRegistry;
+import org.wildfly.security.credential.source.CredentialSource;
 import org.wildfly.subsystem.service.ResourceServiceInstaller;
 import org.wildfly.subsystem.service.ServiceDependency;
 
@@ -76,7 +79,8 @@ public class GeminiChatModelProviderServiceConfigurator extends AbstractChatMode
     @Override
     public ResourceServiceInstaller configure(OperationContext context, ModelNode model) throws OperationFailedException {
         Long connectTimeOut = CONNECT_TIMEOUT.resolveModelAttribute(context, model).asLong();
-        String key = API_KEY.resolveModelAttribute(context, model).asString();
+        ServiceDependency<CredentialSource> credentialReference = model.hasDefined(API_KEY.getName())
+                ? ServiceDependency.from(CredentialReference.getCredentialSourceDependency(context, API_KEY, model)) : null;
         Boolean allowCodeExecution = ALLOWED_CODE_EXECUTION.resolveModelAttribute(context, model).asBooleanOrNull();
         Boolean enableEnhancedCivicAnswers = ENABLE_ENHANCED_CIVIC_ANSWERS.resolveModelAttribute(context, model).asBooleanOrNull();
         Double frequencyPenalty = FREQUENCY_PENALTY.resolveModelAttribute(context, model).asDoubleOrNull();
@@ -107,7 +111,7 @@ public class GeminiChatModelProviderServiceConfigurator extends AbstractChatMode
             public WildFlyChatModelConfig get() {
                 return new WildFlyGeminiChatModelConfig()
                         .allowCodeExecution(allowCodeExecution)
-                        .apiKey(key)
+                        .apiKey(credentialReference == null ? "" : CredentialReferenceUtil.getPassword(credentialReference.get()))
                         .enableEnhancedCivicAnswers(enableEnhancedCivicAnswers)
                         .frequencyPenalty(frequencyPenalty)
                         .includeCodeExecutionOutput(includeCodeExecutionOutput)
@@ -134,7 +138,7 @@ public class GeminiChatModelProviderServiceConfigurator extends AbstractChatMode
                         .topP(topP);
             }
         };
-        return installService(context.getCurrentAddressValue(), factory, isObservable, executorAdapter);
+        return installService(context.getCurrentAddressValue(), factory, isObservable, executorAdapter, credentialReference);
     }
 
     private Map<String, String> safetySettingConfig(OperationContext context, ModelNode model) throws OperationFailedException {
