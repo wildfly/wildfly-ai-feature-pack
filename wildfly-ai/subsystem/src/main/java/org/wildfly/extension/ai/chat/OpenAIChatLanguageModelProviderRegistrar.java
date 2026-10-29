@@ -32,9 +32,9 @@ import org.jboss.as.version.Stability;
 import org.jboss.dmr.ModelType;
 
 import static org.wildfly.extension.ai.AIAttributeDefinitions.RESPONSE_FORMAT;
+import static org.wildfly.extension.ai.AIAttributeDefinitions.SEED;
 import static org.wildfly.extension.ai.AIAttributeDefinitions.STREAMING;
 import static org.wildfly.extension.ai.AIAttributeDefinitions.TOP_P;
-import static org.wildfly.extension.ai.chat.GithubModelChatLanguageModelProviderRegistrar.SEED;
 
 import org.wildfly.extension.ai.injection.chat.WildFlyChatModelConfig;
 import org.wildfly.service.capture.ValueExecutorRegistry;

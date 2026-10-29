@@ -18,7 +18,6 @@ The feature pack provides 37 Galleon layers organized by functionality.
 | `openai-chat-model` | OpenAI synchronous chat |
 | `mistral-ai-chat-model` | Mistral AI synchronous chat |
 | `gemini-chat-model` | Google Gemini synchronous chat |
-| `github-chat-model` | GitHub Models synchronous chat |
 | `groq-chat-model` | Groq synchronous chat |
 
 ### Streaming Chat Models
@@ -29,7 +28,6 @@ The feature pack provides 37 Galleon layers organized by functionality.
 | `openai-streaming-chat-model` | OpenAI streaming chat |
 | `mistral-ai-streaming-chat-model` | Mistral AI streaming chat |
 | `gemini-streaming-chat-model` | Google Gemini streaming chat |
-| `github-streaming-chat-model` | GitHub Models streaming chat |
 | `groq-streaming-chat-model` | Groq streaming chat |
 
 ### Embedding Models
@@ -115,15 +113,6 @@ The feature pack provides 37 Galleon layers organized by functionality.
 | `GEMINI_API_KEY` | API key for authentication | Yes |
 | `GEMINI_CHAT_MODEL_NAME` | Model name | No |
 | `GEMINI_CHAT_LOG` | Enable request/response tracing | No |
-
-### GitHub Models
-
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `GITHUB_API_KEY` | API key (GitHub PAT) | Yes |
-| `GITHUB_CHAT_URL` | Endpoint URL | No |
-| `GITHUB_CHAT_MODEL_NAME` | Model name | No |
-| `GITHUB_CHAT_LOG` | Enable tracing | No |
 
 ### Groq
 

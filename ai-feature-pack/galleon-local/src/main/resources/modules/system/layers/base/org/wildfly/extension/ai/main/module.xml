@@ -20,7 +20,6 @@
         <module name="dev.langchain4j"/>
         <module name="dev.langchain4j.chroma" optional="true"/>
         <module name="dev.langchain4j.gemini" optional="true"/>
-        <module name="dev.langchain4j.github" optional="true"/>
         <module name="dev.langchain4j.mcp-client" optional="true"/>
         <module name="dev.langchain4j.neo4j" optional="true"/>
         <module name="dev.langchain4j.ollama" optional="true"/>

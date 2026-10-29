@@ -16,7 +16,7 @@ import org.wildfly.subsystem.SubsystemPersistence;
  * AI services and Large Language Models (LLMs) through the LangChain4j framework.
  * It provides a subsystem for configuring and managing:</p>
  * <ul>
- *   <li>Chat models (OpenAI, Ollama, Gemini, GitHub Models, Mistral AI)</li>
+ *   <li>Chat models (OpenAI, Ollama, Gemini, Mistral AI)</li>
  *   <li>Embedding models (local and remote)</li>
  *   <li>Embedding stores (in-memory, Neo4j, Weaviate, Chroma)</li>
  *   <li>Content retrievers for RAG (Retrieval-Augmented Generation)</li>
