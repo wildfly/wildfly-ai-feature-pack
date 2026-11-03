@@ -16,7 +16,6 @@ import org.jboss.as.controller.descriptions.SubsystemResourceDescriptionResolver
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
 import org.jboss.as.server.deployment.Phase;
 import org.wildfly.extension.ai.chat.GeminiChatLanguageModelProviderRegistrar;
-import org.wildfly.extension.ai.chat.GithubModelChatLanguageModelProviderRegistrar;
 import org.wildfly.extension.ai.chat.MistralAIChatLanguageModelProviderRegistrar;
 import org.wildfly.extension.ai.chat.OllamaChatLanguageModelProviderRegistrar;
 import org.wildfly.extension.ai.chat.OpenAIChatLanguageModelProviderRegistrar;
@@ -59,7 +58,6 @@ import org.wildfly.subsystem.resource.SubsystemResourceDefinitionRegistrar;
  * <h3>Chat Model Providers</h3>
  * <ul>
  *   <li>Gemini - Google's Gemini AI models</li>
- *   <li>GitHub Models - GitHub's model marketplace</li>
  *   <li>Ollama - Local LLM runtime</li>
  *   <li>OpenAI - ChatGPT and GPT models</li>
  *   <li>Mistral AI - Mistral's models</li>
@@ -146,7 +144,6 @@ class AISubsystemRegistrar implements SubsystemResourceDefinitionRegistrar {
         new ChatMemoryProviderRegistrar(RESOLVER).register(registration, context);
 
         new GeminiChatLanguageModelProviderRegistrar(RESOLVER).register(registration, context);
-        new GithubModelChatLanguageModelProviderRegistrar(RESOLVER).register(registration, context);
         new OllamaChatLanguageModelProviderRegistrar(RESOLVER).register(registration, context);
         new OpenAIChatLanguageModelProviderRegistrar(RESOLVER).register(registration, context);
         new MistralAIChatLanguageModelProviderRegistrar(RESOLVER).register(registration, context);

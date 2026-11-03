@@ -1,6 +1,6 @@
 ---
 title: Chat Models
-description: Configure LLM chat model providers -- OpenAI, Ollama, Mistral, Gemini, GitHub Models, and Groq.
+description: Configure LLM chat model providers -- OpenAI, Ollama, Mistral, Gemini, and Groq.
 layout: page
 ---
 
@@ -18,7 +18,6 @@ The feature pack supports connecting to multiple LLM providers for both synchron
 | `openai-chat-model` | [OpenAI](https://platform.openai.com/) | Yes |
 | `mistral-ai-chat-model` | [Mistral AI](https://mistral.ai/) | Yes |
 | `gemini-chat-model` | [Google Gemini](https://ai.google.dev/) | Yes |
-| `github-chat-model` | [GitHub Models](https://github.com/marketplace/models) | Yes |
 | `groq-chat-model` | [Groq](https://groq.com/) | Yes |
 
 ### Streaming Chat Models
@@ -29,7 +28,6 @@ The feature pack supports connecting to multiple LLM providers for both synchron
 | `openai-streaming-chat-model` | OpenAI | Yes |
 | `mistral-ai-streaming-chat-model` | Mistral AI | Yes |
 | `gemini-streaming-chat-model` | Google Gemini | Yes |
-| `github-streaming-chat-model` | GitHub Models | Yes |
 | `groq-streaming-chat-model` | Groq | Yes |
 
 ## Provider Configuration
@@ -72,15 +70,6 @@ export MISTRAL_CHAT_LOG_RESPONSE=true
 export GEMINI_API_KEY=...
 export GEMINI_CHAT_MODEL_NAME=gemini-pro
 export GEMINI_CHAT_LOG=true
-```
-
-### GitHub Models
-
-```bash
-export GITHUB_API_KEY=ghp_...
-export GITHUB_CHAT_URL=https://models.inference.ai.azure.com
-export GITHUB_CHAT_MODEL_NAME=gpt-4o
-export GITHUB_CHAT_LOG=true
 ```
 
 ### Groq

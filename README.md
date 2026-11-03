@@ -34,10 +34,9 @@ When running the WildFly installation, you must also specify this stability leve
 Supported AI types
 ========================
 
-The feature pack provides 37 Galleon layers organized by functionality. For each AI type it supports, the feature-pack provides several Galleon layers that build upon each other:
+The feature pack provides 34 Galleon layers organized by functionality. For each AI type it supports, the feature-pack provides several Galleon layers that build upon each other:
 * Support for chat models to interact with a LLM:
   * `gemini-chat-model`
-  * `github-chat-model`
   * `groq-chat-model` (same as openai-chat-model but targeting Groq)
   * `mistral-ai-chat-model`
   * `ollama-chat-model`
