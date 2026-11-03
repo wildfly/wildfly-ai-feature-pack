@@ -70,7 +70,7 @@ public class GithubModelChatLanguageModelProviderRegistrar implements ChildResou
             .setStability(Stability.EXPERIMENTAL)
             .build();
 
-    public static final Collection<AttributeDefinition> ATTRIBUTES = List.of(API_KEY, CONNECT_TIMEOUT,CUSTOM_HEADERS,
+    public static final Collection<AttributeDefinition> ATTRIBUTES = List.of(API_KEY, CONNECT_TIMEOUT, CUSTOM_HEADERS,
             ENDPOINT, FREQUENCY_PENALTY, LOG_REQUESTS_RESPONSES, MAX_RETRIES, MAX_TOKEN, MODEL_NAME, PRESENCE_PENALTY,
             RESPONSE_FORMAT, SEED, SERVICE_VERSION, STREAMING, TEMPERATURE, TOP_P, USER_AGENT_SUFFIX);
 

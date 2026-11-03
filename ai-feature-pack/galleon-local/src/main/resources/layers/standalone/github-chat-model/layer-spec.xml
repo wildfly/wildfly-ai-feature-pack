@@ -25,7 +25,7 @@
         <feature spec="subsystem.ai.github-chat-model">
             <param name="github-chat-model" value="github"/>
             <param name="endpoint" value="${org.wildfly.ai.github.chat.url,env.GITHUB_CHAT_URL:https://models.inference.ai.azure.com}"/>
-            <param name="api-key" value="${env.GITHUB_API_KEY:YOUR_KEY_VALUE}"/>
+            <param name="credential-reference" value="{clear-text=${env.GITHUB_API_KEY:YOUR_KEY_VALUE}}"/>
             <param name="model-name" value="${org.wildfly.ai.github.chat.model.name,env.GITHUB_CHAT_MODEL_NAME:gpt-4o-mini}"/>
             <param name="log-requests-responses" value="${org.wildfly.ai.github.chat.log,env.GITHUB_CHAT_LOG:true}"/>
         </feature>

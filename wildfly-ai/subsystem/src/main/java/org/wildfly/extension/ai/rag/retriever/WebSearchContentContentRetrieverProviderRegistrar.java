@@ -5,9 +5,9 @@
 package org.wildfly.extension.ai.rag.retriever;
 
 
-import static org.wildfly.extension.ai.AIAttributeDefinitions.API_KEY;
 import static org.wildfly.extension.ai.AIAttributeDefinitions.BASE_URL;
 import static org.wildfly.extension.ai.AIAttributeDefinitions.CONNECT_TIMEOUT;
+import static org.wildfly.extension.ai.AIAttributeDefinitions.API_KEY;
 import static org.wildfly.extension.ai.AIAttributeDefinitions.LOG_REQUESTS;
 import static org.wildfly.extension.ai.AIAttributeDefinitions.LOG_RESPONSES;
 import static org.wildfly.extension.ai.AIAttributeDefinitions.MAX_RETRIES;

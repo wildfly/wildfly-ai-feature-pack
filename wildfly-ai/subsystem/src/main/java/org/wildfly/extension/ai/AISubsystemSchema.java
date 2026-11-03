@@ -4,6 +4,7 @@
  */
 package org.wildfly.extension.ai;
 
+import static org.wildfly.extension.ai.AIAttributeDefinitions.API_KEY;
 import static org.wildfly.extension.ai.AIAttributeDefinitions.CREDENTIAL_REFERENCE;
 
 import org.wildfly.extension.ai.chat.OpenAIChatLanguageModelProviderRegistrar;
@@ -40,8 +41,9 @@ import org.wildfly.extension.ai.rag.retriever.Neo4JContentRetrieverProviderRegis
  * Enumeration of AI subsystem schema versions.
  */
 enum AISubsystemSchema implements SubsystemResourceXMLSchema<AISubsystemSchema> {
-    VERSION_1_0(1, 0),;
-    static final AISubsystemSchema CURRENT = VERSION_1_0;
+    VERSION_1_0(1, 0),
+    VERSION_2_0(2, 0),;
+    static final AISubsystemSchema CURRENT = VERSION_2_0;
     private final ResourceXMLParticleFactory factory = ResourceXMLParticleFactory.newInstance(this);
 
     private final VersionedNamespace<IntVersion, AISubsystemSchema> namespace;
@@ -76,11 +78,15 @@ enum AISubsystemSchema implements SubsystemResourceXMLSchema<AISubsystemSchema> 
                         this.factory
                                 .choice()
                                 .withCardinality(XMLCardinality.Unbounded.OPTIONAL)
-                                .addElement(this.factory.namedElement(GeminiChatLanguageModelProviderRegistrar.REGISTRATION).addAttributes(GeminiChatLanguageModelProviderRegistrar.ATTRIBUTES).build())
-                                .addElement(this.factory.namedElement(GithubModelChatLanguageModelProviderRegistrar.REGISTRATION).addAttributes(GithubModelChatLanguageModelProviderRegistrar.ATTRIBUTES).build())
+                                .addElement(this.factory.namedElement(GeminiChatLanguageModelProviderRegistrar.REGISTRATION).addAttributes(GeminiChatLanguageModelProviderRegistrar.ATTRIBUTES)
+                                        .withContent(this.factory.choice().withCardinality(XMLCardinality.Single.OPTIONAL).addElement(API_KEY).build()).build())
+                                .addElement(this.factory.namedElement(GithubModelChatLanguageModelProviderRegistrar.REGISTRATION).addAttributes(GithubModelChatLanguageModelProviderRegistrar.ATTRIBUTES)
+                                        .withContent(this.factory.choice().withCardinality(XMLCardinality.Single.OPTIONAL).addElement(API_KEY).build()).build())
                                 .addElement(this.factory.namedElement(OllamaChatLanguageModelProviderRegistrar.REGISTRATION).addAttributes(OllamaChatLanguageModelProviderRegistrar.ATTRIBUTES).build())
-                                .addElement(this.factory.namedElement(OpenAIChatLanguageModelProviderRegistrar.REGISTRATION).addAttributes(OpenAIChatLanguageModelProviderRegistrar.ATTRIBUTES).build())
-                                .addElement(this.factory.namedElement(MistralAIChatLanguageModelProviderRegistrar.REGISTRATION).addAttributes(MistralAIChatLanguageModelProviderRegistrar.ATTRIBUTES).build())
+                                .addElement(this.factory.namedElement(OpenAIChatLanguageModelProviderRegistrar.REGISTRATION).addAttributes(OpenAIChatLanguageModelProviderRegistrar.ATTRIBUTES)
+                                        .withContent(this.factory.choice().withCardinality(XMLCardinality.Single.OPTIONAL).addElement(API_KEY).build()).build())
+                                .addElement(this.factory.namedElement(MistralAIChatLanguageModelProviderRegistrar.REGISTRATION).addAttributes(MistralAIChatLanguageModelProviderRegistrar.ATTRIBUTES)
+                                        .withContent(this.factory.choice().withCardinality(XMLCardinality.Single.OPTIONAL).addElement(API_KEY).build()).build())
                                 .build()
                 ).build();
     }

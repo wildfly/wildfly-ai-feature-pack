@@ -25,9 +25,9 @@ import org.jboss.dmr.ModelType;
  */
 public class AIAttributeDefinitions {
 
-    public static final SimpleAttributeDefinition API_KEY = new SimpleAttributeDefinitionBuilder("api-key", ModelType.STRING, false)
+    public static final ObjectTypeAttributeDefinition API_KEY = CredentialReference.getAttributeBuilder(true, false)
+            .setXmlName("api-key")
             .addAccessConstraint(SensitiveTargetAccessConstraintDefinition.CREDENTIAL)
-            .setAllowExpression(true)
             .setStability(Stability.EXPERIMENTAL)
             .build();
     public static final SimpleAttributeDefinition BASE_URL = new SimpleAttributeDefinitionBuilder("base-url", ModelType.STRING, false)
@@ -45,7 +45,7 @@ public class AIAttributeDefinitions {
             .setMeasurementUnit(MeasurementUnit.MILLISECONDS)
             .setStability(Stability.EXPERIMENTAL)
             .build();
-    public static final ObjectTypeAttributeDefinition CREDENTIAL_REFERENCE = CredentialReference.getAttributeBuilder(true, true)
+     public static final ObjectTypeAttributeDefinition CREDENTIAL_REFERENCE = CredentialReference.getAttributeBuilder(true, true)
             .addAccessConstraint(SensitiveTargetAccessConstraintDefinition.CREDENTIAL)
             .setStability(Stability.EXPERIMENTAL)
             .build();

@@ -9,6 +9,7 @@ import static org.wildfly.extension.ai.Capabilities.CHAT_MODEL_PROVIDER_CAPABILI
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.jboss.as.controller.OperationContext;
+import org.wildfly.security.credential.source.CredentialSource;
 import org.jboss.as.ee.concurrent.adapter.ManagedExecutorServiceAdapter;
 import org.wildfly.extension.ai.injection.chat.WildFlyChatModelConfig;
 import org.wildfly.extension.opentelemetry.api.WildFlyOpenTelemetryConfig;
@@ -31,14 +32,24 @@ public abstract class AbstractChatModelProviderServiceConfigurator implements Re
         return installService(name, factory, false);
     }
 
+    ResourceServiceInstaller installService(final String name, Supplier<WildFlyChatModelConfig> factory,
+            ServiceDependency<CredentialSource> credentialReference) {
+        return installService(name, factory, false, null, credentialReference);
+    }
+
     ResourceServiceInstaller installService(final String name, Supplier<WildFlyChatModelConfig> factory, boolean isObservable) {
         return installService(name, factory, isObservable, null);
     }
 
     ResourceServiceInstaller installService(final String name, Supplier<WildFlyChatModelConfig> factory, boolean isObservable,
             ServiceDependency<ManagedExecutorServiceAdapter> executorAdapter) {
+        return installService(name, factory, isObservable, executorAdapter, null);
+    }
+
+    ResourceServiceInstaller installService(final String name, Supplier<WildFlyChatModelConfig> factory, boolean isObservable,
+            ServiceDependency<ManagedExecutorServiceAdapter> executorAdapter, ServiceDependency<CredentialSource> credentialReference) {
         Consumer<WildFlyChatModelConfig> captor = registry.add(name);
-        CapabilityServiceInstaller.Builder builder = CapabilityServiceInstaller.builder(CHAT_MODEL_PROVIDER_CAPABILITY, factory)
+        CapabilityServiceInstaller.BlockingBuilder builder = CapabilityServiceInstaller.BlockingBuilder.of(CHAT_MODEL_PROVIDER_CAPABILITY, factory)
                 .withCaptor(captor)
                 .startWhen(Installer.StartWhen.INSTALLED);
         final ServiceDependency<WildFlyOpenTelemetryConfig> openTelemetryConfig;
@@ -48,6 +59,9 @@ public abstract class AbstractChatModelProviderServiceConfigurator implements Re
         }
         if (executorAdapter != null) {
             builder.requires(executorAdapter);
+        }
+        if (credentialReference != null) {
+            builder.requires(credentialReference);
         }
         ResourceServiceInstaller installer = (ResourceServiceInstaller) builder.build();
         Consumer<OperationContext> remover = ctx -> registry.remove(ctx.getCurrentAddressValue());

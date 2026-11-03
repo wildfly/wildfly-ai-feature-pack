@@ -5,13 +5,13 @@
 
 <subsystem xmlns="urn:jboss:domain:ai:experimental:1.0">
     <chat-language-models>
-        <gemini-chat-model name="gemini" api-key="${env.GEMINI_API_KEY:key}" include-code-execution-output="true" harassment="${org.wildfly.ai.gemini.harassment,env.GEMINI_HARASSMENT:BLOCK_LOW_AND_ABOVE}" log-requests="${org.wildfly.ai.gemini.chat.log,env.GEMINI_CHAT_LOG:true}" log-responses="${org.wildfly.ai.gemini.chat.log,env.GEMINI_CHAT_LOG:true}" model-name="${org.wildfly.ai.gemini.chat.model.name,env.GEMINI_CHAT_MODEL_NAME:gpt-4o-mini}" streaming="false" temperature="${org.wildfly.ai.gemini.chat.temperature,env.GEMINI_CHAT_TEMPERATURE:0.9}" executor-service="default"/>
-        <github-chat-model name="github" api-key="${env.GITHUB_API_KEY:key}" endpoint="${org.wildfly.ai.github.chat.url,env.GITHUB_CHAT_URL:https://models.inference.ai.azure.com}" log-requests-responses="${org.wildfly.ai.github.chat.log,env.GITHUB_CHAT_LOG:true}" model-name="${org.wildfly.ai.github.chat.model.name,env.GITHUB_CHAT_MODEL_NAME:gpt-4o-mini}" streaming="false" temperature="${org.wildfly.ai.github.chat.temperature,env.GITHUB_CHAT_TEMPERATURE:0.9}"/>
+        <gemini-chat-model name="gemini" include-code-execution-output="true" harassment="${org.wildfly.ai.gemini.harassment,env.GEMINI_HARASSMENT:BLOCK_LOW_AND_ABOVE}" log-requests="${org.wildfly.ai.gemini.chat.log,env.GEMINI_CHAT_LOG:true}" log-responses="${org.wildfly.ai.gemini.chat.log,env.GEMINI_CHAT_LOG:true}" model-name="${org.wildfly.ai.gemini.chat.model.name,env.GEMINI_CHAT_MODEL_NAME:gpt-4o-mini}" streaming="false" temperature="${org.wildfly.ai.gemini.chat.temperature,env.GEMINI_CHAT_TEMPERATURE:0.9}" executor-service="default"><api-key clear-text="${env.TEST_API_KEY:test-key}"/></gemini-chat-model>
+        <github-chat-model name="github" endpoint="${org.wildfly.ai.github.chat.url,env.GITHUB_CHAT_URL:https://models.inference.ai.azure.com}" log-requests-responses="${org.wildfly.ai.github.chat.log,env.GITHUB_CHAT_LOG:true}" model-name="${org.wildfly.ai.github.chat.model.name,env.GITHUB_CHAT_MODEL_NAME:gpt-4o-mini}" streaming="false" temperature="${org.wildfly.ai.github.chat.temperature,env.GITHUB_CHAT_TEMPERATURE:0.9}"><api-key clear-text="${env.TEST_API_KEY:test-key}"/></github-chat-model>
         <ollama-chat-model name="ollama" base-url="${org.wildfly.ai.ollama.chat.url,env.OLLAMA_CHAT_URL:http://127.0.0.1:11434}" executor-service="default" log-requests="${org.wildfly.ai.ollama.chat.log.request,env.OLLAMA_CHAT_LOG_REQUEST:true}" log-responses="${org.wildfly.ai.ollama.chat.log.response,env.OLLAMA_CHAT_LOG_RESPONSE:true}" model-name="${org.wildfly.ai.ollama.chat.model.name,env.OLLAMA_CHAT_MODEL_NAME:llama3.1:8b}" temperature="${org.wildfly.ai.ollama.chat.temperature,env.OLLAMA_CHAT_TEMPERATURE:0.9}"/>
         <ollama-chat-model name="streaming-ollama" base-url="${org.wildfly.ai.ollama.chat.url,env.OLLAMA_CHAT_URL:http://127.0.0.1:11434}" executor-service="default" log-requests="${org.wildfly.ai.ollama.chat.log.request,env.OLLAMA_CHAT_LOG_REQUEST:true}" log-responses="${org.wildfly.ai.ollama.chat.log.response,env.OLLAMA_CHAT_LOG_RESPONSE:true}" model-name="${org.wildfly.ai.ollama.chat.model.name,env.OLLAMA_CHAT_MODEL_NAME:llama3.1:8b}" streaming="true" temperature="${org.wildfly.ai.ollama.chat.temperature,env.OLLAMA_CHAT_TEMPERATURE:0.9}"/>
-        <openai-chat-model name="chat" base-url="http://langchain4j.dev/demo/openai/v1" api-key="demo" model-name="gpt-4" streaming="false" executor-service="default"/>
-        <openai-chat-model name="mychat" api-key="${env.GROQ_API_KEY}" base-url="https://api.groq.com/openai/v1" model-name="llama3-8b-8192" streaming="false"  executor-service="default"/>
-        <mistral-ai-chat-model name="mistral" api-key="demo" base-url="https://api.mistral.ai/v1" model-name="mistral-small-latest" streaming="false" executor-service="default"/>
+        <openai-chat-model name="chat" base-url="http://langchain4j.dev/demo/openai/v1" model-name="gpt-4" streaming="false" executor-service="default"><api-key clear-text="${env.TEST_API_KEY:test-key}"/></openai-chat-model>
+        <openai-chat-model name="mychat" base-url="https://api.groq.com/openai/v1" model-name="llama3-8b-8192" streaming="false"  executor-service="default"><api-key clear-text="${env.TEST_API_KEY:test-key}"/></openai-chat-model>
+        <mistral-ai-chat-model name="mistral" base-url="https://api.mistral.ai/v1" model-name="mistral-small-latest" streaming="false" executor-service="default"><api-key clear-text="${env.TEST_API_KEY:test-key}"/></mistral-ai-chat-model>
     </chat-language-models>
     <embedding-models>
         <in-memory-embedding-model name="myembedding" module="dev.langchain4j.embeddings.all-minilm-l6-v2" embedding-class="dev.langchain4j.model.embedding.AllMiniLmL6V2EmbeddingModel"/>
@@ -30,10 +30,10 @@
             <credential-reference clear-text="passwordOut!"/>
         </neo4j-content-retriever>
         <web-search-content-retriever name="google-test">
-            <google api-key="key" connect-timeout="10000" custom-search-id="id" log-requests="true" log-responses="true"/>
+            <google connect-timeout="10000" custom-search-id="id" log-requests="true" log-responses="true"><api-key clear-text="${env.TEST_API_KEY:test-key}"/></google>
         </web-search-content-retriever>
         <web-search-content-retriever name="tavily-test">
-            <tavily api-key="key" base-url="https://api.tavily.com" connect-timeout="20000" exclude-domains="example.org" include-answer="true" include-domains="example.com" include-raw-content="true" search-depth="basic"/>
+            <tavily base-url="https://api.tavily.com" connect-timeout="20000" exclude-domains="example.org" include-answer="true" include-domains="example.com" include-raw-content="true" search-depth="basic"><api-key clear-text="${env.TEST_API_KEY:test-key}"/></tavily>
         </web-search-content-retriever>
     </content-retrievers>
     <chat-memories>
