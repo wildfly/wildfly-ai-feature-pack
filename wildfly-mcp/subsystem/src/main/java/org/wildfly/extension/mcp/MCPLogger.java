@@ -247,13 +247,13 @@ public interface MCPLogger extends BasicLogger {
     String internalError();
 
     @LogMessage(level = WARN)
-    @Message(id = 65, value = "Unsigned requestState rejected — configure a request-state-secret in the MCP subsystem to enable HMAC verification")
+    @Message(id = 65, value = "Unsigned requestState rejected — configure a secret-key credential-reference in the MCP subsystem to enable HMAC verification")
     void unsignedRequestStateRejected();
 
     @LogMessage(level = WARN)
     @Message(id = 66, value = "Accepting unsigned requestState because system property "
             + "org.wildfly.extension.mcp.allow-unsigned-request-state is set to true — "
-            + "configure a request-state-secret to enable HMAC verification")
+            + "configure a secret-key credential-reference to enable HMAC verification")
     void unsignedRequestStateAccepted();
 
     @Message(id = 67, value = "Failed to send synchronous notification")
@@ -274,6 +274,11 @@ public interface MCPLogger extends BasicLogger {
     IllegalArgumentException unsignedRequestStateRejectedInvocation(String propertyName);
 
     // JSON-RPC error responses (no message ID to avoid WFMCP prefix in client-facing messages)
+    @Message(id = 72, value = "The credential referenced by 'credential-reference' does not contain a secret key; "
+            + "generate one with the credential store's generate-secret-key operation or elytron-tool")
+    IllegalStateException credentialReferenceMissingSecretKey();
+
+    // StreamableHttpHandler JSON-RPC error responses (no message ID to avoid WFMCP prefix in client-facing messages)
     @Message(id = Message.NONE, value = "Unknown session: %s")
     String unknownSessionError(String sessionId);
 

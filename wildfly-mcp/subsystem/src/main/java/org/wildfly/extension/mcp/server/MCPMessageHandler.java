@@ -17,7 +17,6 @@ import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 import jakarta.json.JsonString;
 import jakarta.json.JsonValue;
-import java.util.Base64;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -70,15 +69,9 @@ public class MCPMessageHandler {
         this.registry = registry;
         ExecutorService executorService = lookupExecutorService();
         RequestStateCodec requestStateCodec = null;
-        String requestStateSecret = config.requestStateSecret();
-        if (requestStateSecret != null && !requestStateSecret.isEmpty()) {
-            byte[] secretBytes;
-            try {
-                secretBytes = Base64.getDecoder().decode(requestStateSecret);
-            } catch (IllegalArgumentException e) {
-                throw ROOT_LOGGER.invalidRequestStateSecret(e);
-            }
-            requestStateCodec = new RequestStateCodec(secretBytes);
+        byte[] requestStateSecret = config.requestStateSecret();
+        if (requestStateSecret != null && requestStateSecret.length > 0) {
+            requestStateCodec = new RequestStateCodec(requestStateSecret);
         }
         this.requestStateCodec = requestStateCodec;
         int pageSize = config.pageSize();

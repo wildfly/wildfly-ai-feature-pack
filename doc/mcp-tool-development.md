@@ -251,9 +251,10 @@ Object confirmDelete(@ToolArg(description = "Item to delete") String item,
 echoes back on the next call. Use it to carry context between rounds without server-side
 session storage.
 
-When `request-state-secret` is configured on the MCP subsystem, the server HMAC-signs the
-`requestState` to prevent tampering. **Without this attribute, unsigned `requestState`
-tokens are rejected by default.** See [SECURITY.md](../SECURITY.md) for deployment guidance.
+When the MCP subsystem's `credential-reference` (a secret-key credential store entry) is
+configured, the server HMAC-signs the `requestState` to prevent tampering. **Without it,
+unsigned `requestState` tokens are rejected by default.** See [SECURITY.md](../SECURITY.md)
+for deployment guidance.
 
 ```java
 @Tool(name = "stateful_tool", description = "Uses requestState across rounds")
@@ -383,10 +384,11 @@ the `org.mcpjava.server` module, which is transitively available.
 
 ## Security Considerations
 
-- **`requestState` integrity**: Configure `request-state-secret` in the MCP subsystem for
-  production deployments. Without it, `requestState` tokens are rejected by default.
-  See the system property `org.wildfly.extension.mcp.allow-unsigned-request-state` in
-  [SECURITY.md](../SECURITY.md) for development overrides.
+- **`requestState` integrity**: Configure the MCP subsystem's `credential-reference`
+  (a secret-key credential store entry) for production deployments. Without it, `requestState`
+  tokens are rejected by default. See the system property
+  `org.wildfly.extension.mcp.allow-unsigned-request-state` in [SECURITY.md](../SECURITY.md)
+  for development overrides.
 - **`@McpParamHeader` values are client-supplied**: Treat them as untrusted input. Do not use
   header values in security decisions without independent validation.
 - **Capability checking is advisory**: `ClientCapabilities` reflects what the client

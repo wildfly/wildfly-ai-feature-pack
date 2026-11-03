@@ -11,7 +11,7 @@ import static org.wildfly.extension.mcp.MCPSubsystemRegistrar.STREAMABLE_PATH;
 import static org.wildfly.extension.mcp.MCPSubsystemRegistrar.ALLOWED_ORIGINS;
 import static org.wildfly.extension.mcp.MCPSubsystemRegistrar.CACHE_SCOPE;
 import static org.wildfly.extension.mcp.MCPSubsystemRegistrar.CACHE_TTL;
-import static org.wildfly.extension.mcp.MCPSubsystemRegistrar.REQUEST_STATE_SECRET;
+import static org.wildfly.extension.mcp.MCPSubsystemRegistrar.CREDENTIAL_REFERENCE;
 import static org.wildfly.extension.mcp.MCPSubsystemRegistrar.TIMEOUT;
 import static org.wildfly.extension.mcp.MCPSubsystemRegistrar.REQUEST_TIMEOUT;
 
@@ -56,7 +56,10 @@ enum MCPSubsystemSchema implements SubsystemResourceXMLSchema<MCPSubsystemSchema
                    .addAttribute(PAGE_SIZE)
                    .addAttribute(TIMEOUT)
                    .addAttribute(REQUEST_TIMEOUT)
-                   .addAttribute(REQUEST_STATE_SECRET)
+                   .withContent(this.factory.choice()
+                           .withCardinality(XMLCardinality.Single.OPTIONAL)
+                           .addElement(CREDENTIAL_REFERENCE)
+                           .build())
                    .addAttribute(ALLOWED_ORIGINS)
                    .addAttribute(CACHE_TTL)
                    .addAttribute(CACHE_SCOPE);

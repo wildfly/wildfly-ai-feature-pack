@@ -28,7 +28,7 @@ boundary is untrusted.
 - JSON-RPC schema validation (`JsonRPC.validate`)
 - Endpoint path restricted to `[a-zA-Z0-9\-_]+` (`EndpointPathValidator`)
 - Session IDs generated with `SecureRandom` via `UUID.randomUUID()`
-- HMAC-SHA256 integrity on `requestState` tokens (when `request-state-secret` is configured)
+- HMAC-SHA256 integrity on `requestState` tokens (when a secret-key `credential-reference` is configured)
 - Protocol version negotiation and header consistency checks
 
 ### 2. AI Provider APIs (outbound)
@@ -123,11 +123,12 @@ The following are explicitly outside this project's security perimeter:
 
 ## Deployment Recommendations
 
-1. **Configure `request-state-secret`** when using multi-round tool results (MRTR) to enable
-   HMAC integrity verification on `requestState` tokens. Without this attribute, any
-   `requestState` sent by a client is rejected by default. The system property
-   `org.wildfly.extension.mcp.allow-unsigned-request-state` can be set to `true` to accept
-   unsigned tokens during development, but this is **not recommended for production**.
+1. **Configure the MCP subsystem's `credential-reference`** (a secret-key credential store entry)
+   when using multi-round tool results (MRTR) to enable HMAC integrity verification on
+   `requestState` tokens. Without it, any `requestState` sent by a client is rejected by default.
+   The system property `org.wildfly.extension.mcp.allow-unsigned-request-state` can be set to
+   `true` to accept unsigned tokens during development, but this is **not recommended for
+   production**.
 2. **Restrict `allowedOrigins`** in production to the expected client origins.
 3. **Enable TLS** (`ssl-enabled`) for all AI provider connections.
 4. **Use `credential-reference`** with a credential store rather than plaintext `api-key`

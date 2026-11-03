@@ -17,9 +17,16 @@ layout: page
 
 ## Deployment Hardening
 
-### 1. Configure `request-state-secret`
+### 1. Configure `credential-reference`
 
-When using multi-round tool results (MRTR), configure `request-state-secret` in the MCP subsystem. Without this attribute, any `requestState` token sent by a client is **rejected** with an `INVALID_PARAMS` JSON-RPC error.
+When using multi-round tool results (MRTR), configure the MCP subsystem's `credential-reference` attribute with a secret-key credential store entry. Without it, any `requestState` token sent by a client is **rejected** with an `INVALID_PARAMS` JSON-RPC error.
+
+```
+/subsystem=elytron/credential-store=mcp-cs:add(relative-to=jboss.server.data.dir, path=mcp-cs.store, create=true, credential-reference={clear-text=changeit})
+/subsystem=elytron/credential-store=mcp-cs:generate-secret-key(alias=request-state-secret)
+/subsystem=mcp:write-attribute(name=credential-reference, value={store=mcp-cs, alias=request-state-secret})
+reload
+```
 
 For development only, you can allow unsigned tokens:
 
@@ -53,7 +60,7 @@ Disable debug logging in production to prevent sensitive content (prompts, respo
 
 | Property | Default | Description |
 |----------|---------|-------------|
-| `org.wildfly.extension.mcp.allow-unsigned-request-state` | `false` | When `true`, accepts `requestState` tokens without HMAC verification if no `request-state-secret` is configured. **Not recommended for production.** |
+| `org.wildfly.extension.mcp.allow-unsigned-request-state` | `false` | When `true`, accepts `requestState` tokens without HMAC verification if no secret-key `credential-reference` is configured. **Not recommended for production.** |
 
 ## MCP Header Security
 
