@@ -53,11 +53,6 @@
         <version.wildfly.maven.plugin>6.0.0.Final</version.wildfly.maven.plugin>
 
         <version.ai.djl>0.36.0</version.ai.djl>
-        <version.com.azure.azure-ai-inference>1.0.0-beta.5</version.com.azure.azure-ai-inference>
-        <version.com.azure.azure-core>1.57.1</version.com.azure.azure-core>
-        <version.com.azure.azure-core-http-netty>1.16.3</version.com.azure.azure-core-http-netty>
-        <version.com.azure.azure-json>1.5.1</version.com.azure.azure-json>
-        <version.com.azure.azure-xml>1.2.1</version.com.azure.azure-xml>
         <version.com.dylibso.chicory>1.7.5</version.com.dylibso.chicory>
         <version.com.fasterxml.classmate>1.7.0</version.com.fasterxml.classmate>
         <version.com.fasterxml.jackson.annotations>2.22</version.com.fasterxml.jackson.annotations>
@@ -75,8 +70,6 @@
         <version.dev.langchain4j.community>1.18.0-beta28</version.dev.langchain4j.community>
         <version.dev.langchain4j.core>1.19.0</version.dev.langchain4j.core>
         <version.dev.langchain4j.embeddings>1.19.0-beta29</version.dev.langchain4j.embeddings>
-        <version.io.projectreactor.netty>1.2.16</version.io.projectreactor.netty>
-        <version.io.projectreactor.reactor-core>3.7.17</version.io.projectreactor.reactor-core>
         <version.io.weaviate.client>5.3.0</version.io.weaviate.client>
         <version.net.java.dev.jna>5.13.0</version.net.java.dev.jna>
         <version.org.extism.sdk.chicory-sdk>0.3.0</version.org.extism.sdk.chicory-sdk>
@@ -262,72 +255,6 @@
                 <version>${version.org.ow2.asm}</version>
             </dependency>
 
-            <dependency>
-                <groupId>com.azure</groupId>
-                <artifactId>azure-ai-inference</artifactId>
-                <version>${version.com.azure.azure-ai-inference}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>*</groupId>
-                        <artifactId>*</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>com.azure</groupId>
-                <artifactId>azure-core</artifactId>
-                <version>${version.com.azure.azure-core}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>*</groupId>
-                        <artifactId>*</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>com.azure</groupId>
-                <artifactId>azure-core-http-netty</artifactId>
-                <version>${version.com.azure.azure-core-http-netty}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>*</groupId>
-                        <artifactId>*</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>com.azure</groupId>
-                <artifactId>azure-core-serializer-json-jackson</artifactId>
-                <version>1.6.3</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>*</groupId>
-                        <artifactId>*</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>com.azure</groupId>
-                <artifactId>azure-json</artifactId>
-                <version>${version.com.azure.azure-json}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>*</groupId>
-                        <artifactId>*</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>com.azure</groupId>
-                <artifactId>azure-xml</artifactId>
-                <version>${version.com.azure.azure-xml}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>*</groupId>
-                        <artifactId>*</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
 
             <dependency>
                 <groupId>com.dylibso.chicory</groupId>
@@ -592,17 +519,6 @@
             </dependency>
             <dependency>
                 <groupId>dev.langchain4j</groupId>
-                <artifactId>langchain4j-github-models</artifactId>
-                <version>${version.dev.langchain4j}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>*</groupId>
-                        <artifactId>*</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>dev.langchain4j</groupId>
                 <artifactId>langchain4j-google-ai-gemini</artifactId>
                 <version>${version.dev.langchain4j.core}</version>
                 <exclusions>
@@ -735,39 +651,6 @@
                 </exclusions>
             </dependency>
 
-            <dependency>
-                <groupId>io.projectreactor</groupId>
-                <artifactId>reactor-core</artifactId>
-                <version>${version.io.projectreactor.reactor-core}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>*</groupId>
-                        <artifactId>*</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>io.projectreactor.netty</groupId>
-                <artifactId>reactor-netty-core</artifactId>
-                <version>${version.io.projectreactor.netty}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>*</groupId>
-                        <artifactId>*</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>io.projectreactor.netty</groupId>
-                <artifactId>reactor-netty-http</artifactId>
-                <version>${version.io.projectreactor.netty}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>*</groupId>
-                        <artifactId>*</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
             <dependency>
                 <groupId>dev.langchain4j.cdi</groupId>
                 <artifactId>langchain4j-cdi-core</artifactId>

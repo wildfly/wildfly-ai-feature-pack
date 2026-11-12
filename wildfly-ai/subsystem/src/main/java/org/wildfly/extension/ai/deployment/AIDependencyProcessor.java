@@ -65,7 +65,6 @@ import org.wildfly.extension.ai.Capabilities;
  * <ul>
  * <li>{@code dev.langchain4j.chroma} - ChromaDB integration</li>
  * <li>{@code dev.langchain4j.gemini} - Google Gemini models</li>
- * <li>{@code dev.langchain4j.github-models} - GitHub Models marketplace</li>
  * <li>{@code dev.langchain4j.ollama} - Ollama local LLM runtime</li>
  * <li>{@code dev.langchain4j.openai} - OpenAI GPT models</li>
  * <li>{@code dev.langchain4j.mcp-client} - Model Context Protocol</li>
@@ -132,7 +131,6 @@ public class AIDependencyProcessor implements DeploymentUnitProcessor {
     public static final String[] OPTIONAL_MODULES = {
         "dev.langchain4j.chroma",
         "dev.langchain4j.gemini",
-        "dev.langchain4j.github-models",
         "dev.langchain4j.ollama",
         "dev.langchain4j.openai",
         "dev.langchain4j.mcp-client",

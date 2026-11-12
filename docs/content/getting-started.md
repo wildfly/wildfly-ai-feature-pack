@@ -10,7 +10,7 @@ The WildFly AI Feature Pack is a [Galleon](https://docs.wildfly.org/galleon/) fe
 
 ## What You Can Build
 
-- **LLM-powered applications** -- Connect to OpenAI, Ollama, Mistral, Gemini, GitHub Models, or Groq from your Jakarta EE application.
+- **LLM-powered applications** -- Connect to OpenAI, Ollama, Mistral, Gemini, or Groq from your Jakarta EE application.
 - **RAG pipelines** -- Use embedding models, embedding stores (in-memory, Neo4j, Weaviate, Chroma), and content retrievers.
 - **MCP servers** -- Expose your CDI beans as Model Context Protocol servers with tools, prompts, and resources.
 - **MCP clients** -- Connect to external MCP servers via SSE, stdio, or Streamable HTTP transports.
