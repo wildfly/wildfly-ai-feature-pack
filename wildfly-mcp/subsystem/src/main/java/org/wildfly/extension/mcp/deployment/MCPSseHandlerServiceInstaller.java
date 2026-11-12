@@ -105,12 +105,12 @@ public class MCPSseHandlerServiceInstaller implements DeploymentServiceInstaller
         // One shared handler instance for the deployment: both HTTP endpoints and the SSE callback
         // route through the same MCPMessageHandler so listener state (e.g. session tracking maps)
         // is consistent across connection types.
-        final String requestStateSecret = configuration.requestStateSecret();
+        final byte[] requestStateSecret = configuration.requestStateSecret();
         final Duration cacheTtlMs = configuration.cacheTtlMs();
         final CacheScope cacheScope = configuration.cacheScope();
         final MCPMessageHandler mcpMessageHandler = new MCPMessageHandler(
                 connectionManager, registry, classLoader, serverName, deploymentUnit.getName(),
-                new MCPHandlerConfig(pageSize, listeners, requestStateSecret, cacheTtlMs.toMillis(), cacheScope.toString()));
+                new MCPHandlerConfig(pageSize, listeners, requestStateSecret, configuration.allowUnsignedRequestState(), cacheTtlMs.toMillis(), cacheScope.toString()));
         final MCPServerSentConnectionCallBack mcpServerSentConnectionCallBack = new MCPServerSentConnectionCallBack(messagesEndpoint, connectionManager);
         final MCPStreamableConnectionCallBack mcpStreamableConnectionCallBack = new MCPStreamableConnectionCallBack(connectionManager, mcpMessageHandler);
         final MessagesHttpHandler messagesHttpHandler = new MessagesHttpHandler(connectionManager, mcpMessageHandler, configuration.allowedOrigins());

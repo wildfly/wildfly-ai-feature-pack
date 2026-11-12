@@ -75,7 +75,7 @@ public class PaginationTestCase {
 
         ConnectionManager connectionManager = new ConnectionManager();
         handler = new MCPMessageHandler(connectionManager, registry, getClass().getClassLoader(),
-                "test-server", "1.0.0", new MCPHandlerConfig(PAGE_SIZE, List.of(), null, 3_600_000L, "public"));
+                "test-server", "1.0.0", new MCPHandlerConfig(PAGE_SIZE, List.of(), null, false, 3_600_000L, "public"));
 
         responder = new TestResponder();
         connection = new TestMCPConnection("test-connection-1");

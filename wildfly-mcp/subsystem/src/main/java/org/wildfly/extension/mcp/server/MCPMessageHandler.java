@@ -17,7 +17,6 @@ import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 import jakarta.json.JsonString;
 import jakarta.json.JsonValue;
-import java.util.Base64;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -69,25 +68,20 @@ public class MCPMessageHandler {
     public MCPMessageHandler(ConnectionManager connectionManager, WildFlyMCPRegistry registry, ClassLoader classLoader, String serverName, String serverVersion, MCPHandlerConfig config) {
         this.registry = registry;
         ExecutorService executorService = lookupExecutorService();
-        RequestStateCodec requestStateCodec = null;
-        String requestStateSecret = config.requestStateSecret();
-        if (requestStateSecret != null && !requestStateSecret.isEmpty()) {
-            byte[] secretBytes;
-            try {
-                secretBytes = Base64.getDecoder().decode(requestStateSecret);
-            } catch (IllegalArgumentException e) {
-                throw ROOT_LOGGER.invalidRequestStateSecret(e);
-            }
-            requestStateCodec = new RequestStateCodec(secretBytes);
+        RequestStateCodec varRequestStateCodec = null;
+        byte[] requestStateSecret = config.requestStateSecret();
+        if (requestStateSecret != null && requestStateSecret.length > 0) {
+            varRequestStateCodec = new RequestStateCodec(requestStateSecret);
         }
-        this.requestStateCodec = requestStateCodec;
+        this.requestStateCodec = varRequestStateCodec;
         int pageSize = config.pageSize();
         this.connectionManager = connectionManager;
         this.subscriptionManager = new SubscriptionManager();
         this.resourceHandler = new ResourceMessageHandler(registry, classLoader, executorService, pageSize, this.subscriptionManager, connectionManager);
         this.resourceHandler.setStreamNotifier(this::notifyResourceUpdatedOnStreams);
-        this.promptHandler = new PromptMessageHandler(registry, classLoader, executorService, pageSize, requestStateCodec, resourceHandler);
-        this.toolHandler = new ToolMessageHandler(registry, classLoader, executorService, pageSize, requestStateCodec, resourceHandler);
+        this.promptHandler = new PromptMessageHandler(registry, classLoader, executorService, pageSize, requestStateCodec, config.allowUnsignedRequestState(), resourceHandler);
+        this.toolHandler = new ToolMessageHandler(registry, classLoader, executorService, pageSize, requestStateCodec,
+                config.allowUnsignedRequestState(), resourceHandler);
         this.toolHandler.setListChangeNotifier(new org.wildfly.mcp.api.ListChangeNotifier() {
             @Override public void notifyToolsChanged() { notifySubscriptionStreams("toolsListChanged"); }
             @Override public void notifyPromptsChanged() { notifySubscriptionStreams("promptsListChanged"); }

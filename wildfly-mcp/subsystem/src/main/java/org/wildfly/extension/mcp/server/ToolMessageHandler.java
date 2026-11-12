@@ -110,7 +110,6 @@ import org.wildfly.security.manager.WildFlySecurityManager;
 public class ToolMessageHandler {
 
     private static final String REQUEST_STATE_META_KEY = "requestState";
-    static final String ALLOW_UNSIGNED_REQUEST_STATE_PROPERTY = "org.wildfly.extension.mcp.allow-unsigned-request-state";
 
     private final SchemaGenerator schemaGenerator;
     private final WildFlyMCPRegistry registry;
@@ -126,13 +125,10 @@ public class ToolMessageHandler {
     // Tools whose schema generation failed permanently for this deployment — skipped on every tools/list.
     private final Set<String> failedToolNames = ConcurrentHashMap.newKeySet();
     private final ResourceMessageHandler resourceHandler;
-
-    ToolMessageHandler(WildFlyMCPRegistry registry, ClassLoader classLoader, ExecutorService executorService, int pageSize) {
-        this(registry, classLoader, executorService, pageSize, null, null);
-    }
+    private final boolean allowUnsignedRequestState;
 
     ToolMessageHandler(WildFlyMCPRegistry registry, ClassLoader classLoader, ExecutorService executorService, int pageSize,
-            RequestStateCodec requestStateCodec, ResourceMessageHandler resourceHandler) {
+            RequestStateCodec requestStateCodec, boolean allowUnsignedRequestState, ResourceMessageHandler resourceHandler) {
         if (pageSize < 0) {
             throw ROOT_LOGGER.invalidPageSize(pageSize);
         }
@@ -144,6 +140,7 @@ public class ToolMessageHandler {
         this.executorService = executorService;
         this.pageSize = pageSize;
         this.requestStateCodec = requestStateCodec;
+        this.allowUnsignedRequestState = allowUnsignedRequestState;
         this.resourceHandler = resourceHandler;
     }
 
@@ -671,12 +668,12 @@ public class ToolMessageHandler {
         return Collections.unmodifiableMap(merged);
     }
 
-    static InputResponses parseInputResponses(JsonObject params, RequestStateCodec.DecodedState decodedRequestState) {
-        return parseInputResponses(params, decodedRequestState, true);
+    static InputResponses parseInputResponses(JsonObject params, RequestStateCodec.DecodedState decodedRequestState, boolean allowUnsignedRequestState) {
+        return parseInputResponses(params, decodedRequestState, true, allowUnsignedRequestState);
     }
 
     static InputResponses parseInputResponses(JsonObject params, RequestStateCodec.DecodedState decodedRequestState,
-                                              boolean codecConfigured) {
+                                              boolean codecConfigured, boolean allowUnsignedRequestState) {
         Map<String, JsonObject> responses = null;
         JsonValue irValue = params.get(INPUT_RESPONSES);
         if (irValue != null && irValue.getValueType() == JsonValue.ValueType.OBJECT) {
@@ -697,11 +694,11 @@ public class ToolMessageHandler {
             JsonValue rsValue = params.get(REQUEST_STATE);
             if (rsValue != null && rsValue.getValueType() == JsonValue.ValueType.STRING) {
                 if (!codecConfigured) {
-                    if (Boolean.getBoolean(ALLOW_UNSIGNED_REQUEST_STATE_PROPERTY)) {
+                    if (allowUnsignedRequestState) {
                         ROOT_LOGGER.unsignedRequestStateAccepted();
                     } else {
                         ROOT_LOGGER.unsignedRequestStateRejected();
-                        throw ROOT_LOGGER.unsignedRequestStateRejectedInvocation(ALLOW_UNSIGNED_REQUEST_STATE_PROPERTY);
+                        throw ROOT_LOGGER.unsignedRequestStateRejectedInvocation();
                     }
                 }
                 requestState = ((JsonString) rsValue).getString();

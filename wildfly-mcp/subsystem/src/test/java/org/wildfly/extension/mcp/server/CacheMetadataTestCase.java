@@ -36,7 +36,7 @@ public class CacheMetadataTestCase {
         ConnectionManager connectionManager = new ConnectionManager();
         handler = new MCPMessageHandler(connectionManager, registry, getClass().getClassLoader(),
                 "test-server", "1.0.0",
-                new MCPHandlerConfig(0, List.of(), null, 120_000L, "private"));
+                new MCPHandlerConfig(0, List.of(), null, false, 120_000L, "private"));
         responder = new TestResponder();
         connection = new TestMCPConnection("cache-test");
         connectionManager.add(connection);
