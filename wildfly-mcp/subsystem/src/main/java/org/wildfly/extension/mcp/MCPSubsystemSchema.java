@@ -9,9 +9,9 @@ import static org.wildfly.extension.mcp.MCPSubsystemRegistrar.PAGE_SIZE;
 import static org.wildfly.extension.mcp.MCPSubsystemRegistrar.SSE_PATH;
 import static org.wildfly.extension.mcp.MCPSubsystemRegistrar.STREAMABLE_PATH;
 import static org.wildfly.extension.mcp.MCPSubsystemRegistrar.ALLOWED_ORIGINS;
+import static org.wildfly.extension.mcp.MCPSubsystemRegistrar.ALLOW_UNSIGNED_REQUEST_STATE;
 import static org.wildfly.extension.mcp.MCPSubsystemRegistrar.CACHE_SCOPE;
 import static org.wildfly.extension.mcp.MCPSubsystemRegistrar.CACHE_TTL;
-import static org.wildfly.extension.mcp.MCPSubsystemRegistrar.REQUEST_STATE_SECRET;
 import static org.wildfly.extension.mcp.MCPSubsystemRegistrar.TIMEOUT;
 import static org.wildfly.extension.mcp.MCPSubsystemRegistrar.REQUEST_TIMEOUT;
 
@@ -25,6 +25,8 @@ import org.jboss.as.controller.xml.VersionedNamespace;
 import org.jboss.as.controller.xml.XMLCardinality;
 import org.jboss.as.version.Stability;
 import org.jboss.staxmapper.IntVersion;
+
+import static org.wildfly.extension.mcp.MCPSubsystemRegistrar.REQUEST_STATE_SECRET;
 
 /**
  * Enumeration of MCP Server subsystem schema versions.
@@ -56,7 +58,11 @@ enum MCPSubsystemSchema implements SubsystemResourceXMLSchema<MCPSubsystemSchema
                    .addAttribute(PAGE_SIZE)
                    .addAttribute(TIMEOUT)
                    .addAttribute(REQUEST_TIMEOUT)
-                   .addAttribute(REQUEST_STATE_SECRET)
+                   .withContent(this.factory.choice()
+                           .withCardinality(XMLCardinality.Single.OPTIONAL)
+                           .addElement(REQUEST_STATE_SECRET)
+                           .build())
+                   .addAttribute(ALLOW_UNSIGNED_REQUEST_STATE)
                    .addAttribute(ALLOWED_ORIGINS)
                    .addAttribute(CACHE_TTL)
                    .addAttribute(CACHE_SCOPE);

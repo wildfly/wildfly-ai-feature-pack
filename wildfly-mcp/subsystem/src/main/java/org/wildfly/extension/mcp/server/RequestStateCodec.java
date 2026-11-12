@@ -37,17 +37,19 @@ class RequestStateCodec {
 
     private final byte[] secret;
     private final long ttlMs;
+    private final boolean allowUnsignedRequestState;
 
     RequestStateCodec(byte[] secret) {
-        this(secret, DEFAULT_TTL_MS);
+        this(secret, DEFAULT_TTL_MS, false);
     }
 
-    RequestStateCodec(byte[] secret, long ttlMs) {
+    RequestStateCodec(byte[] secret, long ttlMs, boolean allowUnsignedRequestState) {
         if (secret == null || secret.length < 16) {
             throw ROOT_LOGGER.secretTooShort();
         }
         this.secret = secret.clone();
         this.ttlMs = ttlMs;
+        this.allowUnsignedRequestState= allowUnsignedRequestState;
     }
 
     String encode(JsonObject state, String principal, String requestId, String toolName) {
@@ -124,6 +126,10 @@ class RequestStateCodec {
         } catch (NoSuchAlgorithmException | InvalidKeyException e) {
             throw ROOT_LOGGER.hmacComputationFailed(e);
         }
+    }
+
+    boolean allowUnsignedRequestState() {
+        return allowUnsignedRequestState;
     }
 
     record DecodedState(JsonObject state, String principal, String requestId, String toolName) {}

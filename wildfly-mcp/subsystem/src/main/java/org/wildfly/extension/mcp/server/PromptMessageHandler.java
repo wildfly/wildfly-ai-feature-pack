@@ -73,16 +73,18 @@ public class PromptMessageHandler {
     private final ExecutorService executorService;
     private final int pageSize;
     private final RequestStateCodec requestStateCodec;
+    private final boolean allowUnsignedRequestState;
     private final ResourceMessageHandler resourceHandler;
 
     PromptMessageHandler(WildFlyMCPRegistry registry, ClassLoader classLoader, ExecutorService executorService,
-            int pageSize, RequestStateCodec requestStateCodec, ResourceMessageHandler resourceHandler) {
+            int pageSize, RequestStateCodec requestStateCodec, boolean allowUnsignedRequestState,ResourceMessageHandler resourceHandler) {
         this.registry = registry;
         this.mapper = SHARED_MAPPER;
         this.classLoader = classLoader;
         this.executorService = executorService;
         this.pageSize = pageSize;
         this.requestStateCodec = requestStateCodec;
+        this.allowUnsignedRequestState = allowUnsignedRequestState;
         this.resourceHandler = resourceHandler;
     }
 
@@ -142,7 +144,7 @@ public class PromptMessageHandler {
                 args.put(key, arguments.get(key));
             }
         }
-        final InputResponses inputResponses = ToolMessageHandler.parseInputResponses(params, decodedRequestState);
+        final InputResponses inputResponses = ToolMessageHandler.parseInputResponses(params, decodedRequestState, allowUnsignedRequestState);
         final MCPFeatureMetadata metadata = registry.getPrompt(promptName);
         if (metadata == null) {
             responder.sendError(id, INVALID_PARAMS, ROOT_LOGGER.invalidPromptName(promptName));

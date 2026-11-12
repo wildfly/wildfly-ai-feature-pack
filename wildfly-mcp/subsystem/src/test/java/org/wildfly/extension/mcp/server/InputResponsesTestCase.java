@@ -25,7 +25,7 @@ public class InputResponsesTestCase {
                 Json.createObjectBuilder().add("toolState", "server-state").build(),
                 "user", "request-1", "tool");
 
-        InputResponses inputResponses = ToolMessageHandler.parseInputResponses(params, decodedState);
+        InputResponses inputResponses = ToolMessageHandler.parseInputResponses(params, decodedState, false);
 
         assertTrue(inputResponses.hasResponses());
         assertTrue(inputResponses.responses().get("confirm").getBoolean("ok"));

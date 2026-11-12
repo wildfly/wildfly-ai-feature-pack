@@ -50,19 +50,19 @@ assets, trust boundaries, entry points, and deployment recommendations.
 
 ### Deployment Hardening
 
-1. **Configure `request-state-secret`** when using multi-round tool results (MRTR). Without this
-   attribute, any `requestState` token sent by a client is rejected with an `INVALID_PARAMS`
-   JSON-RPC error. If you need to accept unsigned tokens during development, set the system
-   property `org.wildfly.extension.mcp.allow-unsigned-request-state=true` — this is **not
-   recommended for production** as it allows clients to forge arbitrary request state.
+1. **Configure the MCP subsystem's `request-state-secret`** credential-reference (pointing to a
+   secret-key credential store entry) when using multi-round tool results (MRTR). Without it, any `requestState` token
+   sent by a client is rejected with an `INVALID_PARAMS` JSON-RPC error. If you need to accept
+   unsigned tokens during development, set attribute `allow-unsigned-request-state` to `true` —
+   this is **not recommended for production** as it allows clients to forge arbitrary request state.
 2. Restrict `allowedOrigins` to expected client origins in production
 3. Enable TLS for all AI provider connections
 4. Use `credential-reference` with a credential store instead of plaintext API keys
 5. Set memory limits for WASM module configurations
 6. Disable debug logging in production to prevent sensitive content in logs
 
-### System Properties
+### MCP Subsystem Attributes
 
-| Property | Default | Description |
-|----------|---------|-------------|
-| `org.wildfly.extension.mcp.allow-unsigned-request-state` | `false` | When `true`, accepts `requestState` tokens without HMAC verification if no `request-state-secret` is configured. **Not recommended for production.** |
+| Attribute | Default | Description |
+|-----------|---------|-------------|
+| `allow-unsigned-request-state` | `false` | When `true`, accepts `requestState` tokens without HMAC verification if no `request-state-secret` credential-reference is configured. **Not recommended for production.** |

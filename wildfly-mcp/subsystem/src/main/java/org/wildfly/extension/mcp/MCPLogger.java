@@ -199,7 +199,7 @@ public interface MCPLogger extends BasicLogger {
     @Message(id = 48, value = "Unknown session: %s")
     void unknownSession(String sessionId);
 
-    @Message(id = 49, value = "The 'request-state-secret' attribute must be a valid Base64-encoded value")
+    @Message(id = 49, value = "The 'request-state-secret' credential-reference must contain a secret key")
     IllegalArgumentException invalidRequestStateSecret(@Cause Throwable cause);
 
     // RequestMetadata validation
@@ -247,13 +247,13 @@ public interface MCPLogger extends BasicLogger {
     String internalError();
 
     @LogMessage(level = WARN)
-    @Message(id = 65, value = "Unsigned requestState rejected — configure a request-state-secret in the MCP subsystem to enable HMAC verification")
+    @Message(id = 65, value = "Unsigned requestState rejected — configure the 'request-state-secret' credential-reference to enable HMAC verification")
     void unsignedRequestStateRejected();
 
     @LogMessage(level = WARN)
-    @Message(id = 66, value = "Accepting unsigned requestState because system property "
-            + "org.wildfly.extension.mcp.allow-unsigned-request-state is set to true — "
-            + "configure a request-state-secret to enable HMAC verification")
+    @Message(id = 66, value = "Accepting unsigned requestState because the 'allow-unsigned-request-state' "
+            + "subsystem attribute is true — configure the 'request-state-secret' credential-reference "
+            + "to enable HMAC verification")
     void unsignedRequestStateAccepted();
 
     @Message(id = 67, value = "Failed to send synchronous notification")
@@ -269,11 +269,17 @@ public interface MCPLogger extends BasicLogger {
     @Message(id = 70, value = "Missing required header argument: %s")
     String missingRequiredHeaderArgument(String headerName);
 
-    @Message(id = 71, value = "Unsigned requestState rejected — configure a request-state-secret "
-            + "or set system property %s=true to accept unsigned tokens")
-    IllegalArgumentException unsignedRequestStateRejectedInvocation(String propertyName);
+    @Message(id = 71, value = "Unsigned requestState rejected — configure a 'request-state-secret' "
+            + "credential-reference or set the 'allow-unsigned-request-state' subsystem attribute to true "
+            + "to accept unsigned tokens")
+    IllegalArgumentException unsignedRequestStateRejectedInvocation();
 
     // JSON-RPC error responses (no message ID to avoid WFMCP prefix in client-facing messages)
+    @Message(id = 72, value = "The credential referenced by 'request-state-secret' does not contain a secret key; "
+            + "generate one with the credential store's generate-secret-key operation or elytron-tool")
+    IllegalStateException credentialReferenceMissingSecretKey();
+
+    // StreamableHttpHandler JSON-RPC error responses (no message ID to avoid WFMCP prefix in client-facing messages)
     @Message(id = Message.NONE, value = "Unknown session: %s")
     String unknownSessionError(String sessionId);
 
