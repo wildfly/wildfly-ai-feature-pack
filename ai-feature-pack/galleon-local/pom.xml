@@ -258,6 +258,11 @@
         </dependency>
 
         <dependency>
+            <groupId>io.smallrye.reactive</groupId>
+            <artifactId>mutiny-zero</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>io.weaviate</groupId>
             <artifactId>client</artifactId>
         </dependency>

@@ -17,8 +17,8 @@ import org.junit.jupiter.api.BeforeEach;
  */
 abstract class AbstractObservableChatModelTestCase {
 
-    static final String SPAN_LISTENER    = "dev.langchain4j.cdi.telemetry.SpanChatModelListener";
-    static final String METRICS_LISTENER = "dev.langchain4j.cdi.telemetry.MetricsChatModelListener";
+    static final String SPAN_LISTENER    = "dev.langchain4j.cdi.telemetry.GenAISpanChatModelListener";
+    static final String METRICS_LISTENER = "dev.langchain4j.cdi.telemetry.GenAIMetricsChatModelListener";
 
     @Inject
     @Named("ollama")
