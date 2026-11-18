@@ -1,0 +1,5 @@
+embed-server --server-config=standalone.xml --stability=experimental
+
+/subsystem=wasm/wasm-tool=countVowels:add(path=${jboss.home.dir}/../classes/wasm/count_vowels.wasm)
+
+stop-embedded-server
