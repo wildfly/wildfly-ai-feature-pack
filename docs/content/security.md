@@ -19,12 +19,20 @@ layout: page
 
 ### 1. Configure `request-state-secret`
 
-When using multi-round tool results (MRTR), configure `request-state-secret` in the MCP subsystem. Without this attribute, any `requestState` token sent by a client is **rejected** with an `INVALID_PARAMS` JSON-RPC error.
+When using multi-round tool results (MRTR), configure the MCP subsystem's `request-state-secret` credential-reference with a secret-key credential store entry. Without it, any `requestState` token sent by a client is **rejected** with an `INVALID_PARAMS` JSON-RPC error.
+
+```
+/subsystem=elytron/credential-store=mcp-cs:add(relative-to=jboss.server.data.dir, path=mcp-cs.store, create=true, credential-reference={clear-text=changeit})
+/subsystem=elytron/credential-store=mcp-cs:generate-secret-key(alias=request-state-secret)
+/subsystem=mcp:write-attribute(name=request-state-secret, value={store=mcp-cs, alias=request-state-secret})
+reload
+```
 
 For development only, you can allow unsigned tokens:
 
 ```
--Dorg.wildfly.extension.mcp.allow-unsigned-request-state=true
+/subsystem=mcp:write-attribute(name=allow-unsigned-request-state, value=true)
+reload
 ```
 
 This is **not recommended for production** as it allows clients to forge arbitrary request state.
@@ -49,11 +57,11 @@ Set memory limits for WASM module configurations to prevent resource exhaustion.
 
 Disable debug logging in production to prevent sensitive content (prompts, responses, API keys) from appearing in logs.
 
-## System Properties
+## MCP Subsystem Attributes
 
-| Property | Default | Description |
-|----------|---------|-------------|
-| `org.wildfly.extension.mcp.allow-unsigned-request-state` | `false` | When `true`, accepts `requestState` tokens without HMAC verification if no `request-state-secret` is configured. **Not recommended for production.** |
+| Attribute | Default | Description |
+|-----------|---------|-------------|
+| `allow-unsigned-request-state` | `false` | When `true`, accepts `requestState` tokens without HMAC verification if no `request-state-secret` credential-reference is configured. **Not recommended for production.** |
 
 ## MCP Header Security
 

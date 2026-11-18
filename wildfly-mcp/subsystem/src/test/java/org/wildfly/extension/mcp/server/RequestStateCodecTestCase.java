@@ -73,7 +73,7 @@ public class RequestStateCodecTestCase {
 
     @Test(expected = RequestStateCodec.RequestStateException.class)
     public void testExpiredToken() throws Exception {
-        RequestStateCodec shortLivedCodec = new RequestStateCodec(SECRET, 1);
+        RequestStateCodec shortLivedCodec = new RequestStateCodec(SECRET, 1, false);
         JsonObject state = Json.createObjectBuilder().add("key", "value").build();
         String token = shortLivedCodec.encode(state, "user", "req-1", "testTool");
 
