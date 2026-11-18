@@ -4,7 +4,7 @@ This package contains tests for the observable configuration feature in WildFly 
 
 ## Overview
 
-The tests verify that when `observable` is set to `false`, the `SpanChatModelListener` and `MetricsChatModelListener` from langchain4j-cdi are filtered out, while custom listeners are preserved.
+The tests verify that when `observable` is set to `false`, the `GenAISpanChatModelListener` and `GenAIMetricsChatModelListener` from langchain4j-cdi are filtered out, while custom listeners are preserved.
 
 ## Test Classes
 
@@ -12,7 +12,7 @@ The tests verify that when `observable` is set to `false`, the `SpanChatModelLis
 Deploys to the **`wildfly-observable`** container (OpenTelemetry subsystem enabled, via `provisioning-otel.xml`).
 
 **What it tests:**
-- Both `SpanChatModelListener` and `MetricsChatModelListener` are registered in CDI when the OpenTelemetry subsystem is active
+- Both `GenAISpanChatModelListener` and `GenAIMetricsChatModelListener` are registered in CDI when the OpenTelemetry subsystem is active
 - Applying the `observable=false` class-name filter leaves only custom listeners (simulates what `WildFlyLLMConfig` does at model creation time)
 - Custom listeners like `TestChatModelListener` are injectable and discoverable
 - Basic chat model functionality
@@ -27,7 +27,7 @@ Deploys to the **`wildfly-observable`** container (OpenTelemetry subsystem enabl
 Deploys to the **default `wildfly-managed`** container (no OpenTelemetry subsystem, via `provisioning.xml`).
 
 **What it tests:**
-- When `observable=false`, telemetry listeners (`SpanChatModelListener`, `MetricsChatModelListener`) are **not** baked into the model at construction time — verified via reflection on the model's internal listener list
+- When `observable=false`, telemetry listeners (`GenAISpanChatModelListener`, `GenAIMetricsChatModelListener`) are **not** baked into the model at construction time — verified via reflection on the model's internal listener list
 - Basic CDI injection and listener discoverability still work without OTel
 - Basic chat model functionality
 
@@ -129,24 +129,24 @@ Located in `WildFlyLLMConfig.createProducerFunction()`:
 
 1. When `observable=true`: All ChatModelListener beans are collected
 2. When `observable=false`: All listeners are collected, then filtered:
-   - `SpanChatModelListener` is excluded
-   - `MetricsChatModelListener` is excluded  
+   - `GenAISpanChatModelListener` is excluded
+   - `GenAIMetricsChatModelListener` is excluded  
    - Custom listeners are preserved
 
 The filtering is done by checking the fully-qualified class name:
 ```java
 private boolean isObservabilityListener(ChatModelListener listener) {
     String className = listener.getClass().getName();
-    return className.equals("dev.langchain4j.cdi.telemetry.SpanChatModelListener") ||
-           className.equals("dev.langchain4j.cdi.telemetry.MetricsChatModelListener");
+    return className.equals("dev.langchain4j.cdi.telemetry.GenAISpanChatModelListener") ||
+           className.equals("dev.langchain4j.cdi.telemetry.GenAIMetricsChatModelListener");
 }
 ```
 
 ### Mock Listeners for Testing
 The unit tests use mock implementations in the `dev.langchain4j.cdi.telemetry` package to simulate the actual langchain4j-cdi listeners:
 
-- `dev.langchain4j.cdi.telemetry.SpanChatModelListener` (mock)
-- `dev.langchain4j.cdi.telemetry.MetricsChatModelListener` (mock)
+- `dev.langchain4j.cdi.telemetry.GenAISpanChatModelListener` (mock)
+- `dev.langchain4j.cdi.telemetry.GenAIMetricsChatModelListener` (mock)
 
 These mocks have the correct fully-qualified class name so they match the filtering logic.
 

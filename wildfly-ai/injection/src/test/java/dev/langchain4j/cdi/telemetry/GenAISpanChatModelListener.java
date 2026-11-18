@@ -6,10 +6,10 @@ import dev.langchain4j.model.chat.listener.ChatModelRequestContext;
 import dev.langchain4j.model.chat.listener.ChatModelResponseContext;
 
 /**
- * Mock MetricsChatModelListener for testing purposes only.
- * Simulates the actual langchain4j-cdi MetricsChatModelListener class.
+ * Mock GenAISpanChatModelListener for testing purposes only.
+ * Simulates the actual langchain4j-cdi GenAISpanChatModelListener class.
  */
-public class MetricsChatModelListener implements ChatModelListener {
+public class GenAISpanChatModelListener implements ChatModelListener {
     @Override
     public void onRequest(ChatModelRequestContext requestContext) {
     }

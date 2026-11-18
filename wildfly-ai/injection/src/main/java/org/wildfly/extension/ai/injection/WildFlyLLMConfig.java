@@ -79,15 +79,15 @@ public class WildFlyLLMConfig extends LLMConfig {
      * when observable is set to false.
      *
      * @param listener the ChatModelListener to check
-     * @return true if the listener is SpanChatModelListener or MetricsChatModelListener
+     * @return true if the listener is GenAISpanChatModelListener or GenAIMetricsChatModelListener
      */
     private boolean isObservabilityListener(ChatModelListener listener) {
         // Class names are matched as strings intentionally: importing the real classes would
         // introduce a compile-time dependency on langchain4j-cdi, which is an optional runtime
         // module not guaranteed to be present in all WildFly configurations.
         String className = listener.getClass().getName();
-        return className.equals("dev.langchain4j.cdi.telemetry.SpanChatModelListener") ||
-               className.equals("dev.langchain4j.cdi.telemetry.MetricsChatModelListener");
+        return className.equals("dev.langchain4j.cdi.telemetry.GenAISpanChatModelListener") ||
+               className.equals("dev.langchain4j.cdi.telemetry.GenAIMetricsChatModelListener");
     }
 
     /**
@@ -113,7 +113,7 @@ public class WildFlyLLMConfig extends LLMConfig {
                     if(config.isObservable()) {
                         listeners = lookup.select(ChatModelListener.class).handlesStream().map(Handle<ChatModelListener>::get).collect(Collectors.toList());
                     } else {
-                        // When observable is false, filter out SpanChatModelListener and MetricsChatModelListener
+                        // When observable is false, filter out GenAISpanChatModelListener and GenAIMetricsChatModelListener
                         listeners = lookup.select(ChatModelListener.class).handlesStream()
                                 .map(Handle<ChatModelListener>::get)
                                 .filter(listener -> !isObservabilityListener(listener))

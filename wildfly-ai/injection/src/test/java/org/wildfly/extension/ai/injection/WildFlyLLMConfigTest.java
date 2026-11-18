@@ -18,13 +18,13 @@ import java.util.stream.Collectors;
 import static org.assertj.core.api.Assertions.assertThat;
 
 // Import the mock listeners from dev.langchain4j.cdi package
-import dev.langchain4j.cdi.telemetry.MetricsChatModelListener;
-import dev.langchain4j.cdi.telemetry.SpanChatModelListener;
+import dev.langchain4j.cdi.telemetry.GenAIMetricsChatModelListener;
+import dev.langchain4j.cdi.telemetry.GenAISpanChatModelListener;
 
 /**
  * Unit tests for {@link WildFlyLLMConfig} listener filtering logic.
  *
- * <p>Tests verify that SpanChatModelListener and MetricsChatModelListener
+ * <p>Tests verify that GenAISpanChatModelListener and GenAIMetricsChatModelListener
  * are correctly filtered when observable is set to false.</p>
  */
 class WildFlyLLMConfigTest {
@@ -38,31 +38,31 @@ class WildFlyLLMConfigTest {
 
     /**
      * Tests that the isObservabilityListener method correctly identifies
-     * SpanChatModelListener.
+     * GenAISpanChatModelListener.
      */
     @Test
     void testIsObservabilityListener_SpanChatModelListener() throws Exception {
-        ChatModelListener listener = new SpanChatModelListener();
+        ChatModelListener listener = new GenAISpanChatModelListener();
 
         boolean result = invokeIsObservabilityListener(listener);
 
         assertThat(result)
-                .as("SpanChatModelListener should be identified as observability listener")
+                .as("GenAISpanChatModelListener should be identified as observability listener")
                 .isTrue();
     }
 
     /**
      * Tests that the isObservabilityListener method correctly identifies
-     * MetricsChatModelListener.
+     * GenAIMetricsChatModelListener.
      */
     @Test
     void testIsObservabilityListener_MetricsChatModelListener() throws Exception {
-        ChatModelListener listener = new MetricsChatModelListener();
+        ChatModelListener listener = new GenAIMetricsChatModelListener();
 
         boolean result = invokeIsObservabilityListener(listener);
 
         assertThat(result)
-                .as("MetricsChatModelListener should be identified as observability listener")
+                .as("GenAIMetricsChatModelListener should be identified as observability listener")
                 .isTrue();
     }
 
@@ -91,8 +91,8 @@ class WildFlyLLMConfigTest {
      */
     @Test
     void testListenerFiltering_ObservableTrue() throws Exception {
-        SpanChatModelListener span = new SpanChatModelListener();
-        MetricsChatModelListener metrics = new MetricsChatModelListener();
+        GenAISpanChatModelListener span = new GenAISpanChatModelListener();
+        GenAIMetricsChatModelListener metrics = new GenAIMetricsChatModelListener();
         CustomChatModelListener custom = new CustomChatModelListener();
 
         List<ChatModelListener> allListeners = List.of(span, metrics, custom);
@@ -151,8 +151,8 @@ class WildFlyLLMConfigTest {
     @Test
     void testFilteredListContents() {
         List<ChatModelListener> allListeners = new ArrayList<>();
-        SpanChatModelListener span = new SpanChatModelListener();
-        MetricsChatModelListener metrics = new MetricsChatModelListener();
+        GenAISpanChatModelListener span = new GenAISpanChatModelListener();
+        GenAIMetricsChatModelListener metrics = new GenAIMetricsChatModelListener();
         CustomChatModelListener custom = new CustomChatModelListener();
 
         allListeners.add(span);

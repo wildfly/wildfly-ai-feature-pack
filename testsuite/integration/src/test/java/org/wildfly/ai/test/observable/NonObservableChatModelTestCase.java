@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Integration test for the non-observable server (no OpenTelemetry subsystem).
  *
  * <p>Validates that when {@code observable=false}, the telemetry listeners
- * ({@code SpanChatModelListener} and {@code MetricsChatModelListener}) are not
+ * ({@code GenAISpanChatModelListener} and {@code GenAIMetricsChatModelListener}) are not
  * baked into the chat model at construction time. Verified via reflection on the
  * model's internal listener list.</p>
  *
@@ -80,7 +80,7 @@ public class NonObservableChatModelTestCase extends AbstractObservableChatModelT
      * the class hierarchy to find the {@code listeners} field.</p>
      *
      * <p>With {@code observable=false} the production filter should have already stripped
-     * {@code SpanChatModelListener} and {@code MetricsChatModelListener} before passing
+     * {@code GenAISpanChatModelListener} and {@code GenAIMetricsChatModelListener} before passing
      * the list to the builder, so neither should appear here.</p>
      */
     @Test

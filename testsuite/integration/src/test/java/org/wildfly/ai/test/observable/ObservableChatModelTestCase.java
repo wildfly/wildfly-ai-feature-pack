@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Integration test for the observable=true server (with OpenTelemetry).
  *
  * <p>Validates that when the OpenTelemetry subsystem is present, both
- * SpanChatModelListener and MetricsChatModelListener are registered in CDI,
+ * GenAISpanChatModelListener and GenAIMetricsChatModelListener are registered in CDI,
  * and that the observable=false filter logic correctly removes them while
  * preserving custom listeners.</p>
  */
@@ -72,8 +72,8 @@ public class ObservableChatModelTestCase extends AbstractObservableChatModelTest
      * Lists all CDI-discovered ChatModelListeners, showing which are telemetry listeners
      * (filtered when observable=false) and which are custom.
      *
-     * <p>On the observable server (with OpenTelemetry), both SpanChatModelListener and
-     * MetricsChatModelListener are expected to be present in CDI.</p>
+     * <p>On the observable server (with OpenTelemetry), both GenAISpanChatModelListener and
+     * GenAIMetricsChatModelListener are expected to be present in CDI.</p>
      */
     @Test
     public void testListListenersWithFilteringReport() {
@@ -95,7 +95,7 @@ public class ObservableChatModelTestCase extends AbstractObservableChatModelTest
         System.out.println("===================================");
 
         assertThat(telemetryListeners)
-                .as("Both SpanChatModelListener and MetricsChatModelListener should be present in CDI")
+                .as("Both GenAISpanChatModelListener and GenAIMetricsChatModelListener should be present in CDI")
                 .extracting(l -> l.getClass().getName())
                 .containsExactlyInAnyOrder(SPAN_LISTENER, METRICS_LISTENER);
 
@@ -107,7 +107,7 @@ public class ObservableChatModelTestCase extends AbstractObservableChatModelTest
     /**
      * Verifies the observable=false filtering behavior using the real CDI container.
      *
-     * <p>SpanChatModelListener and MetricsChatModelListener are registered by the
+     * <p>GenAISpanChatModelListener and GenAIMetricsChatModelListener are registered by the
      * langchain4j-cdi module and ARE present in CDI — which is exactly why the
      * observable=false filter is necessary. This test confirms:</p>
      * <ol>
@@ -122,10 +122,10 @@ public class ObservableChatModelTestCase extends AbstractObservableChatModelTest
                 .collect(Collectors.toList());
 
         assertThat(allCdiListeners)
-                .as("SpanChatModelListener should be present in CDI (filtering is meaningful)")
+                .as("GenAISpanChatModelListener should be present in CDI (filtering is meaningful)")
                 .anyMatch(l -> l.getClass().getName().equals(SPAN_LISTENER));
         assertThat(allCdiListeners)
-                .as("MetricsChatModelListener should be present in CDI (filtering is meaningful)")
+                .as("GenAIMetricsChatModelListener should be present in CDI (filtering is meaningful)")
                 .anyMatch(l -> l.getClass().getName().equals(METRICS_LISTENER));
 
         List<ChatModelListener> filtered = allCdiListeners.stream()

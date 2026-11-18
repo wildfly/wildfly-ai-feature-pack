@@ -29,6 +29,7 @@
         <module name="com.fasterxml.jackson.core.jackson-databind"/>
         <module name="com.knuddels.jtokkit"/>
         <module name="com.squareup.retrofit2" export="true" services="import"/>
+        <module name="io.smallrye.reactive.mutiny-zero"/>
         <module name="java.logging"/>
         <module name="java.net.http"/>
         <module name="org.slf4j"/>

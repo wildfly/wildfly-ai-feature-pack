@@ -65,11 +65,12 @@
         <version.com.squareup.okio-jvm>3.16.4</version.com.squareup.okio-jvm>
         <version.com.squareup.retrofit2>2.11.0</version.com.squareup.retrofit2>
         <version.commons-compress>1.27.1</version.commons-compress>
-        <version.dev.langchain4j>1.19.0-beta29</version.dev.langchain4j>
-        <version.dev.langchain4j.cdi>1.4.0</version.dev.langchain4j.cdi>
-        <version.dev.langchain4j.community>1.18.0-beta28</version.dev.langchain4j.community>
-        <version.dev.langchain4j.core>1.19.0</version.dev.langchain4j.core>
-        <version.dev.langchain4j.embeddings>1.19.0-beta29</version.dev.langchain4j.embeddings>
+        <version.dev.langchain4j>1.23.0-beta33</version.dev.langchain4j>
+        <version.dev.langchain4j.cdi>1.5.1</version.dev.langchain4j.cdi>
+        <version.dev.langchain4j.community>1.22.0-beta32</version.dev.langchain4j.community>
+        <version.dev.langchain4j.core>1.23.0</version.dev.langchain4j.core>
+        <version.dev.langchain4j.embeddings>1.23.0-beta33</version.dev.langchain4j.embeddings>
+        <version.io.smallrye.reactive.mutiny-zero>1.1.1</version.io.smallrye.reactive.mutiny-zero>
         <version.io.weaviate.client>5.3.0</version.io.weaviate.client>
         <version.net.java.dev.jna>5.13.0</version.net.java.dev.jna>
         <version.org.extism.sdk.chicory-sdk>0.3.0</version.org.extism.sdk.chicory-sdk>
@@ -677,6 +678,18 @@
                 <groupId>dev.langchain4j.cdi.mp</groupId>
                 <artifactId>langchain4j-cdi-telemetry</artifactId>
                 <version>${version.dev.langchain4j.cdi}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>*</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
+            <dependency>
+                <groupId>io.smallrye.reactive</groupId>
+                <artifactId>mutiny-zero</artifactId>
+                <version>${version.io.smallrye.reactive.mutiny-zero}</version>
                 <exclusions>
                     <exclusion>
                         <groupId>*</groupId>

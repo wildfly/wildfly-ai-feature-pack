@@ -96,7 +96,7 @@ These are passed to WildFly via `arquillian.xml`:
 - **ChatMemoryProviderDeploymentTest**: Tests chat memory provider CDI injection and basic conversation memory
 
 ### Observable/OpenTelemetry Tests
-- **ObservableChatModelTestCase**: Runs against `wildfly-observable` (with OTel). Verifies that `SpanChatModelListener` and `MetricsChatModelListener` are present in CDI when OpenTelemetry is active, and that the `observable=false` class-name filter correctly removes them.
+- **ObservableChatModelTestCase**: Runs against `wildfly-observable` (with OTel). Verifies that `GenAISpanChatModelListener` and `GenAIMetricsChatModelListener` are present in CDI when OpenTelemetry is active, and that the `observable=false` class-name filter correctly removes them.
 - **NonObservableChatModelTestCase**: Runs against the default server (no OTel). Verifies via reflection that telemetry listeners are not baked into the model when `observable=false`.
 - **OpenTelemetryIntegrationTestCase**: Tests LGTM observability stack infrastructure (skipped if Docker unavailable)
 
