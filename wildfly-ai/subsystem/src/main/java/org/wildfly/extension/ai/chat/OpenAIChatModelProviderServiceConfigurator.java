@@ -29,13 +29,16 @@ import java.util.function.Supplier;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.ee.concurrent.adapter.ManagedExecutorServiceAdapter;
+import org.jboss.as.controller.security.CredentialReference;
 import org.jboss.dmr.ModelNode;
 import org.wildfly.extension.ai.AIAttributeDefinitions;
+import org.wildfly.extension.ai.CredentialReferenceUtil;
 
 import org.wildfly.extension.ai.injection.chat.WildFlyChatModelConfig;
 import org.wildfly.extension.ai.injection.chat.WildFlyOpenAiChatModelConfig;
 
 import org.wildfly.service.capture.ValueRegistry;
+import org.wildfly.security.credential.source.CredentialSource;
 import org.wildfly.subsystem.service.ResourceServiceInstaller;
 import org.wildfly.subsystem.service.ServiceDependency;
 
@@ -53,7 +56,8 @@ public class OpenAIChatModelProviderServiceConfigurator extends AbstractChatMode
         String baseUrl = BASE_URL.resolveModelAttribute(context, model).asString();
         Long connectTimeOut = CONNECT_TIMEOUT.resolveModelAttribute(context, model).asLong();
         Double frequencyPenalty = FREQUENCY_PENALTY.resolveModelAttribute(context, model).asDoubleOrNull();
-        String key = API_KEY.resolveModelAttribute(context, model).asString();
+        ServiceDependency<CredentialSource> credentialReference = model.hasDefined(API_KEY.getName())
+                ? ServiceDependency.from(CredentialReference.getCredentialSourceDependency(context, API_KEY, model)) : null;
         String organizationId = ORGANIZATION_ID.resolveModelAttribute(context, model).asString();
         String modelName = MODEL_NAME.resolveModelAttribute(context, model).asString();
         Integer maxToken = MAX_TOKEN.resolveModelAttribute(context, model).asIntOrNull();
@@ -72,7 +76,7 @@ public class OpenAIChatModelProviderServiceConfigurator extends AbstractChatMode
             @Override
             public WildFlyChatModelConfig get() {
                 return new WildFlyOpenAiChatModelConfig()
-                        .apiKey(key)
+                        .apiKey(credentialReference == null ? null : CredentialReferenceUtil.getPassword(credentialReference.get()))
                         .baseUrl(baseUrl)
                         .frequencyPenalty(frequencyPenalty)
                         .httpClientBuilder(new JdkHttpClientBuilderFactory().create().httpClientBuilder(HttpClient.newBuilder().executor(executorAdapter.get())))
@@ -91,6 +95,6 @@ public class OpenAIChatModelProviderServiceConfigurator extends AbstractChatMode
                         .topP(topP);
             }
         };
-        return installService(context.getCurrentAddressValue(), factory, isObservable, executorAdapter);
+        return installService(context.getCurrentAddressValue(), factory, isObservable, executorAdapter, credentialReference);
     }
 }

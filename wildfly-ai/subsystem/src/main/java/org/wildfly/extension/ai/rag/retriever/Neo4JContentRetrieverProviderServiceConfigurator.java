@@ -13,18 +13,16 @@ import static org.wildfly.extension.ai.rag.retriever.Neo4JContentRetrieverProvid
 import static org.wildfly.extension.ai.rag.retriever.Neo4JContentRetrieverProviderRegistrar.PROMPT_TEMPLATE;
 
 import dev.langchain4j.model.input.PromptTemplate;
-import java.io.IOException;
 import java.util.function.Supplier;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.controller.security.CredentialReference;
 import org.jboss.dmr.ModelNode;
+import org.wildfly.extension.ai.CredentialReferenceUtil;
 import org.wildfly.extension.ai.injection.WildFlyBeanRegistry;
 import org.wildfly.extension.ai.injection.chat.WildFlyChatModelConfig;
 import org.wildfly.extension.ai.injection.retriever.Neo4JContentRetrieverConfig;
-import org.wildfly.security.credential.PasswordCredential;
 import org.wildfly.security.credential.source.CredentialSource;
-import org.wildfly.security.password.interfaces.ClearPassword;
 import org.wildfly.subsystem.service.ResourceServiceConfigurator;
 import org.wildfly.subsystem.service.ResourceServiceInstaller;
 import org.wildfly.subsystem.service.ServiceDependency;
@@ -46,12 +44,7 @@ public class Neo4JContentRetrieverProviderServiceConfigurator implements Resourc
         Supplier<WildFlyContentRetrieverConfig> factory = new Supplier<>() {
             @Override
             public WildFlyContentRetrieverConfig get() {
-                String password;
-                try {
-                    password = String.valueOf(credentialRef.get().getCredential(PasswordCredential.class).getPassword(ClearPassword.class).getPassword());
-                } catch (IOException ex) {
-                    throw new RuntimeException(ex);
-                }
+                String password = CredentialReferenceUtil.getPassword(credentialRef.get());
                 WildFlyBeanRegistry.registerChatModel(chatLanguageModelName, chatLanguageModel.get());
                 return new Neo4JContentRetrieverConfig()
                         .boltUrl(boltUrl)

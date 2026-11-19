@@ -27,6 +27,7 @@ import org.wildfly.extension.ai.Capabilities;
 import org.wildfly.subsystem.resource.ChildResourceDefinitionRegistrar;
 import org.wildfly.subsystem.resource.ManagementResourceRegistrar;
 import org.wildfly.subsystem.resource.ManagementResourceRegistrationContext;
+import org.wildfly.extension.ai.CredentialReferenceOperations;
 import org.wildfly.subsystem.resource.ResourceDescriptor;
 import org.wildfly.subsystem.resource.operation.ResourceOperationRuntimeHandler;
 
@@ -55,6 +56,8 @@ public class Neo4JContentRetrieverProviderRegistrar implements ChildResourceDefi
         this.descriptor = ResourceDescriptor.builder(parentResolver.createChildResolver(PATH))
                 .addCapability(Capabilities.CONTENT_RETRIEVER_PROVIDER_CAPABILITY)
                 .addAttributes(ATTRIBUTES)
+                .addAttribute(CREDENTIAL_REFERENCE, CredentialReferenceOperations.write(CREDENTIAL_REFERENCE, false))
+                .withOperationTransformation("add", CredentialReferenceOperations.add(CREDENTIAL_REFERENCE))
                 .withRuntimeHandler(ResourceOperationRuntimeHandler.configureService(new Neo4JContentRetrieverProviderServiceConfigurator()))
                 .build();
     }

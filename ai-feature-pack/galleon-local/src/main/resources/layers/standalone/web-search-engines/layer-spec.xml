@@ -23,7 +23,7 @@
     <feature spec="subsystem.ai">
         <feature spec="subsystem.ai.web-search-content-retriever">
             <param name="web-search-content-retriever" value="web-search-retriever" />
-            <param name="tavily" value="{api-key=${env.TAVILY_API_KEY}, base-url=https://api.tavily.com, connect-timeout=20000, exclude-domains=[example.org], include-domains=[example.com], include-answer=true}"/>
+            <param name="tavily" value="{credential-reference={clear-text=${env.TAVILY_API_KEY}}, base-url=https://api.tavily.com, connect-timeout=20000, exclude-domains=[example.org], include-domains=[example.com], include-answer=true}"/>
         </feature>
     </feature>
 </layer-spec>

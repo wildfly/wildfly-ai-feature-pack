@@ -39,6 +39,7 @@ import org.wildfly.service.capture.ValueExecutorRegistry;
 import org.wildfly.subsystem.resource.ChildResourceDefinitionRegistrar;
 import org.wildfly.subsystem.resource.ManagementResourceRegistrar;
 import org.wildfly.subsystem.resource.ManagementResourceRegistrationContext;
+import org.wildfly.extension.ai.CredentialReferenceOperations;
 import org.wildfly.subsystem.resource.ResourceDescriptor;
 import org.wildfly.subsystem.resource.operation.ResourceOperationRuntimeHandler;
 
@@ -128,6 +129,8 @@ public class GeminiChatLanguageModelProviderRegistrar implements ChildResourceDe
         this.descriptor = ResourceDescriptor.builder(parentResolver.createChildResolver(PATH))
                 .addCapability(CHAT_MODEL_PROVIDER_CAPABILITY)
                 .addAttributes(ATTRIBUTES)
+                .addAttribute(API_KEY, CredentialReferenceOperations.write(API_KEY, false))
+                .withOperationTransformation("add", CredentialReferenceOperations.add(API_KEY))
                 .withRuntimeHandler(ResourceOperationRuntimeHandler.configureService(new GeminiChatModelProviderServiceConfigurator(registry)))
                 .build();
     }
