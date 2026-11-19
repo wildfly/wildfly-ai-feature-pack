@@ -19,13 +19,17 @@ import java.util.function.Supplier;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.controller.StringListAttributeDefinition;
+import org.jboss.as.controller.security.CredentialReference;
 import org.jboss.dmr.ModelNode;
+import org.wildfly.extension.ai.CredentialReferenceUtil;
 import org.wildfly.extension.ai.injection.retriever.GoogleWebSearchContentRetrieverConfig;
 import org.wildfly.extension.ai.injection.retriever.TavilyWebSearchContentRetrieverConfig;
 import org.wildfly.extension.ai.injection.retriever.WildFlyContentRetrieverConfig;
 import org.wildfly.service.Installer;
+import org.wildfly.security.credential.source.CredentialSource;
 import org.wildfly.subsystem.service.ResourceServiceConfigurator;
 import org.wildfly.subsystem.service.ResourceServiceInstaller;
+import org.wildfly.subsystem.service.ServiceDependency;
 import org.wildfly.subsystem.service.capability.CapabilityServiceInstaller;
 
 public class WebSearchContentRetrieverProviderServiceConfigurator implements ResourceServiceConfigurator {
@@ -36,9 +40,11 @@ public class WebSearchContentRetrieverProviderServiceConfigurator implements Res
         ModelNode tavilyConfiguration = TAVILY_SEARCH_ENGINE.resolveModelAttribute(context, model);
         Integer maxResults = MAX_RESULTS.resolveModelAttribute(context, model).asIntOrNull();
         final WildFlyContentRetrieverConfig contentRetrieverConfig;
+        final ServiceDependency<CredentialSource> credentialReference;
         if (googleConfiguration.isDefined()) {
+            credentialReference = credentialReference(context, googleConfiguration);
             contentRetrieverConfig = new GoogleWebSearchContentRetrieverConfig()
-                    .apiKey(googleConfiguration.get(API_KEY.getName()).asStringOrNull())
+                    .apiKey(apiKey(googleConfiguration, credentialReference))
                     .csi(googleConfiguration.get("custom-search-id").asStringOrNull())
                     .includeImages(googleConfiguration.get("include-images").asBooleanOrNull())
                     .logRequests(googleConfiguration.get(LOG_REQUESTS.getName()).asBooleanOrNull())
@@ -48,8 +54,9 @@ public class WebSearchContentRetrieverProviderServiceConfigurator implements Res
                     .timeout(Duration.ofMillis(googleConfiguration.get(CONNECT_TIMEOUT.getName()).asLong()))
                     .maxResults(maxResults);
         } else {
+            credentialReference = credentialReference(context, tavilyConfiguration);
             contentRetrieverConfig = new TavilyWebSearchContentRetrieverConfig()
-                    .apiKey(tavilyConfiguration.get(API_KEY.getName()).asStringOrNull())
+                    .apiKey(apiKey(tavilyConfiguration, credentialReference))
                     .baseUrl(tavilyConfiguration.get(BASE_URL.getName()).asString())
                     .excludeDomains(StringListAttributeDefinition.unwrapValue(context, tavilyConfiguration.get("exclude-domains")))
                     .includeAnswer(tavilyConfiguration.get("include-answer").asBooleanOrNull())
@@ -65,10 +72,23 @@ public class WebSearchContentRetrieverProviderServiceConfigurator implements Res
                 return contentRetrieverConfig;
             }
         };
-        return CapabilityServiceInstaller.builder(CONTENT_RETRIEVER_PROVIDER_CAPABILITY, factory)
+        CapabilityServiceInstaller.Builder builder = CapabilityServiceInstaller.builder(CONTENT_RETRIEVER_PROVIDER_CAPABILITY, factory)
                 .blocking()
-                .startWhen(Installer.StartWhen.INSTALLED)
-                .build();
+                .startWhen(Installer.StartWhen.INSTALLED);
+        if (credentialReference != null) {
+            builder.requires(credentialReference);
+        }
+        return (ResourceServiceInstaller) builder.build();
+    }
+
+    private static ServiceDependency<CredentialSource> credentialReference(OperationContext context, ModelNode configuration)
+            throws OperationFailedException {
+        return configuration.hasDefined(API_KEY.getName())
+                ? ServiceDependency.from(CredentialReference.getCredentialSourceDependency(context, API_KEY, configuration)) : null;
+    }
+
+    private static String apiKey(ModelNode configuration, ServiceDependency<CredentialSource> credentialReference) {
+        return credentialReference == null ? null : CredentialReferenceUtil.getPassword(credentialReference.get());
     }
 
 }

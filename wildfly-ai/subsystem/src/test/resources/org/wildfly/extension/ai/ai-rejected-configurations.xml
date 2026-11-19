@@ -1,0 +1,24 @@
+<!--
+~ Copyright The WildFly Authors
+~ SPDX-License-Identifier: Apache-2.0
+-->
+<cases>
+    <case name="github">
+        <subsystem xmlns="urn:jboss:domain:ai:experimental:2.0"><chat-language-models><github-chat-model name="github"/></chat-language-models></subsystem>
+    </case>
+    <case name="gemini">
+        <subsystem xmlns="urn:jboss:domain:ai:experimental:2.0"><chat-language-models><gemini-chat-model name="test" api-key="test-key"/></chat-language-models></subsystem>
+    </case>
+    <case name="openai">
+        <subsystem xmlns="urn:jboss:domain:ai:experimental:2.0"><chat-language-models><openai-chat-model name="test" api-key="test-key"/></chat-language-models></subsystem>
+    </case>
+    <case name="mistral">
+        <subsystem xmlns="urn:jboss:domain:ai:experimental:2.0"><chat-language-models><mistral-ai-chat-model name="test" api-key="test-key"/></chat-language-models></subsystem>
+    </case>
+    <case name="google">
+        <subsystem xmlns="urn:jboss:domain:ai:experimental:2.0"><content-retrievers><web-search-content-retriever name="test"><google api-key="test-key"/></web-search-content-retriever></content-retrievers></subsystem>
+    </case>
+    <case name="tavily">
+        <subsystem xmlns="urn:jboss:domain:ai:experimental:2.0"><content-retrievers><web-search-content-retriever name="test"><tavily api-key="test-key"/></web-search-content-retriever></content-retrievers></subsystem>
+    </case>
+</cases>

@@ -17,6 +17,10 @@
             <!-- AI Feature Pack layers for testing -->
             <include name="ollama-chat-model"/>
             <include name="ollama-streaming-chat-model"/>
+            <!-- Environment-backed credential-reference startup coverage -->
+            <include name="gemini-chat-model"/>
+            <include name="mistral-ai-chat-model"/>
+            <include name="openai-chat-model"/>
             <include name="in-memory-embedding-model-all-minilm-l6-v2"/>
             <include name="ollama-embedding-model"/>
             <include name="in-memory-embedding-store"/>

@@ -5,9 +5,9 @@
 package org.wildfly.extension.ai.rag.retriever;
 
 
-import static org.wildfly.extension.ai.AIAttributeDefinitions.API_KEY;
 import static org.wildfly.extension.ai.AIAttributeDefinitions.BASE_URL;
 import static org.wildfly.extension.ai.AIAttributeDefinitions.CONNECT_TIMEOUT;
+import static org.wildfly.extension.ai.AIAttributeDefinitions.API_KEY;
 import static org.wildfly.extension.ai.AIAttributeDefinitions.LOG_REQUESTS;
 import static org.wildfly.extension.ai.AIAttributeDefinitions.LOG_RESPONSES;
 import static org.wildfly.extension.ai.AIAttributeDefinitions.MAX_RETRIES;
@@ -31,6 +31,7 @@ import org.jboss.as.version.Stability;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
 import org.wildfly.extension.ai.Capabilities;
+import org.wildfly.extension.ai.CredentialReferenceOperations;
 import org.wildfly.subsystem.resource.ChildResourceDefinitionRegistrar;
 import org.wildfly.subsystem.resource.ManagementResourceRegistrar;
 import org.wildfly.subsystem.resource.ManagementResourceRegistrationContext;
@@ -106,6 +107,9 @@ public class WebSearchContentContentRetrieverProviderRegistrar implements ChildR
         this.descriptor = ResourceDescriptor.builder(parentResolver.createChildResolver(PATH))
                 .addCapability(Capabilities.CONTENT_RETRIEVER_PROVIDER_CAPABILITY)
                 .addAttributes(ATTRIBUTES)
+                .addAttribute(GOOGLE_SEARCH_ENGINE, CredentialReferenceOperations.write(API_KEY, true))
+                .addAttribute(TAVILY_SEARCH_ENGINE, CredentialReferenceOperations.write(API_KEY, true))
+                .withOperationTransformation("add", CredentialReferenceOperations.add(API_KEY, "google", "tavily"))
                 .withRuntimeHandler(ResourceOperationRuntimeHandler.configureService(new WebSearchContentRetrieverProviderServiceConfigurator()))
                 .build();
     }
